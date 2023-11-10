@@ -3,7 +3,7 @@ PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
 # Set up the developer environment
-.PHONY: devenv
+.PHONY: dev-env
 dev-env: install-dev .git/hooks/pre-commit
 	echo "Development environment set up. You can activate it using"
 	echo "    $(VENV)/bin/activate"
