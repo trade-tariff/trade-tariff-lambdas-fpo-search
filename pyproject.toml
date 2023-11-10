@@ -1,0 +1,18 @@
+[project]
+name = "hmrc_fpo_categorisation_api"
+description = "FPO Parcel Item Categorisation API"
+version = "0.1.0"
+dependencies = [
+    "numpy",
+    "sentence-transformers",
+    "torch",
+    "tqdm"
+]
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "ruff"
+]
+
+[tool.setuptools]
+py-modules = []

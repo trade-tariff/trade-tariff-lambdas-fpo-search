@@ -1,16 +1,17 @@
 # FPO Parcel Item Categorisation API
 
-## Create your virtual environment
-It is recommended that you run the tool within a virtual environment. These instructions use `venv` but you should be able to use whichever you like.
+## Create your development environment
 
-### Create the virtual environment (this is a one-off step)
-- Create a virtual environment: `python -m venv venv/`
+### Initial development environment setup (one-time setup)
+- Set up a developer environment: `make dev-env`
 
 ### Activate the virtual environment (each time the tool is used)
 - On MacOS or Linux: `source venv/bin/activate`
 - On Windows: `.\venv\Scripts\activate`
-- Install necessary Python modules via `pip install -r requirements.txt`
-- Install the pre-commit hooks: `pre-commit install`
+
+### Install dependencies when the `pyproject.toml` has changed
+- For development: `make install-dev`
+- For production: `make install`
 
 ## Usage
 
