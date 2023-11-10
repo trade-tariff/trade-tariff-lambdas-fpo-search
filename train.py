@@ -1,5 +1,4 @@
 import argparse
-import json
 from pathlib import Path
 import pickle
 
@@ -11,17 +10,36 @@ from training.create_embeddings import create_embeddings
 from training.prepare_data import TrainingDataLoader
 from training.train_model import ModelTrainer
 
-parser = argparse.ArgumentParser(description='Train an FPO classification model.')
-parser.add_argument('--digits', type=int, help='how many digits to train the model to', default=8)
-parser.add_argument('--limit', type=int, help='limit the training data to this many entries to speed up development testing', required=False)
-parser.add_argument('--force', help='force the regeneration of source data and embeddings', required=False, default=False, action='store_true')
+parser = argparse.ArgumentParser(description="Train an FPO classification model.")
+parser.add_argument(
+    "--digits", type=int, help="how many digits to train the model to", default=8
+)
+parser.add_argument(
+    "--limit",
+    type=int,
+    help="limit the training data to this many entries to speed up development testing",
+    required=False,
+)
+parser.add_argument(
+    "--force",
+    help="force the regeneration of source data and embeddings",
+    required=False,
+    default=False,
+    action="store_true",
+)
 
 args = parser.parse_args()
 
 limit = args.limit
 force = args.force
 
-device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_built() else 'cpu'
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_built()
+    else "cpu"
+)
 
 cwd = Path(__file__).resolve().parent
 
@@ -38,7 +56,12 @@ texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
 subheadings_file = data_dir / "subheadings.pkl"
 
-if not force and texts_file.exists() and labels_file.exists() and subheadings_file.exists():
+if (
+    not force
+    and texts_file.exists()
+    and labels_file.exists()
+    and subheadings_file.exists()
+):
     print("💾⇦ Texts pickle file found. Loading...")
     with open(texts_file, "rb") as fp:
         texts = pickle.load(fp)
@@ -63,7 +86,9 @@ else:
     # Append all the Tradesets data sources
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
-    data_sources += [BasicCSVDataSource(filename) for filename in tradesets_data_dir.glob("*.csv")]
+    data_sources += [
+        BasicCSVDataSource(filename) for filename in tradesets_data_dir.glob("*.csv")
+    ]
 
     training_data_loader = TrainingDataLoader()
 
@@ -96,7 +121,7 @@ if not force and embeddings_file.exists():
     with open(embeddings_file, "rb") as fp:
         embeddings = pickle.load(fp)
 else:
-    embeddings = create_embeddings(texts, labels, device)
+    embeddings = create_embeddings(texts, device)
 
     print("💾⇦ Saving embeddings")
     with open(embeddings_file, "wb") as fp:

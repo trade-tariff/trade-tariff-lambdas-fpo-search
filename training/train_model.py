@@ -4,8 +4,11 @@ from torch import Tensor, optim, nn
 from torch.utils.data import DataLoader, TensorDataset
 from training.model import SimpleNN
 
+
 class ModelTrainer:
-    def __init__(self, learning_rate: float = 0.001, max_epochs: int = 3, device: str = 'cpu') -> None:
+    def __init__(
+        self, learning_rate: float = 0.001, max_epochs: int = 3, device: str = "cpu"
+    ) -> None:
         self._learning_rate = learning_rate
         self._max_epochs = max_epochs
         self._device = device
@@ -15,7 +18,9 @@ class ModelTrainer:
 
         input_size = len(embeddings[0])  # Assuming embeddings have fixed size
         output_size = num_labels  # Number of unique classes in your labels
-        hidden_size = math.floor(input_size + ( output_size - input_size ) / 2)  # You can adjust this as needed
+        hidden_size = math.floor(
+            input_size + (output_size - input_size) / 2
+        )  # You can adjust this as needed
         model = SimpleNN(input_size, hidden_size, output_size)
 
         criterion = nn.CrossEntropyLoss()
@@ -55,6 +60,8 @@ class ModelTrainer:
                 total += labels.size(0)
                 correct += (predicted == loader_labels).sum().item()
 
-                print(f"Epoch {epoch+1}/{self._max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%")
-        
+                print(
+                    f"Epoch {epoch+1}/{self._max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
+                )
+
         return model

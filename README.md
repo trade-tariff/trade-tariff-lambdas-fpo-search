@@ -10,6 +10,7 @@ It is recommended that you run the tool within a virtual environment. These inst
 - On MacOS or Linux: `source venv/bin/activate`
 - On Windows: `.\venv\Scripts\activate`
 - Install necessary Python modules via `pip install -r requirements.txt`
+- Install the pre-commit hooks: `pre-commit install`
 
 ## Usage
 

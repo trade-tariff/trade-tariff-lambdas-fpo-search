@@ -6,7 +6,12 @@ from lib.read_description_csv import read_description_csv
 
 
 class BasicCSVDataSource(DataSource):
-    def __init__(self, filename: Union[str, PathLike], code_col: int = 0, description_col: int = 1) -> None:
+    def __init__(
+        self,
+        filename: Union[str, PathLike],
+        code_col: int = 0,
+        description_col: int = 1,
+    ) -> None:
         super().__init__()
         self._filename = filename
         self._code_col = code_col
@@ -31,6 +36,6 @@ class BasicCSVDataSource(DataSource):
                 documents[subheading] = {description}
 
         return documents
-    
+
     def get_description(self) -> str:
         return f"CSV data source from {str(self._filename)}"

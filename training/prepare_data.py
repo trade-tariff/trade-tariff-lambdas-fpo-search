@@ -1,10 +1,9 @@
 from pathlib import Path
 from data_sources.data_source import DataSource
-from data_sources.trade_tariff import TradeTariffDataSource
-from data_sources.tradesets import BasicCSVDataSource
+
 
 class TrainingDataLoader:
-    def __init__(self, source_dir: Path|None = None) -> None:
+    def __init__(self, source_dir: Path | None = None) -> None:
         if source_dir is None:
             cwd = Path(__file__).resolve().parent
             self._source_dir = cwd / "raw_source_data"

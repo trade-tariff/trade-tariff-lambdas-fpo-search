@@ -30,7 +30,7 @@ class TradeTariffDataSource(DataSource):
             processed_codes += 1
 
             code = line[9]
-            ancestor_codes = line[10].split(',')
+            ancestor_codes = line[10].split(",")
             description = line[7]
             for ancestor_code in ancestor_codes:
                 ancestor = mapped_codes[ancestor_code]
@@ -41,10 +41,10 @@ class TradeTariffDataSource(DataSource):
                 commodities_descriptions[key].add(description)
             else:
                 commodities_descriptions[key] = {description}
-        
+
         print(f"Processed {processed_codes} codes, ignored {ignored_codes} codes")
 
         return commodities_descriptions
-    
+
     def get_description(self) -> str:
         return f"Trade Tariff Descriptions from {str(self._filename)}"
