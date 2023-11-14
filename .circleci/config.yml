@@ -1,0 +1,82 @@
+version: 2.1
+
+executors:
+  python:
+    docker:
+      - image: cimg/python:3.11.2
+    resource_class: small
+
+filter-not-main: &filter-not-main
+  filters:
+    branches:
+      ignore:
+        - main
+        - /^dependabot/(?!docker/).*/
+        - /^hotfix\/.+/
+
+filter-main: &filter-main
+  filters:
+    branches:
+      only:
+        - main
+        - /^hotfix\/.+/
+
+orbs:
+  serverless-framework: circleci/serverless-framework@2.0.1
+  slack: circleci/slack@4.3.0
+
+jobs:
+  check:
+    executor: python
+    steps:
+      - checkout
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install ruff
+      - run: make check
+  # test:
+  #   executor: python
+  #   steps:
+  #     - checkout
+  #     - run: make test
+  deploy:
+    executor: python
+    parameters:
+      stage:
+        type: string
+    steps:
+      - checkout
+      - serverless-framework/setup
+      - run: make deploy-<< parameters.stage  >>
+
+workflows:
+  version: 2
+
+  deploy-to-development:
+    jobs:
+      - check:
+          <<: *filter-not-main
+      # - test:
+      #     <<: *filter-not-main
+      - deploy:
+          stage: development
+          context: trade-tariff-lambda-deployments-development
+          requires:
+            # - test
+            - check
+          <<: *filter-not-main
+
+  deploy-to-staging:
+    jobs:
+      - deploy:
+          stage: staging
+          context: trade-tariff-lambda-deployments-staging
+          <<: *filter-main
+
+  deploy-to-production:
+    jobs:
+      - deploy:
+          stage: production
+          context: trade-tariff-lambda-deployments-production
+          <<: *filter-main

@@ -1,56 +1,22 @@
-VENV = venv
-PYTHON = $(VENV)/bin/python3
-PIP = $(VENV)/bin/pip
+.PHONY: build clean deploy-development deploy-staging deploy-production test lint install-linter
 
-# Set up the developer environment
-.PHONY: dev-env
-dev-env: install-dev .git/hooks/pre-commit
-	echo "Development environment set up. You can activate it using"
-	echo "    $(VENV)/bin/activate"
+build:
+	cd fpo_search && make build
 
-# Run the training
-.PHONY: train
-train: install
-	./venv/bin/python3 train.py
-
-## Create the venv
-$(VENV)/bin/activate:
-	python3 -m venv $(VENV)
-
-## Pre-commit hooks
-.git/hooks/pre-commit:
-	$(VENV)/bin/pre-commit install
-
-## Install dependencies for production
-.PHONY: install
-install: $(VENV)/bin/activate
-	@echo ">> Installing dependencies"
-	$(PIP) install --upgrade pip
-	$(PIP) install -e .
-
-## Install dependencies for development
-.PHONY: install-dev
-install-dev: install
-	$(PIP) install -e ".[dev]"
-
-## Delete all temporary files
 clean:
-	rm -rf .ipynb_checkpoints
-	rm -rf **/.ipynb_checkpoints
-	rm -rf .pytest_cache
-	rm -rf **/.pytest_cache
-	rm -rf __pycache__
-	rm -rf **/__pycache__
-	rm -rf build
-	rm -rf dist
-	rm -rf $(VENV)
+	cd fpo_search && make clean
 
-## Lint using ruff
-.PHONY: ruff
-ruff:
-	$(VENV)/bin/ruff .
+deploy-development: clean build
+	STAGE=development serverless deploy --verbose
 
-## Run checks (ruff + test)
-.PHONY: check
+deploy-staging: clean build
+	STAGE=staging serverless deploy --verbose
+
+deploy-production: clean build
+	STAGE=production serverless deploy --verbose
+
+test: clean build
+	cd fpo_search && make test
+
 check:
-	$(VENV)/bin/ruff check .
+	cd fpo_search && make check
