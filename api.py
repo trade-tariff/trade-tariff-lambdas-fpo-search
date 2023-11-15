@@ -75,7 +75,11 @@ async def search(q: str, digits: int = 6, limit: int = 5):
 
     logger.info("Finished search request in %.2fms" % (response_time))
 
-    return [{"code": result.code, "score": result.score * 1000} for result in results]
+    return {
+        "results": [
+            {"code": result.code, "score": result.score * 1000} for result in results
+        ]
+    }
 
 
 if __name__ == "__main__":
