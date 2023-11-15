@@ -91,7 +91,7 @@ or
 
 ```uvicorn api:app --port 5000```
 
-You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10&digits=8
+You can then access the service locally at http://localhost:5000/code-search?q=smelly+socks&limit=10&digits=8
 
 #### Building an inference API Docker image
 
@@ -103,7 +103,7 @@ And then run it:
 
 ```docker run -p 5000:5000 fpo-inference-api```
 
-You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10&digits=8
+You can then access the service locally at http://localhost:5000/code-search?q=smelly+socks&limit=10&digits=8
 
 ## Licence
 
