@@ -63,11 +63,28 @@ For example:
 #### Running as an API
 
 Start the FastAPI service:
-- Either `python api.py`
-- or `uvicorn api:app --port 5000`
+
+Either using:
+
+```python api.py```
+
+or
+
+```uvicorn api:app --port 5000```
 
 You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10
 
+#### Building an inference API Docker image
+
+You can build the API as a Docker image:
+
+```docker build -f Dockerfile.inference -t fpo-inference-api .```
+
+And then run it:
+
+```docker run -p 5000:5000 fpo-inference-api```
+
+You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10
 
 ## Licence
 
