@@ -2,7 +2,7 @@ import math
 import torch
 from torch import Tensor, optim, nn
 from torch.utils.data import DataLoader, TensorDataset
-from training.model import SimpleNN
+from model.model import SimpleNN
 
 
 class ModelTrainer:

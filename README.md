@@ -27,7 +27,18 @@ python train.py
 
 To get usage instructions you can run:
 ```
-python train.py --help
+% python train.py --help
+```
+```
+usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force]
+
+Train an FPO classification model.
+
+options:
+  -h, --help       show this help message and exit
+  --digits DIGITS  how many digits to train the model to
+  --limit LIMIT    limit the training data to this many entries to speed up development testing
+  --force          force the regeneration of source data and embeddings
 ```
 
 ### Inference
@@ -41,8 +52,11 @@ You can either use the training to create fresh versions of these files, or you 
 
 #### From the command-line
 
+To get usage instructions you can run:
 ```
 % python infer.py --help
+```
+```
 usage: infer.py [-h] [--limit LIMIT] query
 
 Query an FPO classification model.
@@ -53,12 +67,17 @@ positional arguments:
 options:
   -h, --help     show this help message and exit
   --limit LIMIT  limit the number of responses
-
+  --digits {2,4,6,8}  how many digits to classify the answer to
 ```
 
 For example:
 
-`python infer.py --limit 10 'smelly socks'`
+```
+python infer.py --limit 10 --digits 8 'smelly socks'
+```
+```
+[61159500 = 225.24, 61159699 = 181.72, 61159900 = 119.44, 61159400 = 71.33, 61151090 = 27.60, 62179000 = 17.30, 61159610 = 17.30, 62171000 = 13.81, 61151010 = 13.68, 62052000 = 7.75]
+```
 
 #### Running as an API
 
@@ -72,7 +91,7 @@ or
 
 ```uvicorn api:app --port 5000```
 
-You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10
+You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10&digits=8
 
 #### Building an inference API Docker image
 
@@ -84,7 +103,7 @@ And then run it:
 
 ```docker run -p 5000:5000 fpo-inference-api```
 
-You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10
+You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10&digits=8
 
 ## Licence
 

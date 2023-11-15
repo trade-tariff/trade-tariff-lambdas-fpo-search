@@ -63,15 +63,13 @@ async def check_api_key(request: Request, call_next):
 async def search(q: str, digits: int = 6, limit: int = 5):
     start_time = time.time()
 
-    if digits != 6 and digits != 8:
+    if digits not in [6, 8]:
         raise HTTPException(400, "digits must be 6 or 8")
 
-    if limit is None:
-        limit = 5
-    elif limit < 1 or limit > 10:
+    if limit < 1 or limit > 10:
         raise HTTPException(400, "limit must be between 1 and 10")
 
-    results = context["classifier"].classify(q, limit)
+    results = context["classifier"].classify(q, limit, digits)
 
     response_time = (time.time() - start_time) * 1000
 

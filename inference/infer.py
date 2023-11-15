@@ -1,5 +1,4 @@
 from pathlib import Path
-import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
 
@@ -10,7 +9,7 @@ class ClassificationResult:
         self.score = score
 
     def __repr__(self) -> str:
-        return "%s = %.2f%%" % (self.code, self.score * 100)
+        return "%s = %.2f" % (self.code, self.score * 1000)
 
 
 class Classifier:
@@ -34,7 +33,9 @@ class FlatClassifier(Classifier):
 
         self._sentence_transformer_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def classify(self, search_text: str, limit: int = 5) -> list[ClassificationResult]:
+    def classify(
+        self, search_text: str, limit: int = 5, digits: int = 6
+    ) -> list[ClassificationResult]:
         # Make sure the model is on the correct device
         self._model.to(self._device)
 
@@ -47,17 +48,24 @@ class FlatClassifier(Classifier):
         # Run it through the model to get the predictions
         predictions = torch.nn.functional.softmax(self._model(new_embeddings), dim=1)
 
-        np_predictions = predictions.detach().numpy()
+        predictions_to_digits = {}
 
-        top_results = np.argsort(np_predictions, axis=1)[:, -limit:]
+        for i, prediction in enumerate(predictions[0]):
+            code = str(self._subheadings[i])[:digits]
+            score = prediction.item()
+
+            if code in predictions_to_digits:
+                predictions_to_digits[code] += score
+            else:
+                predictions_to_digits[code] = score
+
+        top_results = sorted(
+            predictions_to_digits.items(), key=lambda x: x[1], reverse=True
+        )[:limit]
 
         result = []
 
-        for i in reversed(top_results[0]):
-            result.append(
-                ClassificationResult(
-                    str(self._subheadings[i]), predictions[0][i].item()
-                )
-            )
+        for i in top_results:
+            result.append(ClassificationResult(i[0], i[1]))
 
         return result

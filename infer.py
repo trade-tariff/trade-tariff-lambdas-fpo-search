@@ -19,9 +19,19 @@ parser.add_argument(
     default=5,
 )
 
+parser.add_argument(
+    "--digits",
+    type=int,
+    help="how many digits to classify the answer to",
+    default=6,
+    choices=[2, 4, 6, 8],
+)
+
 args = parser.parse_args()
 
 query = args.query
+limit = args.limit
+digits = args.digits
 
 subheadings_file = target_dir / "subheadings.pkl"
 if not subheadings_file.exists():
@@ -36,4 +46,4 @@ if not model_file.exists():
 
 classifier = FlatClassifier(model_file, subheadings, device)
 
-print(classifier.classify(query))
+print(classifier.classify(search_text=query, limit=limit, digits=digits))
