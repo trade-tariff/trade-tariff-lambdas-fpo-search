@@ -54,7 +54,7 @@ print("💾⇨ Loading training data")
 
 texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
-subheadings_file = data_dir / "subheadings.pkl"
+subheadings_file = target_dir / "subheadings.pkl"
 
 if (
     not force
@@ -62,15 +62,15 @@ if (
     and labels_file.exists()
     and subheadings_file.exists()
 ):
-    print("💾⇦ Texts pickle file found. Loading...")
+    print("💾⇨ Texts pickle file found. Loading...")
     with open(texts_file, "rb") as fp:
         texts = pickle.load(fp)
 
-    print("💾⇦ Labels pickle file found. Loading...")
+    print("💾⇨ Labels pickle file found. Loading...")
     with open(labels_file, "rb") as fp:
         labels = pickle.load(fp)
 
-    print("💾⇦ Subheadings pickle file found. Loading...")
+    print("💾⇨ Subheadings pickle file found. Loading...")
     with open(subheadings_file, "rb") as fp:
         subheadings = pickle.load(fp)
 else:
@@ -117,7 +117,7 @@ print("Creating the embeddings")
 embeddings_file = data_dir / "embeddings.pkl"
 
 if not force and embeddings_file.exists():
-    print("💾⇦ Embeddings pickle file found. Loading...")
+    print("💾⇨ Embeddings pickle file found. Loading...")
     with open(embeddings_file, "rb") as fp:
         embeddings = pickle.load(fp)
 else:

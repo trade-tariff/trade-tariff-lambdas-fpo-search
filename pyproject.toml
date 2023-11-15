@@ -6,6 +6,9 @@ dependencies = [
     "numpy",
     "sentence-transformers",
     "torch",
+    "tqdm",
+    "fastapi",
+    "uvicorn",
     "tqdm"
 ]
 [project.optional-dependencies]

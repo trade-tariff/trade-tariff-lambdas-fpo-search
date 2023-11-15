@@ -29,3 +29,46 @@ To get usage instructions you can run:
 ```
 python train.py --help
 ```
+
+### Inference
+
+Once you have the model built you can run inference against it to classify items. By default the inference script requires the following files to be present:
+
+- `target/subheading.pkl` which is a pcikle file of a list of subheadings. This is used to convert the classification from the model back into the eight digit code.
+- `target/model.pt` which is the PyTorch model
+
+You can either use the training to create fresh versions of these files, or you can use the pre-built ones. Contact the team lead to get access to them.
+
+#### From the command-line
+
+```
+% python infer.py --help
+usage: infer.py [-h] [--limit LIMIT] query
+
+Query an FPO classification model.
+
+positional arguments:
+  query          the query string
+
+options:
+  -h, --help     show this help message and exit
+  --limit LIMIT  limit the number of responses
+
+```
+
+For example:
+
+`python infer.py --limit 10 'smelly socks'`
+
+#### Running as an API
+
+Start the FastAPI service:
+- Either `python api.py`
+- or `uvicorn api:app --port 5000`
+
+You can then access the service locally at http://localhost:5000/search?q=smelly+socks&limit=10
+
+
+## Licence
+
+FPO Parcel Item Categorisation API is licenced under the [MIT licence](LICENCE.txt)

@@ -5,8 +5,11 @@ PIP = $(VENV)/bin/pip
 # Set up the developer environment
 .PHONY: dev-env
 dev-env: install-dev .git/hooks/pre-commit
-	echo "Development environment set up. You can activate it using"
-	echo "    $(VENV)/bin/activate"
+	@echo
+	@echo "---------------------------------------------------------"
+	@echo "Development environment set up. You can activate it using"
+	@echo "    source $(VENV)/bin/activate"
+	@echo "---------------------------------------------------------"
 
 # Run the training
 .PHONY: train
@@ -47,10 +50,20 @@ clean:
 
 ## Lint using ruff
 .PHONY: ruff
-ruff:
+ruff: install-dev
 	$(VENV)/bin/ruff .
 
 ## Run checks (ruff + test)
 .PHONY: check
-check:
+check: install-dev
 	$(VENV)/bin/ruff check .
+
+## Run the API locally
+.PHONY: run-api
+run-api: install
+	${PYTHON} api.py
+
+## Freeze the requirements to requirements.txt
+.PHONY: freeze
+freeze: $(VENV)/bin/activate
+	$(PIP) freeze --exclude hmrc_fpo_categorisation_api > requirements.txt
