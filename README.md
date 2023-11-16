@@ -30,15 +30,21 @@ To get usage instructions you can run:
 % python train.py --help
 ```
 ```
-usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force]
+usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force] [--learning-rate LEARNING_RATE] [--max-epochs MAX_EPOCHS] [--device {auto,cpu,mps,cuda}]
 
 Train an FPO classification model.
 
 options:
-  -h, --help       show this help message and exit
-  --digits DIGITS  how many digits to train the model to
-  --limit LIMIT    limit the training data to this many entries to speed up development testing
-  --force          force the regeneration of source data and embeddings
+  -h, --help            show this help message and exit
+  --digits DIGITS       how many digits to train the model to
+  --limit LIMIT         limit the training data to this many entries to speed up development testing
+  --force               force the regeneration of source data and embeddings
+  --learning-rate LEARNING_RATE
+                        the learning rate to train the network with
+  --max-epochs MAX_EPOCHS
+                        the maximum number of epochs to train the network for
+  --device {auto,cpu,mps,cuda}
+                        the torch device to use for training. 'auto' will try to select the best device available.
 ```
 
 ### Inference
