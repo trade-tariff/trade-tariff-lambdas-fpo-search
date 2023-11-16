@@ -8,7 +8,10 @@ from data_sources.trade_tariff import TradeTariffDataSource
 from data_sources.tradesets import BasicCSVDataSource
 from training.create_embeddings import create_embeddings
 from training.prepare_data import TrainingDataLoader
-from training.train_model import ModelTrainer
+from training.train_model import (
+    FlatClassifierModelTrainer,
+    FlatClassifierModelTrainerParameters,
+)
 
 parser = argparse.ArgumentParser(description="Train an FPO classification model.")
 parser.add_argument(
@@ -27,19 +30,49 @@ parser.add_argument(
     default=False,
     action="store_true",
 )
+parser.add_argument(
+    "--learning-rate",
+    dest="learning_rate",
+    type=float,
+    help="the learning rate to train the network with",
+    default=0.001,
+)
+parser.add_argument(
+    "--max-epochs",
+    dest="max_epochs",
+    type=int,
+    help="the maximum number of epochs to train the network for",
+    default=3,
+)
+parser.add_argument(
+    "--device",
+    type=str,
+    help="the torch device to use for training. 'auto' will try to select the best device available.",
+    choices=["auto", "cpu", "mps", "cuda"],
+    default="auto",
+)
 
 args = parser.parse_args()
 
 limit = args.limit
 force = args.force
 
-device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_built()
-    else "cpu"
+training_parameters = FlatClassifierModelTrainerParameters(
+    args.learning_rate, args.max_epochs
 )
+
+device = args.device
+
+if device == "auto":
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_built()
+        else "cpu"
+    )
+
+print(f"⚙️  Using device {device}")
 
 cwd = Path(__file__).resolve().parent
 
@@ -129,7 +162,7 @@ else:
 
 
 # Now build and train the network
-trainer = ModelTrainer()
+trainer = FlatClassifierModelTrainer(training_parameters, device)
 
 # Convert the labels to a Tensor
 labels = torch.tensor(labels, dtype=torch.long)

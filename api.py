@@ -59,7 +59,7 @@ async def check_api_key(request: Request, call_next):
     return await call_next(request)
 
 
-@app.get("/code-search")  # type: ignore
+@app.get("/code-search")
 async def search(q: str, digits: int = 6, limit: int = 5):
     start_time = time.time()
 
