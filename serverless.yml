@@ -10,6 +10,8 @@ provider:
     name: ${env:DEPLOYMENT_BUCKET}
   timeout: 29
   memorySize: 3072
+  environment:
+    API_KEY: ${env:FPO_API_KEY}
 
 functions:
   fpo_search:
