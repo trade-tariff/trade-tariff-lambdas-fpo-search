@@ -1,3 +1,5 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main)
+
 # FPO Parcel Item Categorisation API
 
 ## Create your development environment
