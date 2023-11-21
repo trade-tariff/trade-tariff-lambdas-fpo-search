@@ -6,6 +6,8 @@ provider:
   region: eu-west-2
   runtime: provided
   stage: ${env:STAGE}
+  deploymentBucket:
+    name: ${env:DEPLOYMENT_BUCKET}
   timeout: 29
   memorySize: 3072
   iamRoleStatements:
