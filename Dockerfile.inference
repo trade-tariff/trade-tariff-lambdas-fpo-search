@@ -1,9 +1,9 @@
 FROM python:3.11-slim as build
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
-	build-essential gcc 
+	build-essential gcc
 
-WORKDIR /usr/app
+WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --upgrade pip
