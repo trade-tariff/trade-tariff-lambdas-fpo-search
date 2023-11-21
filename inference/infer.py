@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 import torch
@@ -23,6 +24,19 @@ class FlatClassifier(Classifier):
     ) -> None:
         super().__init__()
 
+        transformer = os.environ.get(
+            "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-MiniLM-L6-v2"
+        )
+        transformer_cache_directory = os.environ.get(
+            "SENTENCE_TRANSFORMERS_HOME", "/tmp/sentence_transformers/"
+        )
+        sentence_transformer_model_directory = (
+            transformer_cache_directory + "sentence-transformers_" + transformer
+        )
+        print(
+            f"💾⇨ Sentence Transformer cache directory: {sentence_transformer_model_directory}"
+        )
+
         self._subheadings = subheadings
         self._device = device
 
@@ -31,7 +45,21 @@ class FlatClassifier(Classifier):
         self._model = torch.load(model_file)
         print("Model loaded")
 
-        self._sentence_transformer_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # Use predownloaded transformer if available
+        if sentence_transformer_model_directory:
+            print(
+                f"💾⇨ Loading Sentence Transformer model from {sentence_transformer_model_directory}"
+            )
+
+            exists = os.path.isdir(sentence_transformer_model_directory)
+            print(f"💾⇨ Sentence Transformer model exists: {exists}")
+            self._sentence_transformer_model = SentenceTransformer(
+                sentence_transformer_model_directory,
+            )
+        else:
+            print(f"💾⇨ Downloading Sentence Transformer model {transformer}")
+            # Otherwise download it from the HuggingFace model hub
+            self._sentence_transformer_model = SentenceTransformer(transformer)
 
     def classify(
         self, search_text: str, limit: int = 5, digits: int = 6

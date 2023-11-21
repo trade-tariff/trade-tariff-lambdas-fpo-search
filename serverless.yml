@@ -1,0 +1,34 @@
+frameworkVersion: "3"
+service: trade-tariff-lambdas-fpo-search
+
+provider:
+  name: aws
+  region: eu-west-2
+  runtime: provided
+  stage: ${env:STAGE}
+  timeout: 29
+  memorySize: 3072
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "ecr:BatchCheckLayerAvailability"
+        - "ecr:BatchGetImage"
+        - "ecr:GetDownloadUrlForLayer"
+        - "ecr:GetRepositoryPolicy"
+        - "ecr:DescribeRepositories"
+      Resource: ${env:ECR_REPOSITORY}
+    - Effect: "Allow"
+      Action:
+        - "ecr:GetAuthorizationToken"
+      Resource: "*"
+
+functions:
+  fpo_search:
+    image: ${env:DOCKER_IMAGE_URI}
+    events:
+      - http:
+          path: /search
+          method: get
+      - http:
+          path: /search
+          method: post

@@ -1,0 +1,95 @@
+version: 2.1
+
+orbs:
+  serverless-framework: circleci/serverless-framework@2.0.1
+  slack: circleci/slack@4.3.0
+  tariff: trade-tariff/trade-tariff-ci-orb@0
+
+executors:
+  python:
+    docker:
+      - image: cimg/python:3.11.2
+    resource_class: small
+    environment:
+      ECR_REPOSITORY: "arn:aws:ecr:eu-west-2:382373577178:repository/tariff-fpo-search-production"
+      DOCKER_IMAGE_URI: "382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest"
+
+filter-not-main: &filter-not-main
+  filters:
+    branches:
+      ignore:
+        - main
+        - /^dependabot/(?!docker/).*/
+        - /^hotfix\/.+/
+
+filter-main: &filter-main
+  filters:
+    branches:
+      only:
+        - main
+        - /^hotfix\/.+/
+
+jobs:
+  check:
+    executor: python
+    steps:
+      - checkout
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install ruff
+          ruff check .
+  # test:
+  #   executor: python
+  #   steps:
+  #     - checkout
+  #     - run: make test
+  deploy:
+    executor: python
+    parameters:
+      stage:
+        type: string
+    steps:
+      - checkout
+      - serverless-framework/setup
+      - run: make deploy-<< parameters.stage  >>
+      - slack/notify:
+          channel: deployments
+          event: fail
+          template: basic_fail_1
+      - slack/notify:
+          channel: deployments
+          event: pass
+          template: basic_success_1
+
+workflows:
+  version: 2
+
+  deploy-to-development:
+    jobs:
+      - check:
+          <<: *filter-not-main
+      # - test:
+      #     <<: *filter-not-main
+      - deploy:
+          stage: development
+          context: trade-tariff-lambda-deployments-development
+          requires:
+            # - test
+            - check
+          <<: *filter-not-main
+
+
+  deploy-to-staging:
+    jobs:
+      - deploy:
+          stage: staging
+          context: trade-tariff-lambda-deployments-staging
+          <<: *filter-main
+
+  deploy-to-production:
+    jobs:
+      - deploy:
+          stage: production
+          context: trade-tariff-lambda-deployments-production
+          <<: *filter-main
