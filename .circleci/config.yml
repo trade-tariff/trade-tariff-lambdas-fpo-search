@@ -53,14 +53,14 @@ jobs:
       - checkout
       - serverless-framework/setup
       - run: make deploy-<< parameters.stage  >>
-      - slack/notify:
-          channel: deployments
-          event: fail
-          template: basic_fail_1
-      - slack/notify:
-          channel: deployments
-          event: pass
-          template: basic_success_1
+      # - slack/notify:
+      #     channel: deployments
+      #     event: fail
+      #     template: basic_fail_1
+      # - slack/notify:
+      #     channel: deployments
+      #     event: pass
+      #     template: basic_success_1
 
 workflows:
   version: 2
