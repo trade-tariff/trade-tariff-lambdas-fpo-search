@@ -52,6 +52,9 @@ jobs:
     steps:
       - checkout
       - serverless-framework/setup
+      - run: |
+          npm install --dev serverless-domain-manager
+
       - run: make deploy-<< parameters.stage  >>
       - slack/notify:
           channel: deployments

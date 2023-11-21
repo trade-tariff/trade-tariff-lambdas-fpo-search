@@ -55,10 +55,10 @@ build:
 	docker build -t 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest .
 
 deploy-development:
-	STAGE=development serverless deploy --verbose
+	STAGE=development serverless deploy --verbose --param="base_domain=dev.api.trade-tariff.service.gov.uk"
 
 deploy-staging:
-	STAGE=staging serverless deploy --verbose
+	STAGE=staging serverless deploy --verbose --param="base_domain=sandbox.api.trade-tariff.service.gov.uk"
 
 deploy-production:
-	STAGE=production serverless deploy --verbose
+	STAGE=production serverless deploy --verbose --param="base_domain=trade-tariff.service.gov.uk"

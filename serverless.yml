@@ -1,6 +1,9 @@
 frameworkVersion: "3"
 service: trade-tariff-lambdas-fpo-search
 
+plugins:
+  - serverless-domain-manager
+
 provider:
   name: aws
   region: eu-west-2
@@ -19,8 +22,21 @@ functions:
     image: ${env:DOCKER_IMAGE_URI}
     events:
       - http:
-          path: /search
+          path: /fpo-code-search
           method: get
       - http:
-          path: /search
+          path: /fpo-code-search
           method: post
+
+custom:
+  customDomain:
+    domainName: ${param:base_domain}
+    stage: ${env:STAGE}
+    basePath: search
+    certificateName: ${param:base_domain}
+    createRoute53Record: true
+    createRoute53IPv6Record: true
+    endpointType: "regional"
+    securityPolicy: tls_1_2
+    apiType: rest
+    autoDomain: false
