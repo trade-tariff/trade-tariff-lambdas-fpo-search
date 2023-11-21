@@ -54,9 +54,6 @@ freeze: $(VENV)/bin/activate
 build:
 	docker build -t 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest .
 
-login:
-	aws ecr get-login-password --region eu-west-2 |  docker login --username AWS --password-stdin  (aws ssm get-parameter --name "/development/FPO_SEARCH_ECR_URL" --with-decryption --region eu-west-2 | jq -r '.Parameter.Value')
-
 deploy-development:
 	STAGE=development serverless deploy --verbose
 
