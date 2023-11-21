@@ -10,19 +10,6 @@ provider:
     name: ${env:DEPLOYMENT_BUCKET}
   timeout: 29
   memorySize: 3072
-  iamRoleStatements:
-    - Effect: "Allow"
-      Action:
-        - "ecr:BatchCheckLayerAvailability"
-        - "ecr:BatchGetImage"
-        - "ecr:GetDownloadUrlForLayer"
-        - "ecr:GetRepositoryPolicy"
-        - "ecr:DescribeRepositories"
-      Resource: ${env:ECR_REPOSITORY}
-    - Effect: "Allow"
-      Action:
-        - "ecr:GetAuthorizationToken"
-      Resource: "*"
 
 functions:
   fpo_search:
