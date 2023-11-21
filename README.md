@@ -1,4 +1,4 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main.svg?style=svg&circle-token=e0c6d3b2325ad0861a88adbf841eb44ff7b4267a)](https://dl.circleci.com/status-badge/redirect/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main)
 
 # FPO Parcel Item Categorisation API
 
