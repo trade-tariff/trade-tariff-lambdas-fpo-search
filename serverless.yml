@@ -30,10 +30,10 @@ functions:
 
 custom:
   customDomain:
-    domainName: ${param:base_domain}
+    domainName: ${param:custom_domain}
     stage: ${env:STAGE}
-    basePath: search
-    certificateName: ${param:base_domain}
+    basePath: ''
+    certificateName: ${param:certificate_domain}
     createRoute53Record: true
     createRoute53IPv6Record: true
     endpointType: "regional"
