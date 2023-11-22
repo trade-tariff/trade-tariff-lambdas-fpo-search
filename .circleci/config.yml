@@ -6,6 +6,10 @@ orbs:
   tariff: trade-tariff/trade-tariff-ci-orb@0
 
 executors:
+  base:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
   python:
     docker:
       - image: cimg/python:3.11.2
@@ -43,11 +47,6 @@ jobs:
           source venv/bin/activate
           pip install ruff
           ruff check .
-  # test:
-  #   executor: python
-  #   steps:
-  #     - checkout
-  #     - run: make test
   deploy:
     executor: node
     parameters:
@@ -67,6 +66,14 @@ jobs:
           channel: deployments
           event: pass
           template: basic_success_1
+  smoketest:
+    executor: base
+    parameters:
+      endpoint:
+        type: string
+    steps:
+      - checkout
+      - run: .circleci/bin/smoketest << parameters.endpoint >>
 
 workflows:
   version: 2
@@ -75,15 +82,15 @@ workflows:
     jobs:
       - check:
           <<: *filter-not-main
-      # - test:
-      #     <<: *filter-not-main
       - deploy:
           name: deploy-development
           stage: development
           context: trade-tariff-lambda-deployments-development
           requires:
-            # - test
             - check
+          <<: *filter-not-main
+      - smoketest:
+          endpoint: https://search.dev.trade-tariff.service.gov.uk
           <<: *filter-not-main
 
   deploy-to-staging:
