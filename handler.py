@@ -57,8 +57,7 @@ def authorised(event):
     client_id = headers.get("x-api-client-id", "")
     api_key = headers.get("x-api-secret-key", "")
 
-    expected_key = os.environ.get("FPO_CLIENT_KEYS", "{}")
-    expected_key = json.loads(expected_key)
-    expected_key = expected_key.get(client_id, "")
+    fpo_client_keys = os.environ.get("FPO_CLIENT_KEYS", "{}")
+    expected_key = json.loads(fpo_client_keys).get(client_id, "")
 
     return api_key == expected_key
