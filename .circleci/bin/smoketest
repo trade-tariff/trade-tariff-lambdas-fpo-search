@@ -17,7 +17,4 @@ STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-searc
 if [[ "$STATUS_CODE" -ne 200 ]] ; then
   echo "ERROR: Status code of $STATUS_CODE"
   exit 1
-else
-  echo "SUCCESS: Status code of $STATUS_CODE"
-  exit 0
 fi

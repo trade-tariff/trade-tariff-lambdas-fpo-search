@@ -90,7 +90,11 @@ workflows:
             - check
           <<: *filter-not-main
       - smoketest:
+          name: smoketest-development
+          context: trade-tariff-lambda-deployments-development
           endpoint: https://search.dev.trade-tariff.service.gov.uk
+          requires:
+            - deploy-development
           <<: *filter-not-main
 
   deploy-to-staging:
@@ -99,6 +103,13 @@ workflows:
           name: deploy-staging
           stage: staging
           context: trade-tariff-lambda-deployments-staging
+          <<: *filter-main
+      - smoketest:
+          name: smoketest-staging
+          context: trade-tariff-lambda-deployments-staging
+          endpoint: https://search.sandbox.trade-tariff.service.gov.uk
+          requires:
+            - deploy-staging
           <<: *filter-main
 
   # deploy-to-production:
