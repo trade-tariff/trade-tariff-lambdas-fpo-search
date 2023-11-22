@@ -94,10 +94,10 @@ workflows:
           context: trade-tariff-lambda-deployments-staging
           <<: *filter-main
 
-  deploy-to-production:
-    jobs:
-      - deploy:
-          name: deploy-production
-          stage: production
-          context: trade-tariff-lambda-deployments-production
-          <<: *filter-main
+  # deploy-to-production:
+  #   jobs:
+  #     - deploy:
+  #         name: deploy-production
+  #         stage: production
+  #         context: trade-tariff-lambda-deployments-production
+  #         <<: *filter-main
