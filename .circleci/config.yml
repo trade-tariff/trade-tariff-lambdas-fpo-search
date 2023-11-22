@@ -10,6 +10,10 @@ executors:
     docker:
       - image: cimg/python:3.11.2
     resource_class: small
+  node:
+    docker:
+      - image: cimg/node:21.2.0
+    resource_class: small
     environment:
       ECR_REPOSITORY: "arn:aws:ecr:eu-west-2:382373577178:repository/tariff-fpo-search-production"
       DOCKER_IMAGE_URI: "382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest"
@@ -45,7 +49,7 @@ jobs:
   #     - checkout
   #     - run: make test
   deploy:
-    executor: python
+    executor: node
     parameters:
       stage:
         type: string
@@ -54,7 +58,6 @@ jobs:
       - serverless-framework/setup
       - run: |
           npm install --dev serverless-domain-manager
-
       - run: make deploy-<< parameters.stage  >>
       - slack/notify:
           channel: deployments
@@ -75,6 +78,7 @@ workflows:
       # - test:
       #     <<: *filter-not-main
       - deploy:
+          name: deploy-development
           stage: development
           context: trade-tariff-lambda-deployments-development
           requires:
@@ -82,10 +86,10 @@ workflows:
             - check
           <<: *filter-not-main
 
-
   deploy-to-staging:
     jobs:
       - deploy:
+          name: deploy-staging
           stage: staging
           context: trade-tariff-lambda-deployments-staging
           <<: *filter-main
@@ -93,6 +97,7 @@ workflows:
   deploy-to-production:
     jobs:
       - deploy:
+          name: deploy-production
           stage: production
           context: trade-tariff-lambda-deployments-production
           <<: *filter-main
