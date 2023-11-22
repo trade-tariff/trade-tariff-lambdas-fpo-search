@@ -39,4 +39,4 @@ custom:
     endpointType: "regional"
     securityPolicy: tls_1_2
     apiType: rest
-    autoDomain: false
+    autoDomain: true
