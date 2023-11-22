@@ -14,7 +14,7 @@ provider:
   timeout: 29
   memorySize: 3072
   environment:
-    API_KEY: ${env:FPO_API_KEY}
+    FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
 
 functions:
   fpo_search:
