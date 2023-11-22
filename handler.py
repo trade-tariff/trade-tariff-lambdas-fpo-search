@@ -26,9 +26,6 @@ print(f"🚀⇨ Static classifier loaded in {time.time() - start:.2f}s")
 
 def handle(event, _context):
     queryParams = event.get("queryStringParameters", {})
-    headers = event.get("headers", {})
-    headers = {k.lower(): v for k, v in headers.items()}
-    api_key = headers.get("x-api-key", "")
 
     q = queryParams.get("q", "")
     digits = int(queryParams.get("digits", 6))
@@ -39,7 +36,7 @@ def handle(event, _context):
     if digits not in [6, 8]:
         statusCode = 400
         body = {"message": "Invalid digits"}
-    elif api_key != os.environ.get("API_KEY"):
+    elif not authorised(event):
         statusCode = 401
         body = {"message": "Unauthorized"}
     else:
@@ -52,3 +49,15 @@ def handle(event, _context):
         }
 
     return {"statusCode": statusCode, "body": json.dumps(body)}
+
+
+def authorised(event):
+    headers = event.get("headers", {})
+    headers = {k.lower(): v for k, v in headers.items()}
+    client_id = headers.get("x-api-client-id", "")
+    api_key = headers.get("x-api-secret-key", "")
+
+    fpo_client_keys = os.environ.get("FPO_CLIENT_KEYS", "{}")
+    expected_key = json.loads(fpo_client_keys).get(client_id, "")
+
+    return api_key == expected_key
