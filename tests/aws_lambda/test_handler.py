@@ -1,15 +1,46 @@
 import json
-import os
 import unittest
+from aws_lambda.handler import LambdaHandler
+
+from inference.infer import ClassificationResult, Classifier
 
 test_fpo_client_keys = {"test_id": "test_secret"}
 
-os.environ["FPO_CLIENT_KEYS"] = json.dumps(test_fpo_client_keys)
 
-from handler import handle  # noqa: E402
+class MockClassifier(Classifier):
+    def classify(
+        self, search_text: str, limit: int = 5, digits: int = 6
+    ) -> list[ClassificationResult]:
+        return [
+            ClassificationResult(str(i).zfill(digits), (1000 - i) / 1000)
+            for i in range(0, limit)
+        ]
+
+
+classifier = MockClassifier()
+
+handler = LambdaHandler(classifier, test_fpo_client_keys)
 
 
 class Test_handler_handle(unittest.TestCase):
+    def test_it_should_handle_a_valid_get_request(self):
+        event = self._create_get_event("test", "8", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+        print(result_body)
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+
+    def test_it_should_handle_a_valid_post_request(self):
+        event = self._create_post_event("test", "6", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+
     def test_it_should_return_unauthorised_with_no_headers(self):
         event = {
             "httpMethod": "GET",
@@ -17,7 +48,7 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {},
         }
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
 
@@ -31,7 +62,7 @@ class Test_handler_handle(unittest.TestCase):
             },
         }
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
 
@@ -42,32 +73,14 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {"x-api-client-id": "test_id", "x-api-secret-key": "invalid"},
         }
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
-
-    def test_it_should_handle_a_valid_get_request(self):
-        event = self._create_get_event("test")
-
-        result = handle(event, {})
-        result_body = json.loads(result["body"])
-
-        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
-
-    def test_it_should_handle_a_valid_post_request(self):
-        event = self._create_post_event("test")
-
-        result = handle(event, {})
-        result_body = json.loads(result["body"])
-
-        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
 
     def test_it_should_respect_the_limit(self):
         event = self._create_post_event("test", "6", "2")
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
         result_body = json.loads(result["body"])
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
@@ -76,28 +89,28 @@ class Test_handler_handle(unittest.TestCase):
     def test_it_should_handle_invalid_digits(self):
         event = self._create_post_event("test", "invalid")
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
     def test_it_should_handle_too_many_digits(self):
         event = self._create_post_event("test", "10")
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
     def test_it_should_handle_invalid_limit(self):
         event = self._create_post_event("test", "6", "invalid")
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
     def test_it_should_handle_too_high_limit(self):
         event = self._create_post_event("test", "6", "11")
 
-        result = handle(event, {})
+        result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
