@@ -3,11 +3,8 @@ import pickle
 import time
 import os
 import json
-
 from inference.infer import FlatClassifier
 
-digits = 6
-limit = 5
 cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
 subheadings_file = target_dir / "subheadings.pkl"
@@ -28,22 +25,36 @@ print(f"🚀⇨ Loaded client keys: {fpo_client_keys.keys()}")
 
 
 def handle(event, _context):
-    queryParams = event.get("queryStringParameters", {})
+    if event.get("httpMethod", "GET") == "POST":
+        body = json.loads(event.get("body", {}))
 
-    q = queryParams.get("q", "")
-    digits = int(queryParams.get("digits", 6))
+        description = body.get("description", "")
+        digits = body.get("digits", 6)
+        limit = body.get("limit", 5)
+    else:
+        queryParams = event.get("queryStringParameters", {})
+
+        description = queryParams.get("q", "")
+        digits = queryParams.get("digits", 6)
+        limit = queryParams.get("limit", 5)
 
     statusCode = 200
     body = {}
 
-    if digits not in [6, 8]:
+    if description == "":
+        statusCode = 400
+        body = {"message": "No description specified"}
+    elif digits not in ["6", "8"]:
         statusCode = 400
         body = {"message": "Invalid digits"}
+    elif not limit.isdecimal() or int(limit) < 1 or int(limit) > 10:
+        statusCode = 400
+        body = {"message": "Invalid limit"}
     elif not authorised(event):
         statusCode = 401
         body = {"message": "Unauthorized"}
     else:
-        results = classifier.classify(q, limit, digits)
+        results = classifier.classify(description, int(limit), int(digits))
         body = {
             "results": [
                 {"code": result.code, "score": result.score * 1000}

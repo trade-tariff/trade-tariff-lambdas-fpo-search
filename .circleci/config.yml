@@ -47,6 +47,14 @@ jobs:
           source venv/bin/activate
           pip install ruff
           ruff check .
+  test:
+    executor: python
+    steps:
+      - checkout
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          python -m unittest -v -b
   deploy:
     executor: node
     parameters:
@@ -81,6 +89,8 @@ workflows:
   deploy-to-development:
     jobs:
       - check:
+          <<: *filter-not-main
+      - test:
           <<: *filter-not-main
       - deploy:
           name: deploy-development
