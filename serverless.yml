@@ -15,11 +15,16 @@ provider:
   memorySize: 3072
   environment:
     FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
-
+  ecr:
+    images:
+      baseimage:
+        path: .
+        file: Dockerfile
+        
 functions:
   fpo_search:
     provisionedConcurrency: 3
-    image: ${env:DOCKER_IMAGE_URI}
+    image: baseimage
     events:
       - http:
           path: /fpo-code-search

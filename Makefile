@@ -59,10 +59,10 @@ test:
 	${PYTHON} -m unittest -v -b
 
 deploy-development:
-	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk" --force
+	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
 
 deploy-staging:
-	STAGE=staging serverless deploy --verbose --param="custom_domain=search.sandbox.trade-tariff.service.gov.uk" --param="certificate_domain=sandbox.trade-tariff.service.gov.uk" --force
+	STAGE=staging serverless deploy --verbose --param="custom_domain=search.sandbox.trade-tariff.service.gov.uk" --param="certificate_domain=sandbox.trade-tariff.service.gov.uk"
 
 deploy-production:
-	STAGE=production serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk" --force
+	STAGE=production serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
