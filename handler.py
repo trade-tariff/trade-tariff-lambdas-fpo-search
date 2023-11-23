@@ -23,6 +23,9 @@ print(f"🚀⇨ Model exists: {model_exists}")
 classifier = FlatClassifier(model_file, subheadings)
 print(f"🚀⇨ Static classifier loaded in {time.time() - start:.2f}s")
 
+fpo_client_keys = json.loads(os.environ.get("FPO_CLIENT_KEYS", "{}"))
+print(f"🚀⇨ Loaded client keys: {fpo_client_keys.keys()}")
+
 
 def handle(event, _context):
     queryParams = event.get("queryStringParameters", {})
@@ -54,10 +57,17 @@ def handle(event, _context):
 def authorised(event):
     headers = event.get("headers", {})
     headers = {k.lower(): v for k, v in headers.items()}
-    client_id = headers.get("x-api-client-id", "")
-    api_key = headers.get("x-api-secret-key", "")
+    client_id = headers.get("x-api-client-id")
+    api_key = headers.get("x-api-secret-key")
 
-    fpo_client_keys = os.environ.get("FPO_CLIENT_KEYS", "{}")
-    expected_key = json.loads(fpo_client_keys).get(client_id, "")
+    if client_id is None:
+        print("⚠️ No client id specified")
+        return False
+
+    if client_id not in fpo_client_keys:
+        print(f"⚠️ Invalid client id '{client_id}' specified")
+        return False
+
+    expected_key = fpo_client_keys.get(client_id, "")
 
     return api_key == expected_key
