@@ -142,13 +142,13 @@ workflows:
           name: build-staging
           context: trade-tariff-terraform-aws-staging
           environment: staging
-          <<: *filter-not-main
+          <<: *filter-main
 
       - deploy:
           name: deploy-staging
           stage: staging
           context: trade-tariff-lambda-deployments-staging
-          <<: *filter-not-main
+          <<: *filter-main
           requires:
             - build-staging
 
