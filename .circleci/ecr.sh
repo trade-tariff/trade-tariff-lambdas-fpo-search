@@ -20,6 +20,11 @@ function fetch_ecr_url {
 }
 
 ecr_url=$(fetch_ecr_url)
+account_id=$(aws sts get-caller-identity --output text --query 'Account')
+
+aws s3 cp s3://trade-tariff-models-${account_id}/target.zip .
+unzip target.zip
+rm target.zip
 
 docker build -t "$container" .
 docker tag "${container}" "${ecr_url}:${CIRCLE_SHA1}"
