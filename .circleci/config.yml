@@ -114,6 +114,7 @@ workflows:
           <<: *filter-not-main
 
       - build:
+          name: build-development
           context: trade-tariff-terraform-aws-development
           environment: development
           <<: *filter-not-main
@@ -124,7 +125,7 @@ workflows:
           context: trade-tariff-lambda-deployments-development
           requires:
             - test
-            - build
+            - build-development
           <<: *filter-not-main
 
       - smoketest:
@@ -137,11 +138,19 @@ workflows:
 
   deploy-to-staging:
     jobs:
+      - build:
+          name: build-staging
+          context: trade-tariff-terraform-aws-staging
+          environment: staging
+          <<: *filter-not-main
+
       - deploy:
           name: deploy-staging
           stage: staging
           context: trade-tariff-lambda-deployments-staging
-          <<: *filter-main
+          <<: *filter-not-main
+          requires:
+            - build-staging
 
       - smoketest:
           name: smoketest-staging
