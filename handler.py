@@ -3,11 +3,10 @@ import pickle
 import time
 import os
 import json
-
 from inference.infer import FlatClassifier
 
-digits = 6
-limit = 5
+from aws_lambda.handler import LambdaHandler
+
 cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
 subheadings_file = target_dir / "subheadings.pkl"
@@ -26,48 +25,8 @@ print(f"🚀⇨ Static classifier loaded in {time.time() - start:.2f}s")
 fpo_client_keys = json.loads(os.environ.get("FPO_CLIENT_KEYS", "{}"))
 print(f"🚀⇨ Loaded client keys: {fpo_client_keys.keys()}")
 
+lambda_handler = LambdaHandler(classifier, fpo_client_keys)
+
 
 def handle(event, _context):
-    queryParams = event.get("queryStringParameters", {})
-
-    q = queryParams.get("q", "")
-    digits = int(queryParams.get("digits", 6))
-
-    statusCode = 200
-    body = {}
-
-    if digits not in [6, 8]:
-        statusCode = 400
-        body = {"message": "Invalid digits"}
-    elif not authorised(event):
-        statusCode = 401
-        body = {"message": "Unauthorized"}
-    else:
-        results = classifier.classify(q, limit, digits)
-        body = {
-            "results": [
-                {"code": result.code, "score": result.score * 1000}
-                for result in results
-            ]
-        }
-
-    return {"statusCode": statusCode, "body": json.dumps(body)}
-
-
-def authorised(event):
-    headers = event.get("headers", {})
-    headers = {k.lower(): v for k, v in headers.items()}
-    client_id = headers.get("x-api-client-id")
-    api_key = headers.get("x-api-secret-key")
-
-    if client_id is None:
-        print("⚠️ No client id specified")
-        return False
-
-    if client_id not in fpo_client_keys:
-        print(f"⚠️ Invalid client id '{client_id}' specified")
-        return False
-
-    expected_key = fpo_client_keys.get(client_id, "")
-
-    return api_key == expected_key
+    return lambda_handler.handle(event, _context)

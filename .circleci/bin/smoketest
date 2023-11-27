@@ -10,11 +10,30 @@ ENDPOINT=$1
 CLIENT_ID=tariff
 CLIENT_SECRET=$(echo "$FPO_CLIENT_KEYS" | jq -r .tariff)
 
+# Ensure it responds with a 200 to a GET request
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-search?q=grilled+cheese&digits=6" \
   -H "X-Api-Client-Id: $CLIENT_ID" \
   -H "X-Api-Secret-Key: $CLIENT_SECRET")
 
 if [[ "$STATUS_CODE" -ne 200 ]] ; then
-  echo "ERROR: Status code of $STATUS_CODE"
+  echo "ERROR: Status code of $STATUS_CODE" >&2
+  exit 1
+fi
+
+# Ensure it responds with a 200 to a POST request
+STATUS_CODE=$(curl -X POST -d '{"description":"grilled cheese"}' -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-search" \
+  -H "X-Api-Client-Id: $CLIENT_ID" \
+  -H "X-Api-Secret-Key: $CLIENT_SECRET")
+
+if [[ "$STATUS_CODE" -ne 200 ]] ; then
+  echo "ERROR: Status code of $STATUS_CODE" >&2
+  exit 1
+fi
+
+# Ensure it responds with a 401 if credentials are missing
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-search?q=grilled+cheese&digits=6")
+
+if [[ "$STATUS_CODE" -ne 401 ]] ; then
+  echo "ERROR: Status code of $STATUS_CODE" >&2
   exit 1
 fi

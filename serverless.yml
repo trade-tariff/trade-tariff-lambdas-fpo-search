@@ -9,17 +9,24 @@ provider:
   region: eu-west-2
   runtime: provided
   stage: ${env:STAGE}
-  deploymentBucket:
-    name: ${env:DEPLOYMENT_BUCKET}
   timeout: 29
   memorySize: 3072
+
+  deploymentBucket:
+    name: "trade-tariff-lambda-deployment-${aws:accountId}"
+
+  ecr:
+    images:
+      fpo-search:
+        uri: "${ssm:/${sls:stage}/FPO_SEARCH_ECR_URL}:${env:CIRCLE_SHA1}"
+
   environment:
     FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
 
 functions:
   fpo_search:
     provisionedConcurrency: 3
-    image: ${env:DOCKER_IMAGE_URI}
+    image: fpo-search
     events:
       - http:
           path: /fpo-code-search

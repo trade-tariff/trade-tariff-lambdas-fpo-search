@@ -23,5 +23,6 @@ venv
 *.egg-info
 raw_source_data
 target*/training_data
+target.zip
 .vscode
 .DS_Store
