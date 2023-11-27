@@ -1,4 +1,4 @@
-.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production
+.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test
 
 VENV = venv
 PYTHON = $(VENV)/bin/python3
@@ -54,7 +54,6 @@ freeze: $(VENV)/bin/activate
 build:
 	docker build -t 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest .
 
-.PHONY: test
 test:
 	${PYTHON} -m unittest -v -b
 

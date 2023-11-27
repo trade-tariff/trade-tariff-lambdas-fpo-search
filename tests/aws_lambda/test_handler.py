@@ -32,6 +32,20 @@ class Test_handler_handle(unittest.TestCase):
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
 
+    def test_it_should_handle_a_valid_get_request_default_args(self):
+        event = self._create_get_event_default("test")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+        print(result_body)
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(
+            6,
+            len(result_body["results"][0]["code"]),
+            "Expected default results to have 6 digits",
+        )
+        self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
+
     def test_it_should_handle_a_valid_post_request(self):
         event = self._create_post_event("test", "6", "5")
 
@@ -40,6 +54,29 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+
+    def test_it_should_handle_a_valid_post_request_with_ints(self):
+        event = self._create_post_event_ints("test", 6, 5)
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+
+    def test_it_should_handle_a_valid_post_request_default_args(self):
+        event = self._create_post_event_default("test")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(
+            6,
+            len(result_body["results"][0]["code"]),
+            "Expected default results to have 6 digits",
+        )
+        self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
 
     def test_it_should_return_unauthorised_with_no_headers(self):
         event = {
@@ -128,12 +165,48 @@ class Test_handler_handle(unittest.TestCase):
             },
         }
 
+    def _create_get_event_default(self, description: str):
+        return {
+            "httpMethod": "GET",
+            "queryStringParameters": {
+                "q": description,
+            },
+            "headers": {
+                "x-api-client-id": "test_id",
+                "x-api-secret-key": "test_secret",
+            },
+        }
+
     def _create_post_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
             "httpMethod": "POST",
             "body": json.dumps(
                 {"description": description, "digits": digits, "limit": limit}
             ),
+            "headers": {
+                "x-api-client-id": "test_id",
+                "x-api-secret-key": "test_secret",
+            },
+        }
+
+    def _create_post_event_ints(
+        self, description: str, digits: int = 6, limit: int = 5
+    ):
+        return {
+            "httpMethod": "POST",
+            "body": json.dumps(
+                {"description": description, "digits": digits, "limit": limit}
+            ),
+            "headers": {
+                "x-api-client-id": "test_id",
+                "x-api-secret-key": "test_secret",
+            },
+        }
+
+    def _create_post_event_default(self, description: str):
+        return {
+            "httpMethod": "POST",
+            "body": json.dumps({"description": description}),
             "headers": {
                 "x-api-client-id": "test_id",
                 "x-api-secret-key": "test_secret",

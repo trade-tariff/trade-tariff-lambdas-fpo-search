@@ -13,14 +13,14 @@ class LambdaHandler:
             body = json.loads(event.get("body", {}))
 
             description = body.get("description", "")
-            digits = body.get("digits", 6)
-            limit = body.get("limit", 5)
+            digits = body.get("digits", "6")
+            limit = body.get("limit", "5")
         else:
             queryParams = event.get("queryStringParameters", {})
 
             description = queryParams.get("q", "")
-            digits = queryParams.get("digits", 6)
-            limit = queryParams.get("limit", 5)
+            digits = queryParams.get("digits", "6")
+            limit = queryParams.get("limit", "5")
 
         statusCode = 200
         body = {}
@@ -28,10 +28,10 @@ class LambdaHandler:
         if description == "":
             statusCode = 400
             body = {"message": "No description specified"}
-        elif digits not in ["6", "8"]:
+        elif str(digits) not in ["6", "8"]:
             statusCode = 400
             body = {"message": "Invalid digits"}
-        elif not limit.isdecimal() or int(limit) < 1 or int(limit) > 10:
+        elif not str(limit).isdecimal() or int(limit) < 1 or int(limit) > 10:
             statusCode = 400
             body = {"message": "Invalid limit"}
         elif not self._authorised(event):

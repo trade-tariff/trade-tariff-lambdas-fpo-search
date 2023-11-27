@@ -14,7 +14,9 @@ class ClassificationResult:
 
 
 class Classifier:
-    def classify(self, search_text: str, limit: int = 5) -> list[ClassificationResult]:
+    def classify(
+        self, search_text: str, limit: int = 5, digits: int = 6
+    ) -> list[ClassificationResult]:
         raise NotImplementedError()
 
 
