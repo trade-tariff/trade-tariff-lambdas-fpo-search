@@ -3,6 +3,8 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 import torch
 
+score_cutoff = 0.05  # We won't send back any results with a score lower than this
+
 
 class ClassificationResult:
     def __init__(self, code: str, score: float) -> None:
@@ -96,6 +98,10 @@ class FlatClassifier(Classifier):
         result = []
 
         for i in top_results:
+            # If the score is less than the cutoff then stop iterating through
+            if i[1] < score_cutoff:
+                break
+
             result.append(ClassificationResult(i[0], i[1]))
 
         return result
