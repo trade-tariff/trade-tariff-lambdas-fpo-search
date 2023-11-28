@@ -23,6 +23,8 @@ provider:
   environment:
     FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
 
+  stackTags:
+    customer: "fpo"
   tags:
     customer: "fpo"
 
