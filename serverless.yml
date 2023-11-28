@@ -23,6 +23,9 @@ provider:
   environment:
     FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
 
+  tags:
+    customer: "fpo"
+
 functions:
   fpo_search:
     provisionedConcurrency: 3
@@ -39,7 +42,7 @@ custom:
   customDomain:
     domainName: ${param:custom_domain}
     stage: ${env:STAGE}
-    basePath: ''
+    basePath: ""
     certificateName: ${param:certificate_domain}
     createRoute53Record: true
     createRoute53IPv6Record: true
