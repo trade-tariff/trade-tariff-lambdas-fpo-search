@@ -65,7 +65,7 @@ class LambdaHandler:
                 "Results generated in %.2fms",
                 lapsed,
                 extra={
-                    "client_id": "client_id",
+                    "client_id": client_id,
                     "request_description": description,
                     "request_digits": int(digits),
                     "request_limit": int(limit),
