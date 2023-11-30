@@ -51,13 +51,14 @@ class LambdaHandler:
             body = {"message": "Unauthorized"}
         else:
             start = time.perf_counter()
-            results = self._classifier.classify(description, int(limit), int(digits))
-            body = {
-                "results": [
-                    {"code": result.code, "score": result.score * 1000}
-                    for result in results
-                ]
-            }
+            raw_results = self._classifier.classify(
+                description, int(limit), int(digits)
+            )
+            results = [
+                {"code": result.code, "score": result.score * 1000}
+                for result in raw_results
+            ]
+            body = {"results": results}
             lapsed = (time.perf_counter() - start) * 1000
 
             self._logger.info(
@@ -66,9 +67,9 @@ class LambdaHandler:
                 extra={
                     "client_id": "client_id",
                     "request_description": description,
-                    "request_digits": digits,
-                    "request_limit": limit,
-                    "result_time": lapsed,
+                    "request_digits": int(digits),
+                    "request_limit": int(limit),
+                    "result_time_ms": lapsed,
                     "result_count": len(results),
                     "results": results,
                 },
