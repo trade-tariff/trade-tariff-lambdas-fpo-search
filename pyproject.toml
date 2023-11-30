@@ -9,7 +9,8 @@ dependencies = [
     "tqdm",
     "fastapi",
     "uvicorn",
-    "tqdm"
+    "tqdm",
+    "aws-lambda-powertools"
 ]
 [project.optional-dependencies]
 dev = [

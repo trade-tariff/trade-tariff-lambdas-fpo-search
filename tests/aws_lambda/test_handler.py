@@ -1,10 +1,15 @@
 import json
+import logging
 import unittest
 from aws_lambda.handler import LambdaHandler
 
 from inference.infer import ClassificationResult, Classifier
 
 test_fpo_client_keys = {"test_id": "test_secret"}
+
+logger = logging.getLogger()
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 
 class MockClassifier(Classifier):
@@ -28,7 +33,6 @@ class Test_handler_handle(unittest.TestCase):
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
-        print(result_body)
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
 
@@ -37,7 +41,6 @@ class Test_handler_handle(unittest.TestCase):
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
-        print(result_body)
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(
             6,

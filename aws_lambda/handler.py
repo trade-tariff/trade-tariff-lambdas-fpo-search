@@ -1,16 +1,22 @@
 import json
 
+import aws_lambda_powertools
+
 from inference.infer import Classifier
 import logging
 import time
 
-logger = logging.getLogger()
-
 
 class LambdaHandler:
-    def __init__(self, classifier: Classifier, api_keys: dict[str, str]) -> None:
+    def __init__(
+        self,
+        classifier: Classifier,
+        api_keys: dict[str, str],
+        logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger(),
+    ) -> None:
         self._classifier = classifier
         self._api_keys = api_keys
+        self._logger = logger
 
     def handle(self, event, _context):
         if event.get("httpMethod", "GET") == "POST":
@@ -52,9 +58,9 @@ class LambdaHandler:
                     for result in results
                 ]
             }
-            lapsed = (time.perf_counter() - start) / 1000
+            lapsed = (time.perf_counter() - start) * 1000
 
-            logger.info(
+            self._logger.info(
                 "Results generated in %.2fms",
                 lapsed,
                 extra={
@@ -64,6 +70,7 @@ class LambdaHandler:
                     "request_limit": limit,
                     "result_time": lapsed,
                     "result_count": len(results),
+                    "results": results,
                 },
             )
 
@@ -76,11 +83,11 @@ class LambdaHandler:
         api_key = headers.get("x-api-secret-key")
 
         if client_id is None:
-            logger.info("No client id specified")
+            self._logger.info("No client id specified")
             return None
 
         if client_id not in self._api_keys:
-            logger.info("Invalid client id '%s' specified", client_id)
+            self._logger.info("Invalid client id '%s' specified", client_id)
             return None
 
         expected_key = self._api_keys.get(client_id, "")
@@ -88,5 +95,5 @@ class LambdaHandler:
         if api_key == expected_key:
             return client_id
 
-        logger.info("Invalid secret key for client id '%s' specified", client_id)
+        self._logger.info("Invalid secret key for client id '%s' specified", client_id)
         return None
