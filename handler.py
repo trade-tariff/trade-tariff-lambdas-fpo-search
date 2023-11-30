@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import pickle
 import time
@@ -6,6 +7,8 @@ import json
 from inference.infer import FlatClassifier
 
 from aws_lambda.handler import LambdaHandler
+
+logging.getLogger().setLevel(logging.INFO)
 
 cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
