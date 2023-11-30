@@ -1,6 +1,10 @@
 import json
 
 from inference.infer import Classifier
+import logging
+import time
+
+logger = logging.getLogger()
 
 
 class LambdaHandler:
@@ -25,6 +29,8 @@ class LambdaHandler:
         statusCode = 200
         body = {}
 
+        client_id = self._authenticate(event)
+
         if description == "":
             statusCode = 400
             body = {"message": "No description specified"}
@@ -34,10 +40,11 @@ class LambdaHandler:
         elif not str(limit).isdecimal() or int(limit) < 1 or int(limit) > 10:
             statusCode = 400
             body = {"message": "Invalid limit"}
-        elif not self._authorised(event):
+        elif client_id is None:
             statusCode = 401
             body = {"message": "Unauthorized"}
         else:
+            start = time.perf_counter()
             results = self._classifier.classify(description, int(limit), int(digits))
             body = {
                 "results": [
@@ -45,23 +52,41 @@ class LambdaHandler:
                     for result in results
                 ]
             }
+            lapsed = (time.perf_counter() - start) / 1000
+
+            logger.info(
+                "Results generated in %.2fms",
+                lapsed,
+                extra={
+                    "client_id": "client_id",
+                    "request_description": description,
+                    "request_digits": digits,
+                    "request_limit": limit,
+                    "result_time": lapsed,
+                    "result_count": len(results),
+                },
+            )
 
         return {"statusCode": statusCode, "body": json.dumps(body)}
 
-    def _authorised(self, event):
+    def _authenticate(self, event) -> str | None:
         headers = event.get("headers", {})
         headers = {k.lower(): v for k, v in headers.items()}
         client_id = headers.get("x-api-client-id")
         api_key = headers.get("x-api-secret-key")
 
         if client_id is None:
-            print("⚠️ No client id specified")
-            return False
+            logger.info("No client id specified")
+            return None
 
         if client_id not in self._api_keys:
-            print(f"⚠️ Invalid client id '{client_id}' specified")
-            return False
+            logger.info("Invalid client id '%s' specified", client_id)
+            return None
 
         expected_key = self._api_keys.get(client_id, "")
 
-        return api_key == expected_key
+        if api_key == expected_key:
+            return client_id
+
+        logger.info("Invalid secret key for client id '%s' specified", client_id)
+        return None
