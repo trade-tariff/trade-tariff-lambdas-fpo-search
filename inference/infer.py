@@ -50,7 +50,7 @@ class FlatClassifier(Classifier):
         print("Model loaded")
 
         # Use predownloaded transformer if available
-        if sentence_transformer_model_directory:
+        if Path(sentence_transformer_model_directory).exists():
             print(
                 f"💾⇨ Loading Sentence Transformer model from {sentence_transformer_model_directory}"
             )

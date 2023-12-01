@@ -54,6 +54,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+digits = args.digits
 limit = args.limit
 force = args.force
 
@@ -125,7 +126,7 @@ else:
 
     training_data_loader = TrainingDataLoader()
 
-    (texts, labels, subheadings) = training_data_loader.fetch_data(data_sources, 8)
+    (texts, labels, subheadings) = training_data_loader.fetch_data(data_sources, digits)
 
     if limit is not None:
         texts = texts[:limit]
