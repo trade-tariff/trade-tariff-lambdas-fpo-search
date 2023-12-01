@@ -68,7 +68,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install --no-cache-dir --upgrade torch --index-url https://download.pytorch.org/whl/cpu
-          pip install --no-cache-dir --upgrade -r requirements.txt
+          pip install --no-cache-dir --upgrade -r requirements_lambda.txt
           python -m unittest -v -b
 
   deploy:
