@@ -154,6 +154,14 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
+    def test_it_should_handle_invalid_json(self):
+        event = self._create_post_event_default("test")
+        event["body"] = "invalid json"
+
+        result = handler.handle(event, {})
+
+        self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+
     def _create_get_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
             "httpMethod": "GET",
