@@ -20,7 +20,13 @@ class LambdaHandler:
 
     def handle(self, event, _context):
         if event.get("httpMethod", "GET") == "POST":
-            body = json.loads(event.get("body", {}))
+            try:
+                body = json.loads(event.get("body", {}))
+            except json.JSONDecodeError:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"message": "Invalid JSON in request body"}),
+                }
 
             description = body.get("description", "")
             digits = body.get("digits", "6")
