@@ -19,13 +19,23 @@ class LambdaHandler:
         self._logger = logger
 
     def handle(self, event, _context):
+        client_id = self._authenticate(event)
+
+        if client_id is None:
+            return {
+                "statusCode": 401,
+                "body": json.dumps({"message": "Unauthorized"}),
+            }
+
         if event.get("httpMethod", "GET") == "POST":
             try:
                 body = json.loads(event.get("body", {}))
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
                 return {
                     "statusCode": 400,
-                    "body": json.dumps({"message": "Invalid JSON in request body"}),
+                    "body": json.dumps(
+                        {"message": "Invalid JSON in request body", "detail": str(e)}
+                    ),
                 }
 
             description = body.get("description", "")
@@ -41,8 +51,6 @@ class LambdaHandler:
         statusCode = 200
         body = {}
 
-        client_id = self._authenticate(event)
-
         if description == "":
             statusCode = 400
             body = {"message": "No description specified"}
@@ -52,9 +60,6 @@ class LambdaHandler:
         elif not str(limit).isdecimal() or int(limit) < 1 or int(limit) > 10:
             statusCode = 400
             body = {"message": "Invalid limit"}
-        elif client_id is None:
-            statusCode = 401
-            body = {"message": "Unauthorized"}
         else:
             start = time.perf_counter()
             raw_results = self._classifier.classify(
@@ -100,6 +105,7 @@ class LambdaHandler:
         expected_key = self._api_keys.get(client_id, "")
 
         if api_key == expected_key:
+            self._logger.debug("Authenticated client '%s'", client_id)
             return client_id
 
         self._logger.info("Invalid secret key for client id '%s' specified", client_id)
