@@ -52,6 +52,3 @@ class TradeTariffDataSource(DataSource):
 
     def get_description(self) -> str:
         return f"Trade Tariff Descriptions from {str(self._filename)}"
-
-    def get_catogory(self) -> str:
-        return "a"

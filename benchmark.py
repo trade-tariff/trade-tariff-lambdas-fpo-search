@@ -8,7 +8,7 @@ from prettytable.colortable import ColorTable, Themes
 import tqdm
 
 from data_sources.data_source import DataSource
-from data_sources.tradesets import BasicCSVDataSource
+from data_sources.basic_csv import BasicCSVDataSource
 from inference.infer import FlatClassifier
 
 parser = argparse.ArgumentParser(description="Benchmark an FPO classification model.")
@@ -55,7 +55,7 @@ colour = args.colour
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-# Everything except CPU seems to be super slow, I assume because of the time it takes to shuffle the data about for each inference. So we'll default to cpu.
+# Everything except CPU seems to be super slow, I assume because of the time it takes to shuffle the data about for each inference. So we'll default to CPU.
 device = "cpu"
 
 cwd = Path(__file__).resolve().parent

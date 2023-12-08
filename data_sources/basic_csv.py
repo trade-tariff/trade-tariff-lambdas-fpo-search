@@ -11,14 +11,12 @@ class BasicCSVDataSource(DataSource):
         filename: Union[str, PathLike],
         code_col: int = 0,
         description_col: int = 1,
-        category: str = "b",
-        encoding: str = "Windows-1252",
+        encoding: str = "utf-8",
     ) -> None:
         super().__init__()
         self._filename = filename
         self._code_col = code_col
         self._description_col = description_col
-        self._category = category
         self._encoding = encoding
 
     def get_codes(self, digits: int) -> dict[str, list[str]]:
