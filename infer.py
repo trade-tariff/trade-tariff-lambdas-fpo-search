@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 import pickle
 
@@ -32,6 +33,9 @@ args = parser.parse_args()
 query = args.query
 limit = args.limit
 digits = args.digits
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 subheadings_file = target_dir / "subheadings.pkl"
 if not subheadings_file.exists():

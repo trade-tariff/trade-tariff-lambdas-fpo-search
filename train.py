@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 import pickle
 
@@ -54,9 +55,11 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-digits = args.digits
 limit = args.limit
 force = args.force
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 training_parameters = FlatClassifierModelTrainerParameters(
     args.learning_rate, args.max_epochs
@@ -126,7 +129,7 @@ else:
 
     training_data_loader = TrainingDataLoader()
 
-    (texts, labels, subheadings) = training_data_loader.fetch_data(data_sources, digits)
+    (texts, labels, subheadings) = training_data_loader.fetch_data(data_sources, 8)
 
     if limit is not None:
         texts = texts[:limit]

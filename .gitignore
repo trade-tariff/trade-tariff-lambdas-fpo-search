@@ -173,3 +173,4 @@ cython_debug/
 .serverless
 lambda/
 target.zip
+benchmarking_data

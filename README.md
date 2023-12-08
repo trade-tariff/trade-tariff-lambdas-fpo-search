@@ -29,7 +29,7 @@ python train.py
 
 To get usage instructions you can run:
 ```
-% python train.py --help
+python train.py --help
 ```
 ```
 usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force] [--learning-rate LEARNING_RATE] [--max-epochs MAX_EPOCHS] [--device {auto,cpu,mps,cuda}]
@@ -49,6 +49,35 @@ options:
                         the torch device to use for training. 'auto' will try to select the best device available.
 ```
 
+### Benchmarking the model
+Once you have trained the model, you can benchmark its performance against some benchmarking data. You can get some example benchmarking data by contacting the OTT lead.
+
+These should be `csv` files, with the first column as the first column as the Goods Description and the second column as the Commodity Code. The first row should be the header and will be skipped.
+
+Once you have obtained the source data for testing, put it in a directory in the project root named `benchmarking_data`.
+
+Once you have the data you can run the training:
+```
+python benchmark.py
+```
+
+To get usage instructions you can run:
+```
+python benchmark.py --help
+```
+```
+usage: benchmark.py [-h] [--digits {2,4,6,8}] [--output {text,json}] [--no-progress] [--colour]
+
+Benchmark an FPO classification model.
+
+options:
+  -h, --help            show this help message and exit
+  --digits {2,4,6,8}    how many digits to classify the answer to
+  --output {text,json}  choose how you want the results outputted
+  --no-progress         don't show a progress bar
+  --colour              enable ANSI colour for the 'text' output type
+```
+
 ### Inference
 
 Once you have the model built you can run inference against it to classify items. By default the inference script requires the following files to be present:
@@ -62,7 +91,7 @@ You can either use the training to create fresh versions of these files, or you 
 
 To get usage instructions you can run:
 ```
-% python infer.py --help
+python infer.py --help
 ```
 ```
 usage: infer.py [-h] [--limit LIMIT] query
@@ -84,7 +113,7 @@ For example:
 python infer.py --limit 10 --digits 8 'smelly socks'
 ```
 ```
-[61159500 = 225.24, 61159699 = 181.72, 61159900 = 119.44, 61159400 = 71.33, 61151090 = 27.60, 62179000 = 17.30, 61159610 = 17.30, 62171000 = 13.81, 61151010 = 13.68, 62052000 = 7.75]
+[61159500 = 225.24, 61159699 = 181.72, 61159900 = 119.44, 61159400 = 71.33]
 ```
 
 #### Running as an API

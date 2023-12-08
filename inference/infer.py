@@ -1,3 +1,5 @@
+from logging import Logger
+import logging
 import os
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
@@ -24,7 +26,11 @@ class Classifier:
 
 class FlatClassifier(Classifier):
     def __init__(
-        self, model_file: Path, subheadings: list[str], device: str = "cpu"
+        self,
+        model_file: Path,
+        subheadings: list[str],
+        device: str = "cpu",
+        logger: Logger = logging.getLogger(),
     ) -> None:
         super().__init__()
 
@@ -37,44 +43,49 @@ class FlatClassifier(Classifier):
         sentence_transformer_model_directory = (
             transformer_cache_directory + "sentence-transformers_" + transformer
         )
-        print(
+        logger.info(
             f"💾⇨ Sentence Transformer cache directory: {sentence_transformer_model_directory}"
         )
 
         self._subheadings = subheadings
         self._device = device
+        self._logger = logger
 
         # Load the model from disk
-        print(f"💾⇨ Loading model file: {model_file}")
+        logger.info(f"💾⇨ Loading model file: {model_file}")
+
+        # Make sure the model is on the correct device
         self._model = torch.load(model_file)
-        print("Model loaded")
+        logger.info("🧠⚡ Model loaded")
 
         # Use predownloaded transformer if available
         if Path(sentence_transformer_model_directory).exists():
-            print(
+            logger.info(
                 f"💾⇨ Loading Sentence Transformer model from {sentence_transformer_model_directory}"
             )
 
             exists = os.path.isdir(sentence_transformer_model_directory)
-            print(f"💾⇨ Sentence Transformer model exists: {exists}")
+            logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
             self._sentence_transformer_model = SentenceTransformer(
-                sentence_transformer_model_directory,
+                sentence_transformer_model_directory, device=device
             )
         else:
-            print(f"💾⇨ Downloading Sentence Transformer model {transformer}")
+            logger.info(f"💾⇨ Downloading Sentence Transformer model {transformer}")
             # Otherwise download it from the HuggingFace model hub
-            self._sentence_transformer_model = SentenceTransformer(transformer)
+            self._sentence_transformer_model = SentenceTransformer(
+                transformer, device=device
+            )
 
     def classify(
         self, search_text: str, limit: int = 5, digits: int = 6
     ) -> list[ClassificationResult]:
-        # Make sure the model is on the correct device
-        self._model.to(self._device)
-
         # Fetch the embedding for the search text
         new_texts = [search_text]
         new_embeddings = self._sentence_transformer_model.encode(
-            new_texts, convert_to_tensor=True
+            new_texts,
+            convert_to_tensor=True,
+            device=self._device,
+            show_progress_bar=False,
         )
 
         # Run it through the model to get the predictions

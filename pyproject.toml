@@ -11,7 +11,8 @@ dependencies = [
     "uvicorn",
     "tqdm",
     "aws-lambda-powertools",
-    "jmespath"
+    "jmespath",
+    "prettytable"
 ]
 [project.optional-dependencies]
 dev = [

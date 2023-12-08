@@ -1,7 +1,7 @@
+import csv
 from os import PathLike
 from typing import Union
 from data_sources.data_source import DataSource
-from lib.read_description_csv import read_description_csv
 
 
 class TradeTariffDataSource(DataSource):
@@ -10,7 +10,11 @@ class TradeTariffDataSource(DataSource):
         self._filename = filename
 
     def get_codes(self, digits: int) -> dict[str, list[str]]:
-        code_data = read_description_csv(self._filename)
+        with open(self._filename, mode="r", encoding="Windows-1252") as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # skip the first line (header)
+            code_data = list(csv_reader)
+
         mapped_codes = {}
         # build map of lines by code first, in case some are out of order
         for line in code_data:

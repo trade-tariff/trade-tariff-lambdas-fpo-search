@@ -31,7 +31,8 @@ def create_embeddings(texts: list[str], torch_device: str = "cpu"):
                     convert_to_tensor=True,
                     batch_size=batch_size,
                     device=torch_device,
-                ).to("cpu"),
+                    show_progress_bar=False,
+                ).to("cpu"),  # type: ignore
             )
         )  # type: ignore
 
