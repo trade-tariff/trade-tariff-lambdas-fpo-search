@@ -8,7 +8,7 @@ from prettytable.colortable import ColorTable, Themes
 import tqdm
 
 from data_sources.data_source import DataSource
-from data_sources.basic_csv import BasicCSVDataSource
+from data_sources.tradesets import BasicCSVDataSource
 from inference.infer import FlatClassifier
 
 parser = argparse.ArgumentParser(description="Benchmark an FPO classification model.")
