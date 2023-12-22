@@ -41,7 +41,7 @@ class FlatClassifierModelTrainer(ModelTrainer):
         print("Created model")
         print(model)
 
-        batch_size = 1000  # Adjust as needed
+        batch_size = 1024  # Adjust as needed
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         batches = len(train_loader)
