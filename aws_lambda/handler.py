@@ -3,6 +3,7 @@ import json
 import aws_lambda_powertools
 
 from inference.infer import Classifier
+from aws_lambda.spelling_corrector import SpellingCorrector
 import logging
 import time
 
@@ -20,6 +21,7 @@ class LambdaHandler:
         self._classifier = classifier
         self._api_keys = api_keys
         self._logger = logger
+        self.spell_corrector = SpellingCorrector()
 
     def handle(self, event, _context):
         path = event.get("path", "")
@@ -62,10 +64,12 @@ class LambdaHandler:
             digits = queryParams.get("digits", "6")
             limit = queryParams.get("limit", "5")
 
+        corrected_description = self.spell_corrector.correct(description)
+
         statusCode = 200
         body = {}
 
-        if description == "":
+        if corrected_description == "":
             statusCode = 400
             body = {"message": "No description specified"}
         elif str(digits) not in ["6", "8"]:
@@ -77,7 +81,7 @@ class LambdaHandler:
         else:
             start = time.perf_counter()
             raw_results = self._classifier.classify(
-                description, int(limit), int(digits)
+                corrected_description, int(limit), int(digits)
             )
             results = [
                 {"code": result.code, "score": result.score * 1000}
@@ -91,7 +95,8 @@ class LambdaHandler:
                 lapsed,
                 extra={
                     "client_id": client_id,
-                    "request_description": description,
+                    # Maybe just log the orginal spelling not corrected
+                    "request_description": corrected_description,
                     "request_digits": int(digits),
                     "request_limit": int(limit),
                     "result_time_ms": lapsed,
