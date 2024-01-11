@@ -6,6 +6,9 @@ from inference.infer import Classifier
 import logging
 import time
 
+with open("REVISION", "r") as f:
+    REVISION = f.read().strip()
+
 
 class LambdaHandler:
     def __init__(
@@ -19,6 +22,17 @@ class LambdaHandler:
         self._logger = logger
 
     def handle(self, event, _context):
+        path = event.get("path", "")
+
+        description = ""
+        statusCode = 200
+        body = {}
+
+        if path == "/healthcheck":
+            body = {"git_sha1": REVISION, "healthy": True}
+
+            return {"statusCode": statusCode, "body": json.dumps(body)}
+
         client_id = self._authenticate(event)
 
         if client_id is None:
