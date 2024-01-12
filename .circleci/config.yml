@@ -65,7 +65,7 @@ jobs:
       - run: |
           python -m venv venv
           source venv/bin/activate
-          pip install ruff
+          pip install ruff==0.1.6
           ruff check .
 
   test:
