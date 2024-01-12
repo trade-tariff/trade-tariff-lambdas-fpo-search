@@ -1,7 +1,9 @@
 #!/bin/bash
 
 ssm_parameter="$1"
-container="fpo-search:${CIRCLE_SHA1}"
+
+docker_tag=$(git rev-parse --short HEAD)
+container="fpo-search:${docker_tag}"
 
 function fetch_ecr_url {
   json=$(aws ssm get-parameter \
@@ -29,8 +31,8 @@ rm target.zip
 git rev-parse --short HEAD > REVISION
 
 docker build -t "$container" .
-docker tag "${container}" "${ecr_url}:${CIRCLE_SHA1}"
+docker tag "${container}" "${ecr_url}:${docker_tag}"
 
 aws ecr get-login-password | docker login --username AWS --password-stdin "${ecr_url}"
 
-docker push "${ecr_url}:${CIRCLE_SHA1}"
+docker push "${ecr_url}:${docker_tag}"

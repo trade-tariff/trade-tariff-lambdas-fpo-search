@@ -18,7 +18,7 @@ provider:
   ecr:
     images:
       fpo-search:
-        uri: "${ssm:/${sls:stage}/FPO_SEARCH_ECR_URL}:${env:CIRCLE_SHA1}"
+        uri: "${ssm:/${sls:stage}/FPO_SEARCH_ECR_URL}:${env:DOCKER_TAG}"
 
   environment:
     FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
