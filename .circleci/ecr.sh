@@ -26,6 +26,8 @@ aws s3 cp s3://trade-tariff-models-${account_id}/target.zip .
 unzip target.zip
 rm target.zip
 
+git rev-parse --short HEAD > REVISION
+
 docker build -t "$container" .
 docker tag "${container}" "${ecr_url}:${CIRCLE_SHA1}"
 
