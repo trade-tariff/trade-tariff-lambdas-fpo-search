@@ -14,6 +14,14 @@ filter-main: &filter-main
       only:
         - main
         - /^hotfix\/.+/
+
+filter-release: &filter-release
+  filters:
+    tags:
+      only: /^release-202[\d-]+/
+    branches:
+      ignore: /.*/
+
 orbs:
   serverless-framework: circleci/serverless-framework@2.0.1
   slack: circleci/slack@4.3.0
@@ -160,10 +168,21 @@ workflows:
             - deploy-staging
           <<: *filter-main
 
-  # deploy-to-production:
-  #   jobs:
-  #     - deploy:
-  #         name: deploy-production
-  #         stage: production
-  #         context: trade-tariff-lambda-deployments-production
-  #         <<: *filter-main
+  deploy-to-production:
+    jobs:
+      - promote-to-production?:
+          type: approval
+          <<: *filter-main
+
+      - tariff/create-production-release:
+          context: trade-tariff-releases
+          image-name: fpo-search
+          requires:
+            - promote-to-production?
+          <<: *filter-main
+
+      - deploy:
+          name: deploy-production
+          stage: production
+          context: trade-tariff-lambda-deployments-production
+          <<: *filter-release
