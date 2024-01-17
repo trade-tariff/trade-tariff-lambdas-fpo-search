@@ -6,7 +6,7 @@ import pickle
 import torch
 from data_sources.data_source import DataSource
 from data_sources.trade_tariff import TradeTariffDataSource
-from data_sources.tradesets import BasicCSVDataSource
+from data_sources.basic_csv import BasicCSVDataSource
 from training.create_embeddings import create_embeddings
 from training.prepare_data import TrainingDataLoader
 from training.train_model import (
@@ -124,7 +124,8 @@ else:
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
     data_sources += [
-        BasicCSVDataSource(filename) for filename in tradesets_data_dir.glob("*.csv")
+        BasicCSVDataSource(filename, encoding="latin_1")
+        for filename in tradesets_data_dir.glob("*.csv")
     ]
 
     training_data_loader = TrainingDataLoader()
