@@ -196,4 +196,4 @@ workflows:
           endpoint: https://search.trade-tariff.service.gov.uk
           requires:
             - deploy-production
-          <<: *filter-main
+          <<: *filter-release
