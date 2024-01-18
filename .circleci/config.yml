@@ -189,3 +189,11 @@ workflows:
           stage: production
           context: trade-tariff-lambda-deployments-production
           <<: *filter-release
+
+      - smoketest:
+          name: smoketest-production
+          context: trade-tariff-lambda-deployments-production
+          endpoint: https://search.trade-tariff.service.gov.uk
+          requires:
+            - deploy-production
+          <<: *filter-main
