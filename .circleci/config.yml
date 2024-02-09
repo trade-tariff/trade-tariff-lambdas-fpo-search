@@ -42,6 +42,12 @@ executors:
       - image: cimg/node:21.2.0
     resource_class: small
 
+parameters:
+  train_model:
+    description: if true, will start the training instance
+    type: boolean
+    default: false
+
 jobs:
   build:
     executor: base
@@ -111,10 +117,20 @@ jobs:
       - checkout
       - run: .circleci/bin/smoketest << parameters.endpoint >>
 
+  start-training-instance:
+    executor: base
+    steps:
+      - checkout
+      - aws-cli/install
+      - run: .circleci/ec2.sh
+
 workflows:
   version: 2
 
   deploy-to-development:
+    when:
+      equal: [ false, << pipeline.parameters.train_model >>]
+
     jobs:
       - check:
           <<: *filter-not-main
@@ -197,3 +213,11 @@ workflows:
           requires:
             - deploy-production
           <<: *filter-release
+
+  start-training:
+    when:
+      equal: [ true, << pipeline.parameters.train_model >>]
+
+    jobs:
+      - start-training-instance:
+          context: trade-tariff-terraform-aws-production

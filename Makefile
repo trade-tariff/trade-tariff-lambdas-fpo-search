@@ -15,7 +15,7 @@ train: install
 	${PYTHON} train.py
 
 $(VENV)/bin/activate:
-	${PYTHON} -m venv $(VENV)
+	python3 -m venv $(VENV)
 
 .git/hooks/pre-commit:
 	$(VENV)/bin/pre-commit install

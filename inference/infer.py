@@ -29,7 +29,7 @@ class FlatClassifier(Classifier):
         self,
         model_file: Path,
         subheadings: list[str],
-        device: str = "cpu",
+        device: torch.device,
         logger: Logger = logging.getLogger(),
     ) -> None:
         super().__init__()
