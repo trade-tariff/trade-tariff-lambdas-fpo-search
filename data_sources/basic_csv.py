@@ -29,20 +29,33 @@ class BasicCSVDataSource(DataSource):
 
         documents = {}
 
+        total_number = len(code_data)
+        counter = 0
+
         for line in code_data:
             subheading = line[self._code_col].strip()[:digits]
             description = line[self._description_col].strip()
-            corrected_description = self.spell_corrector.correct(description)
 
             # Throw out any bad codes
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
                 continue
 
+            corrected_description = self.spell_corrector.correct(description)
+
+            if description != corrected_description:
+                print(f"Correcting spelling for: {description}")
+                print(f"Spelling corrected: {corrected_description}")
+
+            if counter % 250000 == 0:
+                print(f"<======= Progress: {counter}/{total_number} ========>")
+
             if subheading in documents:
                 documents[subheading].add(corrected_description)
             else:
                 documents[subheading] = {corrected_description}
+            counter += 1
 
+        print("Documents created")
         return documents
 
     def get_description(self) -> str:
