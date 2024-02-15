@@ -2,6 +2,7 @@ import argparse
 import logging
 from pathlib import Path
 import pickle
+import pandas as pd
 
 import torch
 from data_sources.data_source import DataSource
@@ -12,6 +13,9 @@ from training.prepare_data import TrainingDataLoader
 from training.train_model import (
     FlatClassifierModelTrainer,
     FlatClassifierModelTrainerParameters,
+)
+from training.clean_data import (FilterItems,
+                                 TextLabelMapper,
 )
 
 parser = argparse.ArgumentParser(description="Train an FPO classification model.")
@@ -124,7 +128,7 @@ else:
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
     data_sources += [
-        BasicCSVDataSource(filename, encoding="latin_1")
+        BasicCSVDataSource(filename)
         for filename in tradesets_data_dir.glob("*.csv")
     ]
 
@@ -147,6 +151,32 @@ else:
     print("💾⇦ Saving subheadings")
     with open(subheadings_file, "wb") as fp:
         pickle.dump(subheadings, fp)
+
+
+###Remove incorrect codes and corresponding texts and labels (these will be extra ones added from outside of commodities file)
+max_label1=max(loc for loc, val in enumerate(datafile) if val == 'source_data/commodities.csv')
+print(f"Up to index {max_label1} is from commodities")
+max_label = max(labels[0: max_label1+1])
+
+
+filter_items = FilterItems(texts, labels, subheadings, max_label)
+texts, labels = filter_items.filter_items() 
+subheadings = filter_items.filter_items2() 
+
+print(f"length of texts, labels is {len(texts)}, length of subheadings is {len(subheadings)}, max subheading is {max(subheadings)}, max labels is {max(labels)}")
+
+
+##Replace vague terms labels with 9856 label (must be run AFTER filter out incorrect codes):
+df=pd.read_csv("Vague Terms Dictionary.csv")
+df2=df['Unacceptable_words'].str.lower() 
+vagueterms=df2.to_list()
+
+mapper = TextLabelMapper(texts, labels, vagueterms, subheadings)
+mapper.update_labels()
+labels = mapper.get_updated_labels() #new updated labels list
+mapper.update_subheadings()
+
+
 
 
 # Next create the embeddings
