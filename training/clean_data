@@ -1,0 +1,46 @@
+##Clean data 
+    
+##Keep correct codes only (filter out incorrect ones)
+class FilterItems:
+    def __init__(self, texts, labels, subheadings, max_label):
+        self.texts = texts
+        self.labels = labels
+        self.subheadings = subheadings
+        self.max_label = max_label
+
+    def filter_items(self):
+        """
+        Filter in data from the lists while preserving order.
+        """
+        filtered_items = filter(lambda x: x[1] <= self.max_label, zip(self.texts, self.labels))
+        texts_correct, labels_correct = zip(*filtered_items)
+        return texts_correct, labels_correct
+    
+    def filter_items2(self):
+        """
+        Filter the list based on its indices.
+        """
+        subheadings_correct = [self.subheadings[i] for i in range(len(self.subheadings)) if i <= self.max_label]
+        return subheadings_correct
+
+
+###Replace vague terms labels with 9856 label:
+class TextLabelMapper:
+    def __init__(self, texts, labels, vagueterms, subheadings_correct):
+        self.texts_lower = [text.lower() for text in texts]
+        self.vagueterms = vagueterms
+        self.text_label_map = dict(zip(self.texts_lower, labels))
+        self.subheadings_correct = subheadings_correct  # Initialize the Codes list
+
+    def update_labels(self):
+        for text in self.vagueterms:
+            if text in self.text_label_map:
+                self.text_label_map[text] = 9856
+
+    def get_updated_labels(self):
+        return [self.text_label_map[text] for text in self.texts_lower]
+    
+    def update_subheadings(self):
+        self.subheadings_correct.append('9856VagueTerm') # Add '9856VagueTerm' to subheadings
+
+
