@@ -35,7 +35,7 @@ class TextLabelMapper:
     def update_labels(self):
         for text in self.vagueterms:
             if text in self.text_label_map:
-                self.text_label_map[text] = 9856
+                self.text_label_map[text] = len(self.subheadings_correct) #so new category will be +1 whatever the last label is, currently len(subheadings) should be 9856
 
     def get_updated_labels(self):
         return [self.text_label_map[text] for text in self.texts_lower]
