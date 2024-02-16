@@ -1,7 +1,6 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
-import tqdm
 
 sentence_transformer_model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -13,27 +12,31 @@ def batched(iterable, n=1):
 
 
 def create_embeddings(texts: list[str], torch_device: str = "cpu"):
-    batch_size = 50
+    # Define batch size
+    batch_size = 2064
 
-    max_batch = np.ceil(len(texts) / batch_size)
+    max_batch = int(np.ceil(len(texts) / batch_size))
 
     sentence_transformer_model.to(torch_device)
 
-    sentence_embeddings = torch.empty(0, 384)
+    # Initialize an empty list to store the embeddings
+    sentence_embeddings = []
 
-    # process each batch
-    for cb in tqdm.tqdm(batched(texts, batch_size), total=max_batch):
-        sentence_embeddings = torch.cat(
-            (
-                sentence_embeddings,
-                sentence_transformer_model.encode(
-                    cb,
-                    convert_to_tensor=True,
-                    batch_size=batch_size,
-                    device=torch_device,
-                    show_progress_bar=False,
-                ).to("cpu"),  # type: ignore
-            )
-        )  # type: ignore
+    # Process texts in batches
+    for i in range(max_batch):
+        start_index = i * batch_size
+        end_index = min((i + 1) * batch_size, len(texts))
+
+        batch_texts = texts[start_index:end_index]
+
+        # Encode the batch of texts
+        batch_embeddings = sentence_transformer_model.encode(
+            batch_texts, show_progress_bar=True
+        )
+
+        # Append the batch embeddings to the list
+        sentence_embeddings.extend(batch_embeddings)
+
+    sentence_embeddings = torch.tensor(sentence_embeddings)
 
     return sentence_embeddings
