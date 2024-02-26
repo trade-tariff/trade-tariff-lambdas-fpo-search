@@ -1,11 +1,17 @@
 import argparse
 import torch
 
+
 class FPOArgsParser:
     def __init__(self):
-        parser = argparse.ArgumentParser(description="Train an FPO classification model.")
+        parser = argparse.ArgumentParser(
+            description="Train an FPO classification model."
+        )
         parser.add_argument(
-            "--digits", type=int, help="how many digits to train the model to", default=8
+            "--digits",
+            type=int,
+            help="how many digits to train the model to",
+            default=8,
         )
         parser.add_argument(
             "--limit",
@@ -35,7 +41,6 @@ class FPOArgsParser:
             default=3,
         )
         parser.add_argument(
-            
             "--device",
             type=str,
             help="the torch device to use for training. 'auto' will try to select the best device available.",
@@ -47,7 +52,15 @@ class FPOArgsParser:
 
     def torch_device(self):
         arg_device = self.parsed_args.device
-        if arg_device == "auto":
-            return "cuda" if torch.cuda.is_available() else "cpu"
-        else:
+
+        if arg_device != "auto":
             return arg_device
+
+        # When "auto" select the best device available
+        if torch.cuda.is_available():
+            return "cuda"
+
+        if torch.backends.mps.is_available():
+            return "mps"
+
+        return "cpu"
