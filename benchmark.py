@@ -7,6 +7,8 @@ from prettytable import PrettyTable
 from prettytable.colortable import ColorTable, Themes
 import tqdm
 
+from datetime import datetime, timezone
+
 from data_sources.data_source import DataSource
 from data_sources.basic_csv import BasicCSVDataSource
 from inference.infer import FlatClassifier
@@ -27,6 +29,13 @@ parser.add_argument(
     type=str,
     default="text",
     choices=["text", "json"],
+)
+
+parser.add_argument(
+    "--write-to-file",
+    help="whether to write output to a file",
+    required=False,
+    default=False,
 )
 
 parser.add_argument(
@@ -51,11 +60,13 @@ digits = args.digits
 output = args.output
 no_progress = args.no_progress
 colour = args.colour
+write_file = args.write_to_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-# Everything except CPU seems to be super slow, I assume because of the time it takes to shuffle the data about for each inference. So we'll default to CPU.
+# Everything except CPU seems to be super slow, I assume because of the time it
+# takes to shuffle the data about for each inference. So we'll default to CPU.
 device = "cpu"
 
 cwd = Path(__file__).resolve().parent
@@ -240,3 +251,15 @@ else:  # output is json
     }
 
     print(json.dumps(row))
+
+if write_file:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filetype = "json" if output == "json" else "txt"
+    file = open(f"benchmark_results_{timestamp}.{filetype}", "w")
+
+    if output == "json":
+        file.write(json.dumps(row))
+    else:
+        file.write(results)
+
+    file.close()
