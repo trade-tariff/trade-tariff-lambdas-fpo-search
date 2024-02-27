@@ -36,6 +36,7 @@ parser.add_argument(
     help="whether to write output to a file",
     required=False,
     default=False,
+    action="store_true",
 )
 
 parser.add_argument(
