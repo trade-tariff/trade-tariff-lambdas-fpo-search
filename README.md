@@ -5,22 +5,29 @@
 ## Create your development environment
 
 ### Initial development environment setup (one-time setup)
+
 - Set up a developer environment: `make dev-env`
 
 ### Activate the virtual environment (each time the tool is used)
+
 - On MacOS or Linux: `source venv/bin/activate`
 - On Windows: `.\venv\Scripts\activate`
 
 ### Install dependencies when the `pyproject.toml` has changed
+
 - For development: `make install-dev`
 - For production: `make install`
 
 ## Usage
 
 ### Training the model
-In order to do anything useful to run the training, you will need some source data. This is not included within this repository and will need to be obtained by contacting the OTT lead.
 
-Once you have obtained the source data for testing, put it in a directory in the project root named `raw_source_data`.
+In order to do anything useful to run the training, you will need some source
+data. This is not included within this repository and will need to be obtained
+by contacting the OTT lead.
+
+Once you have obtained the source data for testing, put it in a directory in the
+project root named `raw_source_data`.
 
 Once you have the data you can run the training:
 ```
@@ -50,11 +57,17 @@ options:
 ```
 
 ### Benchmarking the model
-Once you have trained the model, you can benchmark its performance against some benchmarking data. You can get some example benchmarking data by contacting the OTT lead.
 
-These should be `csv` files, with the first column as the first column as the Goods Description and the second column as the Commodity Code. The first row should be the header and will be skipped.
+Once you have trained the model, you can benchmark its performance against some
+benchmarking data. You can get some example benchmarking data by contacting the
+OTT lead.
 
-Once you have obtained the source data for testing, put it in a directory in the project root named `benchmarking_data`.
+These should be `csv` files, with the first column as the first column as the
+Goods Description and the second column as the Commodity Code. The first row
+should be the header and will be skipped.
+
+Once you have obtained the source data for testing, put it in a directory in the
+project root named `benchmarking_data`.
 
 Once you have the data you can run the training:
 ```
@@ -80,12 +93,17 @@ options:
 
 ### Inference
 
-Once you have the model built you can run inference against it to classify items. By default the inference script requires the following files to be present:
+Once you have the model built you can run inference against it to classify
+items. By default the inference script requires the following files to be
+present:
 
-- `target/subheading.pkl` which is a pcikle file of a list of subheadings. This is used to convert the classification from the model back into the eight digit code.
+- `target/subheading.pkl` which is a pcikle file of a list of subheadings. This
+is used to convert the classification from the model back into the eight digit
+code.
 - `target/model.pt` which is the PyTorch model
 
-You can either use the training to create fresh versions of these files, or you can use the pre-built ones. Contact the team lead to get access to them.
+You can either use the training to create fresh versions of these files, or you
+can use the pre-built ones. Contact the team lead to get access to them.
 
 #### From the command-line
 
