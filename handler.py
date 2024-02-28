@@ -27,7 +27,7 @@ logger.info("🚀⇨ Loading static classifier from %s", model_file)
 model_exists = os.path.isfile(model_file)
 logger.info("🚀⇨ Model exists: %s", model_exists)
 
-classifier = FlatClassifier(model_file, subheadings)
+classifier = FlatClassifier(model_file, subheadings, "cpu")
 logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )
