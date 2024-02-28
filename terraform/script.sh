@@ -96,7 +96,11 @@ venv/bin/python${PYTHON_VERSION} benchmark.py \
 
 echo -e "\nUploading trained model to S3.\n"
 aws s3 sync target/ "${S3_BUCKET_URI}/target/"
-aws s3 cp "benchmarking_results*" "${S3_BUCKET_URI}"
+
+aws s3 cp \
+  "benchmarking_data/results/benchmarking_results*.json" \
+  "${S3_BUCKET_URI}benchmarking_data/results/" \
+  --recursive
 
 if $RUNNING_IN_AWS; then
   shutdown -h

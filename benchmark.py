@@ -1,17 +1,17 @@
 import argparse
 import json
 import logging
-from pathlib import Path
+import os
 import pickle
-from prettytable import PrettyTable
-from prettytable.colortable import ColorTable, Themes
 import tqdm
 
-from datetime import datetime, timezone
-
-from data_sources.data_source import DataSource
 from data_sources.basic_csv import BasicCSVDataSource
+from data_sources.data_source import DataSource
+from datetime import datetime, timezone
 from inference.infer import FlatClassifier
+from pathlib import Path
+from prettytable import PrettyTable
+from prettytable.colortable import ColorTable, Themes
 
 parser = argparse.ArgumentParser(description="Benchmark an FPO classification model.")
 
@@ -254,9 +254,12 @@ else:  # output is json
     print(json.dumps(row))
 
 if write_file:
+    path = "benchmarking_data/results"
+    os.makedirs(path, exist_ok=True)
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filetype = "json" if output == "json" else "txt"
-    file = open(f"benchmark_results_{timestamp}.{filetype}", "w")
+    file = open(f"{path}/benchmark_results_{timestamp}.{filetype}", "w")
 
     if output == "json":
         file.write(json.dumps(row))
