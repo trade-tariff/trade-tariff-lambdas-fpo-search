@@ -27,7 +27,6 @@ training_parameters = FlatClassifierModelTrainerParameters(
 )
 
 device = FPOArgsParser().torch_device()
-
 print(f"⚙️  Using device {device}")
 
 cwd = Path(__file__).resolve().parent
