@@ -91,11 +91,12 @@ fi
 echo -e "\nStarting model benchmarking.\n"
 
 venv/bin/python${PYTHON_VERSION} benchmark.py \
-  --output json
+  --output json \
+  --write-to-file
 
 echo -e "\nUploading trained model to S3.\n"
 aws s3 sync target/ "${S3_BUCKET_URI}/target/"
-
+aws s3 cp "benchmarking_results*" "${S3_BUCKET_URI}"
 
 if $RUNNING_IN_AWS; then
   shutdown -h
