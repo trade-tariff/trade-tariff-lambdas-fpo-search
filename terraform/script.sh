@@ -65,7 +65,6 @@ if [ ! -d "${GIT_REPO}" ]; then
 fi
 
 cd ${GIT_REPO} || exit 1
-git checkout hott-4663-ec2-instance
 
 if [ ! -d "venv" ]; then
   echo -e "\nSetting up virtual python environment.\n"
@@ -99,8 +98,7 @@ aws s3 sync target/ "${S3_BUCKET_URI}/target/"
 
 
 if $RUNNING_IN_AWS; then
-  # shutdown -h
-  exit 0
+  shutdown -h
 else
   exit 0
 fi
