@@ -1,0 +1,8 @@
+abridgement, abridgment, capsule, condensation
+abyssinian => cat, abyssinian
+red lemon => bird
+lemon,lime, citrus
+abridgement => abyssinian, cat
+iron ore, raw
+fresh fish, raw
+ocean crustations, shelled

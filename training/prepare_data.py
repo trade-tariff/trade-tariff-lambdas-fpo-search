@@ -1,5 +1,6 @@
 from pathlib import Path
 from data_sources.data_source import DataSource
+from training.enhance_data import EnhanceData
 
 
 class TrainingDataLoader:
@@ -23,7 +24,15 @@ class TrainingDataLoader:
 
             data = data_source.get_codes(digits)
 
-            for subheading, descriptions in data.items():
+            enable_synonyms = True
+
+            if enable_synonyms is True:
+                enhance_data = EnhanceData()
+                enhanced_data = enhance_data.add_synonyms(data)
+            else:
+                enhanced_data = data
+
+            for subheading, descriptions in enhanced_data.items():
                 if subheading in subheadings_map:
                     label = subheadings_map[subheading]
                 else:
