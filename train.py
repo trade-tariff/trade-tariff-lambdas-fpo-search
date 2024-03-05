@@ -75,9 +75,7 @@ else:
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
     data_sources += [
-        BasicCSVDataSource(filename, 
-                           #encoding="latin_1"
-                          )
+        BasicCSVDataSource(filename, encoding="latin_1")
         for filename in tradesets_data_dir.glob("*.csv")
     ]
 
