@@ -9,19 +9,9 @@ logger.setLevel(logging.DEBUG)
 
 
 class Test_basic_csv_data_source(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.sample_csv_content = """Code,Description
-12345,Fresh fish
-12345,Raw ocean fish
-23456,Dried fruit
-34567,Wooden frames
-123,Invalid code
-"""
-
     def test_initialization(self):
-        data_source = BasicCSVDataSource("sample.csv")
-        self.assertEqual(data_source._filename, "sample.csv")
+        data_source = BasicCSVDataSource("test.csv")
+        self.assertEqual(data_source._filename, "test.csv")
         self.assertEqual(data_source._code_col, 0)
         self.assertEqual(data_source._description_col, 1)
         self.assertEqual(data_source._encoding, "utf-8")
@@ -39,8 +29,8 @@ class Test_basic_csv_data_source(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_get_description(self):
-        data_source = BasicCSVDataSource("sample.csv")
-        expected_description = "CSV data source from sample.csv"
+        data_source = BasicCSVDataSource("test.csv")
+        expected_description = "CSV data source from test.csv"
         self.assertEqual(data_source.get_description(), expected_description)
 
 
