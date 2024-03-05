@@ -35,7 +35,7 @@ class FlatClassifier(Classifier):
         super().__init__()
 
         transformer = os.environ.get(
-            "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-mpnet-base-v2"
+            "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-MiniLM-L6-v2"
         )
         transformer_cache_directory = os.environ.get(
             "SENTENCE_TRANSFORMERS_HOME", "/tmp/sentence_transformers/"
