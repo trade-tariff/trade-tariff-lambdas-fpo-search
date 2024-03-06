@@ -1,6 +1,6 @@
 from pathlib import Path
 from data_sources.data_source import DataSource
-from training.enhance_data import EnhanceData
+from training.enhance_data.enhance_data import EnhanceData
 
 
 class TrainingDataLoader:
@@ -24,6 +24,7 @@ class TrainingDataLoader:
 
             data = data_source.get_codes(digits)
 
+            # This will end up being some global value that is set but for now we want to enable it
             enable_synonyms = True
 
             if enable_synonyms is True:

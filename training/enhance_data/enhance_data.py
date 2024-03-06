@@ -5,17 +5,49 @@ from training.synonym.synonym_expander import SynonymExpander
 class EnhanceData:
     def __init__(self, filename=None):
         self.filename = filename
-        self.synonym_expander = self._synonym_expander()
+        self._synonym_expander = None
+
+    @property
+    def synonym_expander(self):
+        if self._synonym_expander is None:
+            self._initialize_synonym_expander()
+        return self._synonym_expander
+
+    def _initialize_synonym_expander(self):
+        """Lazily initializes the SynonymExpander for heavy processing or dependencies."""
+        try:
+            synonym_handler = SynonymFileHandler(filename=self.filename)
+            synonym_handler.load()
+            self._synonym_expander = SynonymExpander(synonym_handler.terms_to_tokens)
+        except Exception as e:
+            print(f"Failed to initialize synonym expander: {e}")
+            raise
 
     def add_synonyms(self, data):
+        """Expands synonyms in the given data, returning a new data structure to avoid mutation but in type."""
+        new_data = {}
+
         for code, descriptions in data.items():
-            for index, description in enumerate(descriptions):
-                descriptions[index] = self.synonym_expander.expand(description)
+            expanded_descriptions = set()
+            for description in descriptions:
+                if len(description) > 100:
+                    expanded_description = self.synonym_expander.expand(description)
+                else:
+                    expanded_description = description
 
-        return data
+                expanded_descriptions.add(self._unique_words(expanded_description))
 
-    def _synonym_expander(self):
-        synonym_handler = SynonymFileHandler(filename=self.filename)
-        synonym_handler.load()
+            new_data[code] = expanded_descriptions
+        return new_data
 
-        return SynonymExpander(synonym_handler.terms_to_tokens)
+    def _unique_words(self, string):
+        words = string.split()
+        unique_words = []
+
+        for word in words:
+            if word not in unique_words:
+                unique_words.append(word)
+
+        unique_string = " ".join(unique_words)
+
+        return unique_string
