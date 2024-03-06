@@ -177,6 +177,10 @@ labels = mapper.get_updated_labels() #new updated labels list
 mapper.update_subheadings()
 
 
+##Save updated subheadings
+print("💾⇦ Saving updated subheadings")
+with open(subheadings_file, "wb") as fp:
+    pickle.dump(subheadings, fp)
 
 
 # Next create the embeddings
