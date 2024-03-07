@@ -23,6 +23,7 @@ networkx==3.2.1
 nltk==3.8.1
 nodeenv==1.8.0
 numpy==1.26.2
+pandas==2.2.1
 packaging==23.2
 Pillow==10.1.0
 platformdirs==3.11.0
