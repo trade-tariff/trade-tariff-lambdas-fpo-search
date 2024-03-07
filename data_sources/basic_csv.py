@@ -2,9 +2,15 @@ import csv
 from os import PathLike
 import re
 from typing import Union
-
 from data_sources.data_source import DataSource
+import pandas as pd
 
+
+final_df=pd.read_csv('/home/ec2-user/SageMaker/trade-tariff-lambdas-fpo-search/raw_source_data/tradesets_descriptions/search_references_final8digit_16thFeb.csv', dtype=str)
+
+# Create a mapping dictionary from final_df
+mapping_dict = dict(zip(final_df['GDSDESC'], final_df['CMDTYCODE']))
+print(mapping_dict["action figures"])
 
 class BasicCSVDataSource(DataSource):
     def __init__(
@@ -12,7 +18,7 @@ class BasicCSVDataSource(DataSource):
         filename: Union[str, PathLike],
         code_col: int = 0,
         description_col: int = 1,
-        encoding: str = "utf-8",
+        encoding: str = "Windows-1252", #utf-8
     ) -> None:
         super().__init__()
         self._filename = filename
@@ -20,7 +26,7 @@ class BasicCSVDataSource(DataSource):
         self._description_col = description_col
         self._encoding = encoding
 
-    def get_codes(self, digits: int) -> dict[str, dict[str]]:
+    def get_codes(self, digits: int) -> dict[str, list[str]]:
         with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # skip the first line (header)
@@ -30,12 +36,25 @@ class BasicCSVDataSource(DataSource):
 
         for line in code_data:
             subheading = line[self._code_col].strip()[:digits]
-            description = line[self._description_col].strip()
+            description = line[self._description_col].strip().lower()
 
             # Throw out any bad codes
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
                 continue
 
+            # Check if the description exists in the mapping_dict
+            #if description == 'action figures':
+            #    print(subheading, description)
+                
+            if description in final_df['GDSDESC'].values:
+                # Find the corresponding CMDTYCODE for the description
+                cmdtycode = final_df.loc[final_df['GDSDESC'] == description, 'CMDTYCODE'].values[0]
+                line[self._code_col] = cmdtycode #replace the values in self._code_col with the corresponding CMDTYCODE from the mapping_dict if the description matches
+                subheading=cmdtycode
+
+            #if description == 'action figures':
+            #    print(subheading, description)
+            
             if subheading in documents:
                 documents[subheading].add(description)
             else:
