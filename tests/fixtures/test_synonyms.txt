@@ -3,6 +3,7 @@ abyssinian => cat, abyssinian
 red lemon => bird
 lemon,lime, citrus
 abridgement => abyssinian, cat
-iron ore, raw
+iron ore, hematite
 fresh fish, raw
 ocean crustations, shelled
+long description, lengthy

@@ -30,7 +30,7 @@ class EnhanceData:
         for code, descriptions in data.items():
             expanded_descriptions = set()
             for description in descriptions:
-                if len(description) > 100:
+                if len(description) < 100:
                     expanded_description = self.synonym_expander.expand(description)
                 else:
                     expanded_description = description

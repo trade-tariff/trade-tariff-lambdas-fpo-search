@@ -1,6 +1,3 @@
-# EXPAND_EQUIVALENT_SYNONYMS = os.getenv("EXPAND_EQUIVALENT_SYNONYMS") == "true"
-# EXPAND_EXPLICIT_SYNONYMS = os.getenv("EXPAND_EXPLICIT_SYNONYMS") == "true"
-
 """
 Converts synonym files into a dictionary of terms to tokens which can be used to expand queries
 into a set of equivalent synonym tokens. Handles empty lines, whitespace, and duplicate tokens as well as equivalent
@@ -16,7 +13,6 @@ Returns:
 
 
 class SynonymFileHandler:
-    # SYNONYM_FILEPATH = "config/data/synonyms-all.txt"
     SYNONYM_FALLBACK_FILEPATH = "config/data/synonyms-all-fallback.txt"
 
     def __init__(self, filename=None):
@@ -58,7 +54,6 @@ class SynonymFileHandler:
                                 ].union(set(tokens))
                             else:
                                 self.terms_to_tokens[term] = set(tokens)
-                            # self.terms_to_tokens[term].add(term)
 
                     # Equivalent mappings
                     elif lhs:
@@ -70,7 +65,6 @@ class SynonymFileHandler:
                                 ].union(set(tokens))
                             else:
                                 self.terms_to_tokens[term] = set(tokens)
-                            # self.terms_to_tokens[term].add(term)
 
     def __enter__(self):
         return self.load()

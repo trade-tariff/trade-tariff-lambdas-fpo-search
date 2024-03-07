@@ -1,54 +1,66 @@
 class SynonymExpander:
-    def __init__(self, terms_to_tokens, query=""):
+    """
+    A class to expand synonyms in a query string based on a mapping of terms to tokens.
+    """
+
+    def __init__(self, terms_to_tokens):
+        """
+        Initializes the SynonymExpander with a dictionary mapping terms to their tokens.
+        """
         self.terms_to_tokens = terms_to_tokens
-        self.query = query
 
     def expand(self, query):
-        phrases = sorted(self.__find_matching_phrases(query))
-        words = sorted(self.__find_matching_words(query))
-        expanded = self.__substitute(query, phrases + words)
+        """
+        Expands the given query by replacing words or phrases found in the terms_to_tokens mapping
+        with their tokens.
+        """
+        phrases = sorted(self._find_matching_phrases(query), key=len, reverse=True)
+        words = sorted(self._find_matching_words(query), key=len, reverse=True)
+        expanded = self._unique_words(self._substitute(query, phrases + words))
 
         return expanded
 
-    def __substitute(self, query, words_and_phrases):
+    def _substitute(self, query, words_and_phrases):
+        """
+        Replaces words or phrases in the query with their corresponding tokens.
+        """
+        # import pdb; pdb.set_trace()
         for word_or_phrase in words_and_phrases:
-            all_tokens = sorted(self.terms_to_tokens[word_or_phrase])
-            all_tokens = " ".join(all_tokens)
-
             if word_or_phrase in query:
-                query = query.replace(word_or_phrase, all_tokens)
-            else:
-                query = query + " " + all_tokens
-
+                all_tokens = " ".join(sorted(self.terms_to_tokens[word_or_phrase]))
+                if query in all_tokens:
+                    all_tokens = all_tokens.replace(" " + query, "")
+                    query = query + " " + all_tokens
+                else:
+                    query = query.replace(word_or_phrase, all_tokens)
         return query
 
-    def __find_matching_phrases(self, query):
+    def _find_matching_phrases(self, query):
+        """
+        Finds phrases in the query that are keys in the terms_to_tokens mapping.
+        """
         words = query.split()
-
-        matching_phrases = []
-
-        for i, _word in enumerate(words[:-1]):
-            phrase = " ".join(words[i : i + 2])
-            if phrase in self.terms_to_tokens:
-                matching_phrases.append(phrase)
-
-        # Filter out phrases that have no corresponding tokens
-        matching_phrases = [p for p in matching_phrases if self.terms_to_tokens[p]]
-
+        matching_phrases = [
+            " ".join(words[i : i + 2])
+            for i in range(len(words) - 1)
+            if " ".join(words[i : i + 2]) in self.terms_to_tokens
+        ]
         return matching_phrases
 
-    def __find_matching_words(self, query):
-        words = query.split()
+    def _find_matching_words(self, query):
+        """
+        Finds words in the query that are keys in the terms_to_tokens mapping.
+        """
+        return [w for w in query.split() if w in self.terms_to_tokens]
 
-        matching_words = [w for w in words if w in self.terms_to_tokens]
+    def _unique_words(self, string):
+        words = string.split()
+        unique_words = []
 
-        # Filter out words that have no corresponding tokens
-        matching_words = [w for w in matching_words if self.terms_to_tokens[w]]
+        for word in words:
+            if word not in unique_words:
+                unique_words.append(word)
 
-        return matching_words
+        unique_string = " ".join(unique_words)
 
-    def __enter__(self):
-        return self.expand(self.query)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
+        return unique_string
