@@ -1,8 +1,9 @@
 from training.synonym.synonym_file_handler import SynonymFileHandler
 from training.synonym.synonym_expander import SynonymExpander
+from training.helpers import Helpers
 
 
-class EnhanceData:
+class EnhanceDescriptions:
     def __init__(self, filename=None):
         self.filename = filename
         self._synonym_expander = None
@@ -32,22 +33,11 @@ class EnhanceData:
             for description in descriptions:
                 if len(description) < 100:
                     expanded_description = self.synonym_expander.expand(description)
+                    expanded_descriptions.add(description)
                 else:
                     expanded_description = description
 
-                expanded_descriptions.add(self._unique_words(expanded_description))
+                expanded_descriptions.add(Helpers.unique_words(expanded_description))
 
             new_data[code] = expanded_descriptions
         return new_data
-
-    def _unique_words(self, string):
-        words = string.split()
-        unique_words = []
-
-        for word in words:
-            if word not in unique_words:
-                unique_words.append(word)
-
-        unique_string = " ".join(unique_words)
-
-        return unique_string
