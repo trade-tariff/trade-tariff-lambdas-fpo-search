@@ -8,10 +8,6 @@ import pandas as pd
 
 final_df=pd.read_csv('/home/ec2-user/SageMaker/trade-tariff-lambdas-fpo-search/raw_source_data/tradesets_descriptions/search_references_final8digit_16thFeb.csv', dtype=str)
 
-# Create a mapping dictionary from final_df
-mapping_dict = dict(zip(final_df['GDSDESC'], final_df['CMDTYCODE']))
-print(mapping_dict["action figures"])
-
 class BasicCSVDataSource(DataSource):
     def __init__(
         self,
@@ -41,19 +37,12 @@ class BasicCSVDataSource(DataSource):
             # Throw out any bad codes
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
                 continue
-
-            # Check if the description exists in the mapping_dict
-            #if description == 'action figures':
-            #    print(subheading, description)
                 
             if description in final_df['GDSDESC'].values:
                 # Find the corresponding CMDTYCODE for the description
                 cmdtycode = final_df.loc[final_df['GDSDESC'] == description, 'CMDTYCODE'].values[0]
                 line[self._code_col] = cmdtycode #replace the values in self._code_col with the corresponding CMDTYCODE from the mapping_dict if the description matches
                 subheading=cmdtycode
-
-            #if description == 'action figures':
-            #    print(subheading, description)
             
             if subheading in documents:
                 documents[subheading].add(description)
