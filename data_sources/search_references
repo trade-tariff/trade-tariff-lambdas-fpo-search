@@ -1,0 +1,39 @@
+import requests
+import pandas as pd
+
+class SearchReferencesFetcher:
+    def __init__(self, url):
+        self.url = url
+        self.data_list = []
+
+    def fetch_references(self):
+        r = requests.get(self.url)
+        for item in r.json()['data']:
+            if item['attributes']['referenced_class'] in ['Commodity', 'Subheading']:
+                title = item['attributes']['title']
+                negated_title = item['attributes']['negated_title']
+                commodity_code = item['attributes']['goods_nomenclature_item_id']
+                self.data_list.append({
+                    'Title': title,
+                    'Negated Title': negated_title,
+                    'Commodity Code': commodity_code
+                })
+
+    def create_dataframe(self):
+        search_references = pd.DataFrame(self.data_list)
+        search_references['CMDTYCODE'] = search_references['Commodity Code'].astype(str).str[:8] #replace 8 with digits?
+        search_references['last_char']=search_references['Commodity Code'].astype(str).str[-4:]
+        
+        #Valid_code logic based on last four characters
+        def valid(series):
+            if series == '0000':
+                return 'No'
+            else:
+                return 'Yes'
+        
+        search_references['Valid_code'] = search_references['last_char'].apply(valid)
+        filtered_search_ref = search_references.query("Valid_code=='Yes'")
+        cols_to_keep = ['CMDTYCODE', 'Negated Title']
+        search_references2 = filtered_search_ref[cols_to_keep]
+        search_references2.columns = ['CMDTYCODE', 'GDSDESC'] #rename
+        return search_references2
