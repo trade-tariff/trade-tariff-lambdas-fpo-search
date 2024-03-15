@@ -1,9 +1,6 @@
 # The source data directory
 raw_source_data
 
-# The target directory for the training process
-target
-
 # VSCode files
 .vscode
 
@@ -84,6 +81,7 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
+target.zip
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -172,5 +170,4 @@ cython_debug/
 # Serverless directories
 .serverless
 lambda/
-target.zip
 benchmarking_data

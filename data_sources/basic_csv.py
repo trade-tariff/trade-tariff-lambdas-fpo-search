@@ -1,14 +1,9 @@
 import csv
-import os
 from os import PathLike
 import re
-from typing import Union
+from typing import Union, Optional
 from data_sources.data_source import DataSource
-import pandas as pd
-
-DEFAULT_SEARCH_REFERENCES_FILE = (
-    "raw_source_data/tradesets_descriptions/search_references_final8digit_16thFeb.csv"
-)
+from data_sources.search_references import SearchReferences
 
 
 class BasicCSVDataSource(DataSource):
@@ -17,19 +12,15 @@ class BasicCSVDataSource(DataSource):
         filename: Union[str, PathLike],
         code_col: int = 0,
         description_col: int = 1,
-        search_references_file: Union[str, PathLike] = DEFAULT_SEARCH_REFERENCES_FILE,
         encoding: str = "utf-8",
+        search_references: Optional[SearchReferences] = None,
     ) -> None:
         super().__init__()
         self._filename = filename
         self._code_col = code_col
         self._description_col = description_col
         self._encoding = encoding
-
-        if os.path.isfile(search_references_file):
-            self._search_refs = pd.read_csv(search_references_file, dtype=str)
-        else:
-            self._search_refs = None
+        self._search_references = search_references
 
     def get_codes(self, digits: int) -> dict[str, list[str]]:
         with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
@@ -48,23 +39,19 @@ class BasicCSVDataSource(DataSource):
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
                 continue
 
-            if self._search_refs is not None:
-                # Check if the description exists in search references
-                if description in self._search_refs["GDSDESC"].values:
+            if not description.strip():
+                continue
+
+            if self._search_references is not None:
+                if self._search_references.includes_description(description):
                     count += 1
 
-                    # Find the corresponding CMDTYCODE for the description
-                    cmdtycode = (
-                        self._search_refs.loc[
-                            self._search_refs["GDSDESC"] == description, "CMDTYCODE"
-                        ]
-                        .iloc[0]
-                        .strip()[:digits]
-                    )
-                    row[
-                        self._code_col
-                    ] = cmdtycode  # replace the values in self._code_col with the corresponding CMDTYCODE from the mapping_dict if the description matches
-                    subheading = cmdtycode
+                    commodity_code = self._search_references.get_commodity_code(
+                        description
+                    )[:digits]
+
+                    row[self._code_col] = commodity_code
+                    subheading = commodity_code
 
             if subheading in codes:
                 codes[subheading].add(description)

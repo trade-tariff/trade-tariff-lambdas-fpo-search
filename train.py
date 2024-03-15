@@ -4,6 +4,7 @@ from pathlib import Path
 import pickle
 
 import torch
+from data_sources.search_references import SearchReferences
 from data_sources.data_source import DataSource
 from data_sources.trade_tariff import TradeTariffDataSource
 from data_sources.basic_csv import BasicCSVDataSource
@@ -40,6 +41,8 @@ data_dir.mkdir(parents=True, exist_ok=True)
 # First load in the training data
 print("💾⇨ Loading training data")
 
+search_references = SearchReferences()
+
 texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
 subheadings_file = target_dir / "subheadings.pkl"
@@ -75,7 +78,9 @@ else:
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
     data_sources += [
-        BasicCSVDataSource(filename, encoding="latin_1")
+        BasicCSVDataSource(
+            filename, search_references=search_references, encoding="latin_1"
+        )
         for filename in tradesets_data_dir.glob("*.csv")
     ]
 
