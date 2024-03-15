@@ -45,7 +45,7 @@ class BasicCSVDataSource(DataSource):
             if description in final_df['GDSDESC'].values:
                 # Find the corresponding CMDTYCODE for the description
                 cmdtycode = final_df.loc[final_df['GDSDESC'] == description, 'CMDTYCODE'].values[0]
-                line[self._code_col] = cmdtycode #replace the values in self._code_col with the corresponding CMDTYCODE from the mapping_dict if the description matches
+                line[self._code_col] = cmdtycode #replace the values in self._code_col with the corresponding CMDTYCODE from search references if the description matches
                 subheading=cmdtycode
             
             if subheading in documents:
