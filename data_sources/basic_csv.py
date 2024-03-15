@@ -37,6 +37,10 @@ class BasicCSVDataSource(DataSource):
             # Throw out any bad codes
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
                 continue
+
+            #Throw out any blank descriptions if any remain
+            if not description.strip():
+                continue
                 
             if description in final_df['GDSDESC'].values:
                 # Find the corresponding CMDTYCODE for the description
