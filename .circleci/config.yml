@@ -83,6 +83,8 @@ jobs:
           source venv/bin/activate
           pip install --no-cache-dir --upgrade torch --index-url https://download.pytorch.org/whl/cpu
           pip install --no-cache-dir --upgrade -r requirements_lambda.txt
+          # TODO: Add a separate requirements/test.txt
+          pip install pandas==2.2.1
           python -m unittest -v -b
 
   deploy:
