@@ -62,6 +62,13 @@ if (
     with open(subheadings_file, "rb") as fp:
         subheadings = pickle.load(fp)
 else:
+
+    ##generate search_references file and save into raw_source_data folder / make available to basic_csv.py
+    url = 'https://dev.trade-tariff.service.gov.uk/api/v2/search_references'  
+    search_ref_fetcher = SearchReferencesFetcher(url)
+    search_ref_fetcher.fetch_references()
+    search_ref_df = search_ref_fetcher.create_dataframe()
+
     data_sources: list[DataSource] = []
 
     source_dir = cwd / "raw_source_data"
@@ -73,6 +80,9 @@ else:
 
     # Append all the Tradesets data sources
     tradesets_data_dir = source_dir / "tradesets_descriptions"
+
+    ##first save search_references file into here
+    search_ref_df.to_csv(tradesets_data_dir/"search_references.csv")
 
     data_sources += [
         BasicCSVDataSource(filename, encoding="latin_1")
