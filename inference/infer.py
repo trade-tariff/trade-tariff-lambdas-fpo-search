@@ -56,6 +56,7 @@ class FlatClassifier(Classifier):
 
         # Make sure the model is on the correct device
         self._model = torch.load(model_file)
+        self._model.eval() #Best practice: set model to evaluation mode for inference
         logger.info("🧠⚡ Model loaded")
 
         # Use predownloaded transformer if available
