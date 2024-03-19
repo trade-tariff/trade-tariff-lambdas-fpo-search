@@ -2,7 +2,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
 
-sentence_transformer_model = SentenceTransformer("all-MiniLM-L6-v2")
+sentence_transformer_model = SentenceTransformer("all-mpnet-base-v2")
 
 
 def batched(iterable, n=1):
