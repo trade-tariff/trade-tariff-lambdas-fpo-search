@@ -1,3 +1,4 @@
+import logging
 import math
 import torch
 from torch import Tensor, optim, nn
@@ -21,9 +22,13 @@ class FlatClassifierModelTrainer(ModelTrainer):
         self,
         parameters: FlatClassifierModelTrainerParameters = FlatClassifierModelTrainerParameters(),
         device: str = "cpu",
+        batch_size: int = 1000,
+        logger: logging.Logger = logging.getLogger(),
     ) -> None:
         self._parameters = parameters
         self._device = device
+        self._batch_size = batch_size
+        self._logger = logger
 
     def run(self, embeddings: Tensor, labels: Tensor, num_labels: int) -> nn.Module:
         train_dataset = TensorDataset(embeddings, labels)
@@ -38,11 +43,12 @@ class FlatClassifierModelTrainer(ModelTrainer):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=self._parameters.learning_rate)
 
-        print("Created model")
-        print(model)
+        self._logger.info("Created model")
+        self._logger.info(model)
 
-        batch_size = 1024  # Adjust as needed
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=self._batch_size, shuffle=True
+        )
 
         batches = len(train_loader)
         max_epochs = self._parameters.max_epochs
@@ -75,7 +81,7 @@ class FlatClassifierModelTrainer(ModelTrainer):
                 del inputs
                 del loader_labels
 
-                print(
+                self._logger.info(
                     f"Epoch {epoch+1}/{max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
                 )
 

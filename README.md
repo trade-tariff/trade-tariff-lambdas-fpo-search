@@ -39,7 +39,8 @@ To get usage instructions you can run:
 python train.py --help
 ```
 ```
-usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force] [--learning-rate LEARNING_RATE] [--max-epochs MAX_EPOCHS] [--device {auto,cpu,mps,cuda}]
+usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--force] [--learning-rate LEARNING_RATE] [--max-epochs MAX_EPOCHS] [--batch-size BATCH_SIZE] [--device {auto,cpu,mps,cuda}] [--embedding-batch-size EMBEDDING_BATCH_SIZE]
+                [--embedding-cache-checkpoint EMBEDDING_CACHE_CHECKPOINT]
 
 Train an FPO classification model.
 
@@ -52,8 +53,14 @@ options:
                         the learning rate to train the network with
   --max-epochs MAX_EPOCHS
                         the maximum number of epochs to train the network for
+  --batch-size BATCH_SIZE
+                        the size of the batches to use when training the model. You should increse this if your GPU has tonnes of RAM!
   --device {auto,cpu,mps,cuda}
                         the torch device to use for training. 'auto' will try to select the best device available.
+  --embedding-batch-size EMBEDDING_BATCH_SIZE
+                        the size of the batches to use when calculating embeddings. You should increse this if your GPU has tonnes of RAM!
+  --embedding-cache-checkpoint EMBEDDING_CACHE_CHECKPOINT
+                        how often to update the cached embeddings.
 ```
 
 ### Benchmarking the model

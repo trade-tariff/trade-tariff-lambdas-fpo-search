@@ -2,7 +2,6 @@ import argparse
 import logging
 from pathlib import Path
 import pickle
-import torch
 
 from inference.infer import FlatClassifier
 
@@ -49,6 +48,6 @@ model_file = target_dir / "model.pt"
 if not model_file.exists():
     raise FileNotFoundError(f"Could not find model file: {model_file}")
 
-classifier = FlatClassifier(model_file, subheadings, torch.device(device))
+classifier = FlatClassifier(model_file, subheadings, device)
 
 print(classifier.classify(search_text=query, limit=limit, digits=digits))
