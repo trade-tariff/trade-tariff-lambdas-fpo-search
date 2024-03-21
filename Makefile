@@ -42,6 +42,10 @@ clean:
 lint: install-dev
 	$(VENV)/bin/ruff .
 
+.PHONY: lint-fix
+lint-fix: install-dev
+	$(VENV)/bin/ruff --fix .
+
 check: install-dev
 	$(VENV)/bin/ruff check .
 

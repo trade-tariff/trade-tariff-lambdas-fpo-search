@@ -1,42 +1,123 @@
+import bz2
+import logging
+import os
+from pathlib import Path
+import pickle
+import tempfile
+from typing import Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
-
-sentence_transformer_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-
-def batched(iterable, n=1):
-    length = len(iterable)
-    for ndx in range(0, length, n):
-        yield iterable[ndx : min(ndx + n, length)]
+import fnv_c
+from inference.infer import transformer
 
 
-def create_embeddings(texts: list[str], torch_device: str = "cpu"):
-    # Define batch size
-    batch_size = 2064
+class EmbeddingsProcessor:
+    def __init__(
+        self,
+        cache_path: Optional[Path] = None,
+        torch_device: str = "cpu",
+        batch_size: int = 100,
+        cache_checkpoint: int = 50000,
+        transformer_model: str = transformer,
+        logger: logging.Logger = logging.getLogger(),
+    ) -> None:
+        if cache_path is None:
+            self._cache_file = None
+        else:
+            self._cache_file = cache_path / f"embeddings-cache-{transformer_model}.pbz2"
+        self._cache = None
+        self._torch_device = torch_device
+        self._batch_size = batch_size
+        self._cache_checkpoint = cache_checkpoint
+        self._sentence_transformer_model = SentenceTransformer(transformer_model)
+        self._logger = logger
 
-    max_batch = int(np.ceil(len(texts) / batch_size))
+        self._load_cache()
 
-    sentence_transformer_model.to(torch_device)
+    def _load_cache(self):
+        if self._cache_file is not None:
+            if os.path.isfile(self._cache_file):
+                print("💾⇨ Loading embedding cache")
+                with bz2.BZ2File(self._cache_file, "rb") as fp:
+                    self._cache = pickle.load(fp)
+            else:
+                self._logger.info("ℹ️  Creating new embedding cache")
+                self._cache = {}
+        else:
+            self._cache = None
 
-    # Initialize an empty list to store the embeddings
-    sentence_embeddings = []
+    def _save_cache(self):
+        if self._cache_file is not None:
+            self._logger.info("💾⇦ Saving embedding cache")
+            # Write to a temp file first so that we don't corrupt an existing file
 
-    # Process texts in batches
-    for i in range(max_batch):
-        start_index = i * batch_size
-        end_index = min((i + 1) * batch_size, len(texts))
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                with bz2.BZ2File(temp_file, "wb") as file:
+                    pickle.dump(self._cache, file)
 
-        batch_texts = texts[start_index:end_index]
+                temp_file_path = temp_file.name
 
-        # Encode the batch of texts
-        batch_embeddings = sentence_transformer_model.encode(
-            batch_texts, show_progress_bar=True
-        )
+            os.replace(temp_file_path, self._cache_file)
 
-        # Append the batch embeddings to the list
-        sentence_embeddings.extend(batch_embeddings)
+    def create_embeddings(self, texts: list[str]):
+        self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
 
-    sentence_embeddings = torch.tensor(sentence_embeddings)
+        # Initialize an empty list to store the embeddings
+        sentence_embeddings = []
 
-    return sentence_embeddings
+        texts_to_encode = []
+        indexes_to_encode = []
+
+        for idx, text in enumerate(texts):
+            hash = fnv_c.fnv1a_64(str.encode(text))
+
+            if self._cache is not None and hash in self._cache:
+                sentence_embeddings.append(torch.Tensor(self._cache[hash]))
+            else:
+                sentence_embeddings.append(None)
+                texts_to_encode.append(text)
+                indexes_to_encode.append(idx)
+
+        self._logger.info(f"ℹ️  Need to calculate {len(texts_to_encode)} uncached texts")
+
+        max_checkpoint = int(np.ceil(len(texts_to_encode) / self._cache_checkpoint))
+
+        # Process texts in batches
+        for i in range(max_checkpoint):
+            self._logger.info(
+                f"ℹ️  Create embeddings - checkpoint {i + 1} of {max_checkpoint}..."
+            )
+
+            start_index = i * self._cache_checkpoint
+            end_index = min((i + 1) * self._cache_checkpoint, len(texts_to_encode))
+
+            batch_texts = texts_to_encode[start_index:end_index]
+            batch_indexes = indexes_to_encode[start_index:end_index]
+
+            # Encode the batch of texts
+            batch_embeddings = self._sentence_transformer_model.encode(
+                batch_texts,
+                batch_size=self._batch_size,
+                show_progress_bar=True,
+                convert_to_numpy=False,
+                device=self._torch_device,
+            )
+
+            # Append the batch embeddings to the list
+            for idx, embedding in enumerate(batch_embeddings):
+                sentence_embeddings[batch_indexes[idx]] = embedding.cpu()
+
+                if self._cache is not None:
+                    self._cache[
+                        fnv_c.fnv1a_64(str.encode(batch_texts[idx]))
+                    ] = embedding.tolist()
+
+            self._save_cache()
+
+            if self._torch_device == "mps":
+                torch.mps.empty_cache()
+            elif self._torch_device == "cuda":
+                torch.cuda.empty_cache()
+
+        return sentence_embeddings

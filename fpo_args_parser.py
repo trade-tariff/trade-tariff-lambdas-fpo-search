@@ -41,11 +41,29 @@ class FPOArgsParser:
             default=3,
         )
         parser.add_argument(
+            "--batch-size",
+            type=int,
+            help="the size of the batches to use when training the model. You should increse this if your GPU has tonnes of RAM!",
+            default=1000,
+        )
+        parser.add_argument(
             "--device",
             type=str,
             help="the torch device to use for training. 'auto' will try to select the best device available.",
             choices=["auto", "cpu", "mps", "cuda"],
             default="auto",
+        )
+        parser.add_argument(
+            "--embedding-batch-size",
+            type=int,
+            help="the size of the batches to use when calculating embeddings. You should increse this if your GPU has tonnes of RAM!",
+            default=100,
+        )
+        parser.add_argument(
+            "--embedding-cache-checkpoint",
+            type=int,
+            help="how often to update the cached embeddings.",
+            default=50000,
         )
 
         self.parsed_args = parser.parse_args()
