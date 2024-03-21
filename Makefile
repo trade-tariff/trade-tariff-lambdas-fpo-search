@@ -1,4 +1,4 @@
-.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test
+.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test lint-fix format
 
 VENV = venv
 PYTHON = $(VENV)/bin/python3
@@ -39,14 +39,16 @@ clean:
 	rm -rf dist
 	rm -rf $(VENV)
 
-lint: install-dev
+lint:
 	$(VENV)/bin/ruff .
 
-.PHONY: lint-fix
-lint-fix: install-dev
+lint-fix:
 	$(VENV)/bin/ruff --fix .
 
-check: install-dev
+format:
+	$(VENV)/bin/ruff format .
+
+check:
 	$(VENV)/bin/ruff check .
 
 run-api: install

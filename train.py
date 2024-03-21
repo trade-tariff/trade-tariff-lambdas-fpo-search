@@ -103,12 +103,10 @@ else:
 
     tradesets_data_dir = source_dir / "tradesets_descriptions"
 
-    # data_sources += [
-    #     BasicCSVDataSource(
-    #         filename, search_references=search_references, encoding="latin_1"
-    #     )
-    #     for filename in tradesets_data_dir.glob("*.csv")
-    # ]
+    data_sources += [
+        BasicCSVDataSource(filename, encoding="latin_1")
+        for filename in tradesets_data_dir.glob("*.csv")
+    ]
 
     training_data_loader = TrainingDataLoader()
 
