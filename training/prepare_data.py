@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 import typing
 from data_sources.data_source import DataSource
 
@@ -14,14 +13,8 @@ class TrainingData(typing.NamedTuple):
 class TrainingDataLoader:
     def __init__(
         self,
-        source_dir: Path | None = None,
         logger: logging.Logger = logging.getLogger(),
     ) -> None:
-        if source_dir is None:
-            cwd = Path(__file__).resolve().parent
-            self._source_dir = cwd / "raw_source_data"
-        else:
-            self._source_dir = source_dir
         self._logger = logger
 
     def fetch_data(
