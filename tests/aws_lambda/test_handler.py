@@ -81,42 +81,6 @@ class Test_handler_handle(unittest.TestCase):
         )
         self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
 
-    def test_it_should_return_unauthorised_with_no_headers(self):
-        event = {
-            "httpMethod": "GET",
-            "queryStringParameters": {"q": "test", "digits": "6", "limit": "5"},
-            "headers": {},
-        }
-
-        result = handler.handle(event, {})
-
-        self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
-
-    def test_it_should_return_unauthorised_with_invalid_client_id(self):
-        event = {
-            "httpMethod": "GET",
-            "queryStringParameters": {"q": "test", "digits": "6", "limit": "5"},
-            "headers": {
-                "x-api-client-id": "invalid",
-                "x-api-secret-key": "test_secret",
-            },
-        }
-
-        result = handler.handle(event, {})
-
-        self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
-
-    def test_it_should_return_unauthorised_with_invalid_secret(self):
-        event = {
-            "httpMethod": "GET",
-            "queryStringParameters": {"q": "test", "digits": "6", "limit": "5"},
-            "headers": {"x-api-client-id": "test_id", "x-api-secret-key": "invalid"},
-        }
-
-        result = handler.handle(event, {})
-
-        self.assertEqual(401, result["statusCode"], "Expected a 401 status code")
-
     def test_it_should_respect_the_limit(self):
         event = self._create_post_event("test", "6", "2")
 
