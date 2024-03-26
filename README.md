@@ -63,6 +63,32 @@ options:
                         how often to update the cached embeddings.
 ```
 
+#### Notes on data sources
+
+There are two options on a Data Source to control how the codes and descriptions are processed:
+
+##### `creates_codes` to determine what happens with unknown codes
+
+While the data sources are being processed, the `creates_codes` parameter determines what happens when a new code is encountered.
+
+If a new code (i.e. one that hasn't been seen yet) is encountered from a data source and `creates_codes` is `True` for that source then that new code will be added to the set of commodity codes.
+
+If a new code is encountered in a data source and `creates_codes` is `False` for that source then that entry will be skipped.
+
+##### `authoritative` to allow overriding descriptions
+
+While the data sources are being processed, the `authoritative` parameter determines whether a source contains 'definitive' codes for a certain description.
+
+A code for a certain description within an 'authoritative' data source will always override the code for that same description from a non-authoritative source.
+
+For example:
+
+If an authoritative source maps `"widgets"` = `123456`
+
+but then a non-authoritative source also has an entry of `"widgets"` = `098765`, then the non-authoritative entry will be overridden with the authoritative one, so the training data will end up with two entries with the same mapping of:
+
+`"widgets"` = `123456` and `"widgets"` = `123456`
+
 ### Benchmarking the model
 
 Once you have trained the model, you can benchmark its performance against some
