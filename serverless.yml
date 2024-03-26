@@ -28,6 +28,11 @@ provider:
   tags:
     customer: "fpo"
 
+  usagePlan:
+    - apiStages:
+        - api: ${self:service}-${env:STAGE}
+          stage: ${env:STAGE}
+
 functions:
   fpo_search:
     provisionedConcurrency: 3
