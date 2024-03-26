@@ -12,7 +12,7 @@ class ModelTrainer:
 
 
 class FlatClassifierModelTrainerParameters:
-    def __init__(self, learning_rate: float = 0.001, max_epochs: int = 4) -> None: #edit max_epochs here
+    def __init__(self, learning_rate: float = 0.001, max_epochs: int = 3) -> None: #edit max_epochs here
         self.learning_rate = learning_rate
         self.max_epochs = max_epochs
 
@@ -38,7 +38,7 @@ class FlatClassifierModelTrainer(ModelTrainer):
         model = SimpleNN(input_size, hidden_size, output_size).to(self._device)
 
         # Create data loaders.
-        batch_size = 1000  # Adjust as needed
+        batch_size = 1024  # Adjust as needed
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
