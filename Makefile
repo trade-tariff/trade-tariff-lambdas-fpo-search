@@ -58,11 +58,10 @@ test:
 	${PYTHON} -m unittest -v -b
 
 deploy-development:
-	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
+	PRIVATE_ENABLED=false STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
 
 deploy-staging:
-	STAGE=staging serverless deploy --verbose --param="custom_domain=search.sandbox.trade-tariff.service.gov.uk" --param="certificate_domain=sandbox.trade-tariff.service.gov.uk"
+	PRIVATE_ENABLED=false STAGE=staging serverless deploy --verbose --param="custom_domain=search.sandbox.trade-tariff.service.gov.uk" --param="certificate_domain=sandbox.trade-tariff.service.gov.uk"
 
 deploy-production:
-	@echo "Current DOCKER_TAG: $$DOCKER_TAG"
-	STAGE=production DOCKER_TAG=$$DOCKER_TAG serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
+	PRIVATE_ENABLED=true STAGE=production DOCKER_TAG=$$DOCKER_TAG serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
