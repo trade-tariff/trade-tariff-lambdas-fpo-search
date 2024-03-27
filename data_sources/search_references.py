@@ -4,7 +4,7 @@ import requests
 from data_sources.data_source import DataSource
 
 
-class SearchReferences(DataSource):
+class SearchReferencesDataSource(DataSource):
     SEARCH_REFS_API_URL = (
         "https://staging.trade-tariff.service.gov.uk/api/v2/search_references"
     )

@@ -2,7 +2,7 @@ import unittest
 import logging
 from unittest import mock
 
-from data_sources.search_references import SearchReferences
+from data_sources.search_references import SearchReferencesDataSource
 
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
@@ -10,7 +10,9 @@ logger.setLevel(logging.DEBUG)
 
 
 class Test_search_references(unittest.TestCase):
-    data_source = SearchReferences(url="http://localhost/test_search_references.json")
+    data_source = SearchReferencesDataSource(
+        url="http://localhost/test_search_references.json"
+    )
 
     response = {
         "data": [

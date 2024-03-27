@@ -127,3 +127,45 @@ class Test_TrainingDataLoader_fetch_data(unittest.TestCase):
         self.assertEqual(subheadings, ["11111111"])
         self.assertEqual(texts, [0])
         self.assertEqual(labels, [0])
+
+    def test_that_multiplier_works(self):
+        data_source = StaticDataSource(
+            [
+                ("Description 1", "1111111111"),
+            ],
+            creates_codes=True,
+            authoritative=False,
+            multiplier=2,
+        )
+
+        (unique_texts, subheadings, texts, labels) = training_data_loader.fetch_data(
+            [data_source], digits=8
+        )
+
+        self.assertEqual(unique_texts, ["description 1"])
+        self.assertEqual(subheadings, ["11111111"])
+        self.assertEqual(texts, [0, 0])
+        self.assertEqual(labels, [0, 0])
+
+    def test_that_multiplier_works_for_overridden_codes(self):
+        authoritative_data_source = StaticDataSource(
+            [("Description 1", "1234567890")],
+            creates_codes=True,
+            authoritative=True,
+        )
+
+        non_authoritative_data_source = StaticDataSource(
+            [("Description 2", "2222222222"), ("Description 1", "3333333333")],
+            creates_codes=True,
+            authoritative=False,
+            multiplier=2,
+        )
+
+        (unique_texts, subheadings, texts, labels) = training_data_loader.fetch_data(
+            [authoritative_data_source, non_authoritative_data_source], digits=8
+        )
+
+        self.assertEqual(unique_texts, ["description 1", "description 2"])
+        self.assertEqual(subheadings, ["12345678", "22222222", "33333333"])
+        self.assertEqual(texts, [0, 1, 1, 0, 0])
+        self.assertEqual(labels, [0, 1, 1, 0, 0])

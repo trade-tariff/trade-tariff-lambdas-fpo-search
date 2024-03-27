@@ -5,7 +5,7 @@ from pathlib import Path
 import pickle
 
 import torch
-from data_sources.search_references import SearchReferences
+from data_sources.search_references import SearchReferencesDataSource
 from data_sources.data_source import DataSource
 from data_sources.basic_csv import BasicCSVDataSource
 from training.create_embeddings import EmbeddingsProcessor
@@ -44,8 +44,6 @@ data_dir.mkdir(parents=True, exist_ok=True)
 # First load in the training data
 print("💾⇨ Loading training data")
 
-search_references = SearchReferences()
-
 text_values_file = data_dir / "text_values.pkl"
 texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
@@ -79,11 +77,10 @@ else:
 
     # Vague terms data source
     vague_terms_data_file = reference_data_dir / "vague_terms.csv"
-
     data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
 
     # Search references data source
-    data_sources.append(search_references)
+    data_sources.append(SearchReferencesDataSource())
 
     # Combined Nomenclature self-explanatory data source
     cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"
