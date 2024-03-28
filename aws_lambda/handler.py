@@ -21,7 +21,12 @@ class LambdaHandler:
         self._api_keys = api_keys
         self._logger = logger
 
-    def handle(self, event, _context):
+    def handle(self, event, context):
+        self._logger.info("Received event:")
+        self._logger.info(event)
+        self._logger.info("The context is:")
+        self._logger.info(context)
+
         path = event.get("path", "")
 
         description = ""
