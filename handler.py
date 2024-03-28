@@ -2,7 +2,6 @@ from pathlib import Path
 import pickle
 import time
 import os
-import json
 
 from aws_lambda.handler import LambdaHandler
 from aws_lambda_powertools import Logger
@@ -32,10 +31,7 @@ logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )
 
-fpo_client_keys = json.loads(os.environ.get("FPO_CLIENT_KEYS", "{}"))
-logger.info("🚀⇨ Loaded client keys", extra={"client_keys": fpo_client_keys.keys()})
-
-lambda_handler = LambdaHandler(classifier, fpo_client_keys, logger=logger)
+lambda_handler = LambdaHandler(classifier, logger=logger)
 
 
 @logger.inject_lambda_context
