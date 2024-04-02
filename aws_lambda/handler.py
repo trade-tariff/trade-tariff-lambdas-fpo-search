@@ -106,21 +106,9 @@ class LambdaHandler:
         headers = event.get("headers", {})
         headers = {k.lower(): v for k, v in headers.items()}
         client_id = headers.get("x-api-client-id")
-        api_key = headers.get("x-api-secret-key")
 
         if client_id is None:
             self._logger.info("No client id specified")
             return None
 
-        if client_id not in self._api_keys:
-            self._logger.info("Invalid client id '%s' specified", client_id)
-            return None
-
-        expected_key = self._api_keys.get(client_id, "")
-
-        if api_key == expected_key:
-            self._logger.debug("Authenticated client '%s'", client_id)
-            return client_id
-
-        self._logger.info("Invalid secret key for client id '%s' specified", client_id)
-        return None
+        return client_id
