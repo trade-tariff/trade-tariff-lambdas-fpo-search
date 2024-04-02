@@ -1,4 +1,3 @@
-import bz2
 import logging
 import os
 from pathlib import Path
@@ -25,7 +24,7 @@ class EmbeddingsProcessor:
         if cache_path is None:
             self._cache_file = None
         else:
-            self._cache_file = cache_path / f"embeddings-cache-{transformer_model}.pbz2"
+            self._cache_file = cache_path / f"embeddings-cache-{transformer_model}.pkl"
         self._cache = None
         self._torch_device = torch_device
         self._batch_size = batch_size
@@ -39,7 +38,7 @@ class EmbeddingsProcessor:
         if self._cache_file is not None:
             if os.path.isfile(self._cache_file):
                 print("💾⇨ Loading embedding cache")
-                with bz2.BZ2File(self._cache_file, "rb") as fp:
+                with open(str(self._cache_file), "rb") as fp:
                     self._cache = pickle.load(fp)
             else:
                 self._logger.info("ℹ️  Creating new embedding cache")
@@ -53,8 +52,8 @@ class EmbeddingsProcessor:
             # Write to a temp file first so that we don't corrupt an existing file
 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                with bz2.BZ2File(temp_file, "wb") as file:
-                    pickle.dump(self._cache, file)
+                # with open(temp_file, "wb") as file:
+                pickle.dump(self._cache, temp_file)
 
                 temp_file_path = temp_file.name
 
