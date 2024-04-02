@@ -2,7 +2,7 @@ import argparse
 import torch
 
 
-class FPOArgsParser:
+class TrainScriptArgsParser:
     def __init__(self):
         parser = argparse.ArgumentParser(
             description="Train an FPO classification model."
@@ -18,13 +18,6 @@ class FPOArgsParser:
             type=int,
             help="limit the training data to this many entries to speed up development testing",
             required=False,
-        )
-        parser.add_argument(
-            "--force",
-            help="force the regeneration of source data and embeddings",
-            required=False,
-            default=False,
-            action="store_true",
         )
         parser.add_argument(
             "--learning-rate",
@@ -43,7 +36,7 @@ class FPOArgsParser:
         parser.add_argument(
             "--batch-size",
             type=int,
-            help="the size of the batches to use when training the model. You should increse this if your GPU has tonnes of RAM!",
+            help="the size of the batches to use when training the model. You should increase this if your GPU has tonnes of RAM!",
             default=1000,
         )
         parser.add_argument(
@@ -56,7 +49,7 @@ class FPOArgsParser:
         parser.add_argument(
             "--embedding-batch-size",
             type=int,
-            help="the size of the batches to use when calculating embeddings. You should increse this if your GPU has tonnes of RAM!",
+            help="the size of the batches to use when calculating embeddings. You should increase this if your GPU has tonnes of RAM!",
             default=100,
         )
         parser.add_argument(

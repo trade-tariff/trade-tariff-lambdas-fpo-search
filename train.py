@@ -1,5 +1,5 @@
 from data_sources.vague_terms import VagueTermsCSVDataSource
-from fpo_args_parser import FPOArgsParser
+from train_args import TrainScriptArgsParser
 import logging
 from pathlib import Path
 import pickle
@@ -15,10 +15,9 @@ from training.train_model import (
     FlatClassifierModelTrainerParameters,
 )
 
-args = FPOArgsParser().parsed_args
+args = TrainScriptArgsParser().parsed_args
 
 limit = args.limit
-force = args.force
 batch_size = args.batch_size
 embeddings_batch_size = args.embedding_batch_size
 embedding_cache_checkpoint = args.embedding_cache_checkpoint
@@ -30,7 +29,7 @@ training_parameters = FlatClassifierModelTrainerParameters(
     args.learning_rate, args.max_epochs
 )
 
-device = FPOArgsParser().torch_device()
+device = TrainScriptArgsParser().torch_device()
 print(f"⚙️  Using device {device}")
 
 cwd = Path(__file__).resolve().parent
@@ -49,83 +48,63 @@ texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
 subheadings_file = target_dir / "subheadings.pkl"
 
-if (
-    not force
-    and texts_file.exists()
-    and labels_file.exists()
-    and subheadings_file.exists()
-):
-    print("💾⇨ Text values pickle file found. Loading...")
-    with open(text_values_file, "rb") as fp:
-        text_values = pickle.load(fp)
+data_sources: list[DataSource] = []
 
-    print("💾⇨ Texts pickle file found. Loading...")
-    with open(texts_file, "rb") as fp:
-        texts = pickle.load(fp)
+reference_data_dir = cwd / "reference_data"
 
-    print("💾⇨ Labels pickle file found. Loading...")
-    with open(labels_file, "rb") as fp:
-        labels = pickle.load(fp)
+# Vague terms data source
+vague_terms_data_file = reference_data_dir / "vague_terms.csv"
+data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
 
-    print("💾⇨ Subheadings pickle file found. Loading...")
-    with open(subheadings_file, "rb") as fp:
-        subheadings = pickle.load(fp)
-else:
-    data_sources: list[DataSource] = []
+# Extra data source
+extra_data_file = reference_data_dir / "extra_references.csv"
 
-    reference_data_dir = cwd / "reference_data"
-
-    # Vague terms data source
-    vague_terms_data_file = reference_data_dir / "vague_terms.csv"
-    data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
-
-    # Search references data source
-    data_sources.append(SearchReferencesDataSource())
-
-    # Combined Nomenclature self-explanatory data source
-    cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"
-
-    data_sources.append(
-        BasicCSVDataSource(
-            cn_data_file,
-            code_col=1,
-            description_col=3,
-            authoritative=True,
-            creates_codes=True,
-        )
+data_sources.append(
+    BasicCSVDataSource(
+        extra_data_file,
+        code_col=1,
+        description_col=0,
+        authoritative=True,
+        creates_codes=False,
     )
+)
 
-    # Append all the Tradesets data sources
-    source_dir = cwd / "raw_source_data"
+# Search references data source
+data_sources.append(SearchReferencesDataSource())
 
-    tradesets_data_dir = source_dir / "tradesets_descriptions"
 
-    data_sources += [
-        BasicCSVDataSource(filename, encoding="latin_1")
-        for filename in tradesets_data_dir.glob("*.csv")
-    ]
+# Combined Nomenclature self-explanatory data source
+cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"
 
-    training_data_loader = TrainingDataLoader()
-
-    (text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
-        data_sources, 8
+data_sources.append(
+    BasicCSVDataSource(
+        cn_data_file,
+        code_col=1,
+        description_col=3,
+        authoritative=True,
+        creates_codes=True,
     )
+)
 
-    print("💾⇦ Saving text values")
-    with open(text_values_file, "wb") as fp:
-        pickle.dump(text_values, fp)
+# Append all the Tradesets data sources
+source_dir = cwd / "raw_source_data"
 
-    print("💾⇦ Saving subheadings")
-    with open(subheadings_file, "wb") as fp:
-        pickle.dump(subheadings, fp)
+tradesets_data_dir = source_dir / "tradesets_descriptions"
 
-    print("💾⇦ Saving text indexes")
-    with open(texts_file, "wb") as fp:
-        pickle.dump(texts, fp)
+data_sources += [
+    BasicCSVDataSource(filename, encoding="latin_1")
+    for filename in tradesets_data_dir.glob("*.csv")
+]
 
-    print("💾⇦ Saving label indexes")
-    with open(labels_file, "wb") as fp:
-        pickle.dump(labels, fp)
+training_data_loader = TrainingDataLoader()
+
+(text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
+    data_sources, 8
+)
+
+print("💾⇦ Saving subheadings")
+with open(subheadings_file, "wb") as fp:
+    pickle.dump(subheadings, fp)
 
 # Impose the limit if required - this will limit the number of unique descriptions
 if limit is not None:
