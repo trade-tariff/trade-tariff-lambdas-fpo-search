@@ -56,7 +56,7 @@ reference_data_dir = cwd / "reference_data"
 vague_terms_data_file = reference_data_dir / "vague_terms.csv"
 data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
 
-# Extra data source
+# Extra references data source
 extra_data_file = reference_data_dir / "extra_references.csv"
 
 data_sources.append(
@@ -71,7 +71,6 @@ data_sources.append(
 
 # Search references data source
 data_sources.append(SearchReferencesDataSource())
-
 
 # Combined Nomenclature self-explanatory data source
 cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"

@@ -52,7 +52,6 @@ class EmbeddingsProcessor:
             # Write to a temp file first so that we don't corrupt an existing file
 
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                # with open(temp_file, "wb") as file:
                 pickle.dump(self._cache, temp_file)
 
                 temp_file_path = temp_file.name

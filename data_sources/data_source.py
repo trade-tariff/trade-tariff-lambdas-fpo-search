@@ -6,7 +6,7 @@ class DataSource:
         self,
         description: str,
         authoritative: bool = False,
-        creates_codes=False,
+        creates_codes: bool = False,
         multiplier: int = 1,
     ) -> None:
         self.description = description
