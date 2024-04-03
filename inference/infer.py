@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 import torch
+import math
 
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
 vague_term_code = "vvvvvvvvvv"
@@ -33,6 +34,12 @@ class Classifier:
         self, search_text: str, limit: int = 5, digits: int = 6
     ) -> list[ClassificationResult]:
         raise NotImplementedError()
+
+
+def softmax(inputs):
+    temp = [math.exp(v) for v in inputs]
+    total = sum(temp)
+    return [t / total for t in temp]
 
 
 class FlatClassifier(Classifier):
@@ -91,7 +98,7 @@ class FlatClassifier(Classifier):
         )
 
         # Run it through the model to get the predictions
-        predictions = torch.nn.functional.softmax(self._model(new_embeddings), dim=1)
+        predictions = self._model(new_embeddings)
 
         predictions_to_digits = {}
 
@@ -104,9 +111,15 @@ class FlatClassifier(Classifier):
             else:
                 predictions_to_digits[code] = score
 
-        top_results = sorted(
+        top_ten = sorted(
             predictions_to_digits.items(), key=lambda x: x[1], reverse=True
-        )[:limit]
+        )[:10]
+
+        top_ten_list = list(zip(*top_ten))
+
+        adjusted_scores = softmax(top_ten_list[1])
+
+        top_results = list(zip(top_ten_list[0], adjusted_scores))[:limit]
 
         result = []
 
