@@ -183,7 +183,7 @@ workflows:
       - smoketest:
           name: smoketest-staging
           context: trade-tariff-lambda-deployments-staging
-          endpoint: https://search.sandbox.trade-tariff.service.gov.uk
+          endpoint: https://search.staging.trade-tariff.service.gov.uk
           requires:
             - deploy-staging
           <<: *filter-main
