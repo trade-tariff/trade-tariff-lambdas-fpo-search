@@ -1,12 +1,28 @@
+import re
 import requests
 
+from data_sources.data_source import DataSource
 
-class SearchReferences:
+
+class SearchReferencesDataSource(DataSource):
     SEARCH_REFS_API_URL = (
         "https://staging.trade-tariff.service.gov.uk/api/v2/search_references"
     )
 
-    def __init__(self, url=SEARCH_REFS_API_URL):
+    def __init__(
+        self,
+        url=SEARCH_REFS_API_URL,
+        authoritative: bool = True,
+        creates_codes: bool = False,
+        multiplier: int = 1,
+    ):
+        super().__init__(
+            description=f"Search references data source from {str(url)}",
+            authoritative=authoritative,
+            creates_codes=creates_codes,
+            multiplier=multiplier,
+        )
+
         self.url = url
         self._commodities = None
 
@@ -38,6 +54,25 @@ class SearchReferences:
 
         self._commodities = commodities
         return commodities
+
+    def get_codes(self, digits: int) -> dict[str, list[str]]:
+        commodities = self.commodities()
+
+        documents = {}
+
+        for description, code in commodities.items():
+            subheading = code.strip()[:digits]
+
+            # Throw out any bad codes
+            if not re.search("^\\d{" + str(digits) + "}$", subheading):
+                continue
+
+            if subheading in documents:
+                documents[subheading].add(description)
+            else:
+                documents[subheading] = {description}
+
+        return documents
 
     def _get(self):
         response = requests.get(self.url)

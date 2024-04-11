@@ -171,3 +171,5 @@ cython_debug/
 .serverless
 lambda/
 benchmarking_data
+*.pkl
+*.pt

@@ -1,24 +1,26 @@
-from fpo_args_parser import FPOArgsParser
+from data_sources.vague_terms import VagueTermsCSVDataSource
+from train_args import TrainScriptArgsParser
 import logging
 from pathlib import Path
 import pickle
 
 import torch
-from data_sources.search_references import SearchReferences
+from data_sources.search_references import SearchReferencesDataSource
 from data_sources.data_source import DataSource
-from data_sources.trade_tariff import TradeTariffDataSource
 from data_sources.basic_csv import BasicCSVDataSource
-from training.create_embeddings import create_embeddings
+from training.create_embeddings import EmbeddingsProcessor
 from training.prepare_data import TrainingDataLoader
 from training.train_model import (
     FlatClassifierModelTrainer,
     FlatClassifierModelTrainerParameters,
 )
 
-args = FPOArgsParser().parsed_args
+args = TrainScriptArgsParser().parsed_args
 
 limit = args.limit
-force = args.force
+batch_size = args.batch_size
+embeddings_batch_size = args.embedding_batch_size
+embedding_cache_checkpoint = args.embedding_cache_checkpoint
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -27,7 +29,7 @@ training_parameters = FlatClassifierModelTrainerParameters(
     args.learning_rate, args.max_epochs
 )
 
-device = FPOArgsParser().torch_device()
+device = TrainScriptArgsParser().torch_device()
 print(f"⚙️  Using device {device}")
 
 cwd = Path(__file__).resolve().parent
@@ -41,92 +43,104 @@ data_dir.mkdir(parents=True, exist_ok=True)
 # First load in the training data
 print("💾⇨ Loading training data")
 
-search_references = SearchReferences()
-
+text_values_file = data_dir / "text_values.pkl"
 texts_file = data_dir / "texts.pkl"
 labels_file = data_dir / "labels.pkl"
 subheadings_file = target_dir / "subheadings.pkl"
 
-if (
-    not force
-    and texts_file.exists()
-    and labels_file.exists()
-    and subheadings_file.exists()
-):
-    print("💾⇨ Texts pickle file found. Loading...")
-    with open(texts_file, "rb") as fp:
-        texts = pickle.load(fp)
+data_sources: list[DataSource] = []
 
-    print("💾⇨ Labels pickle file found. Loading...")
-    with open(labels_file, "rb") as fp:
-        labels = pickle.load(fp)
+reference_data_dir = cwd / "reference_data"
 
-    print("💾⇨ Subheadings pickle file found. Loading...")
-    with open(subheadings_file, "rb") as fp:
-        subheadings = pickle.load(fp)
-else:
-    data_sources: list[DataSource] = []
+# Vague terms data source
+vague_terms_data_file = reference_data_dir / "vague_terms.csv"
+data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
 
-    source_dir = cwd / "raw_source_data"
+# Extra references data source
+extra_data_file = reference_data_dir / "extra_references.csv"
 
-    # Trade tariff descriptions data source
-    trade_tariff_data_file = source_dir / "commodities.csv"
+data_sources.append(
+    BasicCSVDataSource(
+        extra_data_file,
+        code_col=1,
+        description_col=0,
+        authoritative=True,
+        creates_codes=False,
+    )
+)
 
-    data_sources.append(TradeTariffDataSource(trade_tariff_data_file))
+# Search references data source
+data_sources.append(SearchReferencesDataSource())
 
-    # Append all the Tradesets data sources
-    tradesets_data_dir = source_dir / "tradesets_descriptions"
+# Combined Nomenclature self-explanatory data source
+cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"
 
-    data_sources += [
-        BasicCSVDataSource(
-            filename, search_references=search_references, encoding="latin_1"
-        )
-        for filename in tradesets_data_dir.glob("*.csv")
-    ]
+data_sources.append(
+    BasicCSVDataSource(
+        cn_data_file,
+        code_col=1,
+        description_col=3,
+        authoritative=True,
+        creates_codes=True,
+    )
+)
 
-    training_data_loader = TrainingDataLoader()
+# Append all the Tradesets data sources
+source_dir = cwd / "raw_source_data"
 
-    (texts, labels, subheadings) = training_data_loader.fetch_data(data_sources, 8)
+tradesets_data_dir = source_dir / "tradesets_descriptions"
 
-    if limit is not None:
-        texts = texts[:limit]
-        labels = labels[:limit]
+data_sources += [
+    BasicCSVDataSource(filename, encoding="latin_1")
+    for filename in tradesets_data_dir.glob("*.csv")
+]
 
-    print("💾⇦ Saving texts")
-    with open(texts_file, "wb") as fp:
-        pickle.dump(texts, fp)
+training_data_loader = TrainingDataLoader()
 
-    print("💾⇦ Saving labels")
-    with open(labels_file, "wb") as fp:
-        pickle.dump(labels, fp)
+(text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
+    data_sources, 8
+)
 
-    print("💾⇦ Saving subheadings")
-    with open(subheadings_file, "wb") as fp:
-        pickle.dump(subheadings, fp)
+print("💾⇦ Saving subheadings")
+with open(subheadings_file, "wb") as fp:
+    pickle.dump(subheadings, fp)
 
+# Impose the limit if required - this will limit the number of unique descriptions
+if limit is not None:
+    text_values = text_values[:limit]
+
+    new_texts: list[int] = []
+    new_labels: list[int] = []
+
+    for i, t in enumerate(texts):
+        if t < len(text_values):
+            new_texts.append(t)
+            new_labels.append(labels[i])
+
+    texts = new_texts
+    labels = new_labels
 
 # Next create the embeddings
 print("Creating the embeddings")
 
-embeddings_file = data_dir / "embeddings.pkl"
+embeddings_processor = EmbeddingsProcessor(
+    data_dir,
+    torch_device=device,
+    batch_size=embeddings_batch_size,
+    cache_checkpoint=embedding_cache_checkpoint,
+)
 
-if not force and embeddings_file.exists():
-    print("💾⇨ Embeddings pickle file found. Loading...")
-    with open(embeddings_file, "rb") as fp:
-        embeddings = pickle.load(fp)
-else:
-    embeddings = create_embeddings(texts, device)
-
-    print("💾⇦ Saving embeddings")
-    with open(embeddings_file, "wb") as fp:
-        pickle.dump(embeddings, fp)
-
+unique_embeddings = embeddings_processor.create_embeddings(text_values)
 
 # Now build and train the network
-trainer = FlatClassifierModelTrainer(training_parameters, device)
+trainer = FlatClassifierModelTrainer(
+    training_parameters, device=device, batch_size=batch_size
+)
 
 # Convert the labels to a Tensor
 labels = torch.tensor(labels, dtype=torch.long)
+
+embeddings = torch.stack([unique_embeddings[idx] for idx in texts])
 
 model = trainer.run(embeddings, labels, len(subheadings))
 

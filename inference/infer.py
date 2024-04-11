@@ -6,6 +6,17 @@ from sentence_transformers import SentenceTransformer
 import torch
 
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
+vague_term_code = "vvvvvvvvvv"
+
+transformer = os.environ.get(
+    "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-MiniLM-L6-v2"
+)
+transformer_cache_directory = os.environ.get(
+    "SENTENCE_TRANSFORMERS_HOME", "/tmp/sentence_transformers/"
+)
+sentence_transformer_model_directory = (
+    transformer_cache_directory + "sentence-transformers_" + transformer
+)
 
 
 class ClassificationResult:
@@ -29,20 +40,11 @@ class FlatClassifier(Classifier):
         self,
         model_file: Path,
         subheadings: list[str],
-        device: torch.device,
+        device: str,
         logger: Logger = logging.getLogger(),
     ) -> None:
         super().__init__()
 
-        transformer = os.environ.get(
-            "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-MiniLM-L6-v2"
-        )
-        transformer_cache_directory = os.environ.get(
-            "SENTENCE_TRANSFORMERS_HOME", "/tmp/sentence_transformers/"
-        )
-        sentence_transformer_model_directory = (
-            transformer_cache_directory + "sentence-transformers_" + transformer
-        )
         logger.info(
             f"💾⇨ Sentence Transformer cache directory: {sentence_transformer_model_directory}"
         )
@@ -55,7 +57,7 @@ class FlatClassifier(Classifier):
         logger.info(f"💾⇨ Loading model file: {model_file}")
 
         # Make sure the model is on the correct device
-        self._model = torch.load(model_file)
+        self._model = torch.load(model_file).to(device)
         logger.info("🧠⚡ Model loaded")
 
         # Use predownloaded transformer if available
@@ -111,6 +113,10 @@ class FlatClassifier(Classifier):
         for i in top_results:
             # If the score is less than the cutoff then stop iterating through
             if i[1] < score_cutoff:
+                break
+
+            # If we've hit the vague terms code then we'll stop iterating through
+            if i[0] == vague_term_code[:digits]:
                 break
 
             result.append(ClassificationResult(i[0], i[1]))
