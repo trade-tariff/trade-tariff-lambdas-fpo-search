@@ -31,9 +31,9 @@ if [[ "$STATUS_CODE" -ne 200 ]] ; then
 fi
 
 # Ensure it responds with a 401 if credentials are missing
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-search?q=grilled+cheese&digits=6")
+# STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${ENDPOINT}/fpo-code-search?q=grilled+cheese&digits=6")
 
-if [[ "$STATUS_CODE" -ne 401 ]] ; then
-  echo "ERROR: Status code of $STATUS_CODE" >&2
-  exit 1
-fi
+# if [[ "$STATUS_CODE" -ne 401 ]] ; then
+#   echo "ERROR: Status code of $STATUS_CODE" >&2
+#   exit 1
+# fi

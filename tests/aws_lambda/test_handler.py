@@ -24,7 +24,7 @@ class MockClassifier(Classifier):
 
 classifier = MockClassifier()
 
-handler = LambdaHandler(classifier, test_fpo_client_keys)
+handler = LambdaHandler(classifier)
 
 
 class Test_handler_handle(unittest.TestCase):
@@ -135,8 +135,7 @@ class Test_handler_handle(unittest.TestCase):
                 "limit": limit,
             },
             "headers": {
-                "x-api-client-id": "test_id",
-                "x-api-secret-key": "test_secret",
+                "x-api-key": "test_secret",
             },
         }
 
@@ -147,8 +146,7 @@ class Test_handler_handle(unittest.TestCase):
                 "q": description,
             },
             "headers": {
-                "x-api-client-id": "test_id",
-                "x-api-secret-key": "test_secret",
+                "x-api-key": "test_secret",
             },
         }
 
@@ -159,8 +157,7 @@ class Test_handler_handle(unittest.TestCase):
                 {"description": description, "digits": digits, "limit": limit}
             ),
             "headers": {
-                "x-api-client-id": "test_id",
-                "x-api-secret-key": "test_secret",
+                "x-api-key": "test_secret",
             },
         }
 
@@ -173,8 +170,7 @@ class Test_handler_handle(unittest.TestCase):
                 {"description": description, "digits": digits, "limit": limit}
             ),
             "headers": {
-                "x-api-client-id": "test_id",
-                "x-api-secret-key": "test_secret",
+                "x-api-key": "test_secret",
             },
         }
 
@@ -183,8 +179,7 @@ class Test_handler_handle(unittest.TestCase):
             "httpMethod": "POST",
             "body": json.dumps({"description": description}),
             "headers": {
-                "x-api-client-id": "test_id",
-                "x-api-secret-key": "test_secret",
+                "x-api-key": "test_secret",
             },
         }
 

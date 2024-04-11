@@ -14,11 +14,9 @@ class LambdaHandler:
     def __init__(
         self,
         classifier: Classifier,
-        api_keys: dict[str, str],
         logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger(),
     ) -> None:
         self._classifier = classifier
-        self._api_keys = api_keys
         self._logger = logger
 
     def handle(self, event, _context):
@@ -27,19 +25,14 @@ class LambdaHandler:
         description = ""
         statusCode = 200
         body = {}
+        api_key_id = (
+            event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
+        )
 
         if path == "/healthcheck":
             body = {"git_sha1": REVISION, "healthy": True}
 
             return {"statusCode": statusCode, "body": json.dumps(body)}
-
-        client_id = self._authenticate(event)
-
-        if client_id is None:
-            return {
-                "statusCode": 401,
-                "body": json.dumps({"message": "Unauthorized"}),
-            }
 
         if event.get("httpMethod", "GET") == "POST":
             try:
@@ -90,7 +83,7 @@ class LambdaHandler:
                 "Results generated in %.2fms",
                 lapsed,
                 extra={
-                    "client_id": client_id,
+                    "api_key_id": api_key_id,
                     "request_description": description,
                     "request_digits": int(digits),
                     "request_limit": int(limit),
@@ -101,14 +94,3 @@ class LambdaHandler:
             )
 
         return {"statusCode": statusCode, "body": json.dumps(body)}
-
-    def _authenticate(self, event) -> str | None:
-        headers = event.get("headers", {})
-        headers = {k.lower(): v for k, v in headers.items()}
-        client_id = headers.get("x-api-client-id")
-
-        if client_id is None:
-            self._logger.info("No client id specified")
-            return None
-
-        return client_id
