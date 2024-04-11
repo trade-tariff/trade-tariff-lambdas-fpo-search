@@ -12,7 +12,8 @@ dependencies = [
     "tqdm",
     "aws-lambda-powertools",
     "jmespath",
-    "prettytable"
+    "prettytable",
+    "fnv-c"
 ]
 
 [project.optional-dependencies]
