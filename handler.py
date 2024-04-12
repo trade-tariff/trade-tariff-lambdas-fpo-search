@@ -34,5 +34,5 @@ lambda_handler = LambdaHandler(classifier, logger=logger)
 
 
 @logger.inject_lambda_context
-def handle(event, _context):
-    return lambda_handler.handle(event, _context)
+def handle(event, context):
+    return lambda_handler.handle(event, context)
