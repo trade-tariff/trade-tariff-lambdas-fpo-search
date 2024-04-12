@@ -70,4 +70,4 @@ deploy-staging:
 	STAGE=staging serverless deploy --verbose --param="custom_domain=search.staging.trade-tariff.service.gov.uk" --param="certificate_domain=staging.trade-tariff.service.gov.uk"
 
 deploy-production:
-	STAGE=production DOCKER_TAG=$$DOCKER_TAG serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
+	STAGE=production serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
