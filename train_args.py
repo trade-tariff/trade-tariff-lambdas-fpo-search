@@ -42,9 +42,9 @@ class TrainScriptArgsParser:
         parser.add_argument(
             "--device",
             type=str,
-            help="the torch device to use for training. 'auto' will try to select the best device available.",
-            choices=["auto", "cpu", "mps", "cuda"],
-            default="auto",
+            help="the torch device to use for training. if your hardware does not support the device, it will fall back to cpu.",
+            choices=["cpu", "mps", "cuda"],
+            default="cpu",
         )
         parser.add_argument(
             "--embedding-batch-size",
@@ -64,14 +64,10 @@ class TrainScriptArgsParser:
     def torch_device(self):
         arg_device = self.parsed_args.device
 
-        if arg_device != "auto":
-            return arg_device
+        if arg_device == "cuda" and not torch.cuda.is_available():
+            return "cpu"
 
-        # When "auto" select the best device available
-        if torch.cuda.is_available():
-            return "cuda"
+        if arg_device == "mps" and not torch.backends.mps.is_available():
+            return "cpu"
 
-        if torch.backends.mps.is_available():
-            return "mps"
-
-        return "cpu"
+        return arg_device

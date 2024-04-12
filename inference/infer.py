@@ -50,14 +50,14 @@ class FlatClassifier(Classifier):
         )
 
         self._subheadings = subheadings
-        self._device = device
+        self._device = torch.device("cpu")
         self._logger = logger
 
         # Load the model from disk
         logger.info(f"💾⇨ Loading model file: {model_file}")
 
         # Make sure the model is on the correct device
-        self._model = torch.load(model_file).to(device)
+        self._model = torch.load(model_file, map_location=self._device)
         logger.info("🧠⚡ Model loaded")
 
         # Use predownloaded transformer if available

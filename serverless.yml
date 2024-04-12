@@ -20,9 +20,6 @@ provider:
       fpo-search:
         uri: "${ssm:/${sls:stage}/FPO_SEARCH_ECR_URL}:${env:DOCKER_TAG}"
 
-  environment:
-    FPO_CLIENT_KEYS: ${env:FPO_CLIENT_KEYS}
-
   stackTags:
     customer: "fpo"
   tags:
@@ -42,11 +39,11 @@ functions:
       - http:
           path: /fpo-code-search
           method: get
-          private: ${env:PRIVATE_ENABLED}
+          private: true
       - http:
           path: /fpo-code-search
           method: post
-          private: ${env:PRIVATE_ENABLED}
+          private: true
       - http:
           path: /healthcheck
           method: get

@@ -1,5 +1,6 @@
 .PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test lint-fix format
 
+IMAGE_NAME := trade-tariff-lambdas-fpo-search
 VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
@@ -58,16 +59,36 @@ freeze: $(VENV)/bin/activate
 	$(PIP) freeze --exclude hmrc_fpo_categorisation_api > requirements.txt
 
 build:
-	docker build -t 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production:latest .
+	docker build -t $(IMAGE_NAME) .
+
+run: build
+	docker run -p 9000:8080 \
+		--rm \
+		--name $(IMAGE_NAME) \
+		$(IMAGE_NAME) \
+
+test-local:
+	curl http://localhost:9000/2015-03-31/functions/function/invocations \
+		--header 'Content-Type: application/json' \
+		--data '{"httpMethod": "GET", "queryStringParameters": {"q": "haddock"}}'
+
+shell:
+	docker run \
+		--rm \
+		--name $(IMAGE_NAME)-shell \
+		--no-healthcheck \
+		--entrypoint '' \
+		-it $(IMAGE_NAME) \
+		/usr/bin/bash
 
 test:
 	${PYTHON} -m unittest -v -b
 
 deploy-development:
-	PRIVATE_ENABLED=false STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
+	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
 
 deploy-staging:
-	PRIVATE_ENABLED=false STAGE=staging serverless deploy --verbose --param="custom_domain=search.staging.trade-tariff.service.gov.uk" --param="certificate_domain=staging.trade-tariff.service.gov.uk"
+	STAGE=staging serverless deploy --verbose --param="custom_domain=search.staging.trade-tariff.service.gov.uk" --param="certificate_domain=staging.trade-tariff.service.gov.uk"
 
 deploy-production:
-	PRIVATE_ENABLED=true STAGE=production DOCKER_TAG=$$DOCKER_TAG serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"
+	STAGE=production serverless deploy --verbose --param="custom_domain=search.trade-tariff.service.gov.uk" --param="certificate_domain=trade-tariff.service.gov.uk"

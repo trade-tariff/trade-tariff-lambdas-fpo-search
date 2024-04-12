@@ -116,7 +116,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: .circleci/bin/smoketest << parameters.endpoint >>
+      - run: .circleci/bin/smoketest << parameters.endpoint >> $API_KEY
 
   start-training-instance:
     executor: base
@@ -158,7 +158,7 @@ workflows:
 
       - smoketest:
           name: smoketest-development
-          context: trade-tariff-lambda-deployments-development
+          context: trade-tariff-fpo-smoketests-development
           endpoint: https://search.dev.trade-tariff.service.gov.uk
           requires:
             - deploy-development
@@ -182,7 +182,7 @@ workflows:
 
       - smoketest:
           name: smoketest-staging
-          context: trade-tariff-lambda-deployments-staging
+          context: trade-tariff-fpo-smoketests-staging
           endpoint: https://search.staging.trade-tariff.service.gov.uk
           requires:
             - deploy-staging
@@ -209,7 +209,7 @@ workflows:
 
       - smoketest:
           name: smoketest-production
-          context: trade-tariff-lambda-deployments-production
+          context: trade-tariff-fpo-smoketests-production
           endpoint: https://search.trade-tariff.service.gov.uk
           requires:
             - deploy-production
