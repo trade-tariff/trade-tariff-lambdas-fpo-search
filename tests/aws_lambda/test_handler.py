@@ -5,8 +5,6 @@ from aws_lambda.handler import LambdaHandler
 
 from inference.infer import ClassificationResult, Classifier
 
-test_fpo_client_keys = {"test_id": "test_secret"}
-
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
@@ -32,9 +30,15 @@ class Test_handler_handle(unittest.TestCase):
         event = self._create_get_event("test", "8", "5")
 
         result = handler.handle(event, {})
-        result_body = json.loads(result["body"])
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+        self.assertEqual(
+            5, len(json.loads(result["body"])["results"]), "Expected 5 results"
+        )
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_a_valid_get_request_default_args(self):
         event = self._create_get_event_default("test")
@@ -48,6 +52,11 @@ class Test_handler_handle(unittest.TestCase):
             "Expected default results to have 6 digits",
         )
         self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_a_valid_post_request(self):
         event = self._create_post_event("test", "6", "5")
@@ -57,6 +66,11 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_a_valid_post_request_with_ints(self):
         event = self._create_post_event_ints("test", 6, 5)
@@ -66,6 +80,11 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(5, len(result_body["results"]), "Expected 5 results")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_a_valid_post_request_default_args(self):
         event = self._create_post_event_default("test")
@@ -80,6 +99,11 @@ class Test_handler_handle(unittest.TestCase):
             "Expected default results to have 6 digits",
         )
         self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_respect_the_limit(self):
         event = self._create_post_event("test", "6", "2")
@@ -89,6 +113,11 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(2, len(result_body["results"]), "Expected 2 results")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_invalid_digits(self):
         event = self._create_post_event("test", "invalid")
@@ -103,6 +132,11 @@ class Test_handler_handle(unittest.TestCase):
         result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_invalid_limit(self):
         event = self._create_post_event("test", "6", "invalid")
@@ -110,6 +144,11 @@ class Test_handler_handle(unittest.TestCase):
         result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_too_high_limit(self):
         event = self._create_post_event("test", "6", "11")
@@ -117,6 +156,11 @@ class Test_handler_handle(unittest.TestCase):
         result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def test_it_should_handle_invalid_json(self):
         event = self._create_post_event_default("test")
@@ -125,9 +169,26 @@ class Test_handler_handle(unittest.TestCase):
         result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
+    def test_it_should_handle_unknown_path(self):
+        event = self._create_unhandled_event()
+
+        result = handler.handle(event, {})
+        self.assertEqual(404, result["statusCode"], "Expected a 404 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
 
     def _create_get_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
+            "path": "/fpo-code-search",
             "httpMethod": "GET",
             "queryStringParameters": {
                 "q": description,
@@ -137,10 +198,12 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {
                 "x-api-key": "test_secret",
             },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
     def _create_get_event_default(self, description: str):
         return {
+            "path": "/fpo-code-search",
             "httpMethod": "GET",
             "queryStringParameters": {
                 "q": description,
@@ -148,10 +211,12 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {
                 "x-api-key": "test_secret",
             },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
     def _create_post_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
+            "path": "/fpo-code-search",
             "httpMethod": "POST",
             "body": json.dumps(
                 {"description": description, "digits": digits, "limit": limit}
@@ -159,12 +224,14 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {
                 "x-api-key": "test_secret",
             },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
     def _create_post_event_ints(
         self, description: str, digits: int = 6, limit: int = 5
     ):
         return {
+            "path": "/fpo-code-search",
             "httpMethod": "POST",
             "body": json.dumps(
                 {"description": description, "digits": digits, "limit": limit}
@@ -172,15 +239,28 @@ class Test_handler_handle(unittest.TestCase):
             "headers": {
                 "x-api-key": "test_secret",
             },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
     def _create_post_event_default(self, description: str):
         return {
+            "path": "/fpo-code-search",
             "httpMethod": "POST",
             "body": json.dumps({"description": description}),
             "headers": {
                 "x-api-key": "test_secret",
             },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
+        }
+
+    def _create_unhandled_event(self):
+        return {
+            "path": "/unknown",
+            "httpMethod": "GET",
+            "headers": {
+                "x-api-key": "test_secret",
+            },
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
 

@@ -1,4 +1,5 @@
 import json
+from typing import Union
 
 import aws_lambda_powertools
 
@@ -8,6 +9,37 @@ import time
 
 with open("REVISION", "r") as f:
     REVISION = f.read().strip()
+
+
+def log_handler(func):
+    def wrapper(self, event, _context):
+        api_key_id = (
+            event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
+        )
+        user_agent = event.get("headers", {}).get("User-Agent", "")
+        request_id = event.get("requestContext", {}).get("requestId", "")
+        start = time.perf_counter()
+        result = func(self, event, _context)
+        lapsed = (time.perf_counter() - start) * 1000
+
+        self._logger.info(
+            "Handler %s completed in %.2fms",
+            func.__name__,
+            lapsed,
+            extra={
+                "http_method": event.get("httpMethod"),
+                "path": event.get("path"),
+                "api_key_id": api_key_id,
+                "status_code": result["statusCode"],
+                "body": result["body"],
+                "time_ms": lapsed,
+                "user_agent": user_agent,
+                "request_id": request_id,
+            },
+        )
+        return result
+
+    return wrapper
 
 
 class LambdaHandler:
@@ -20,77 +52,98 @@ class LambdaHandler:
         self._logger = logger
 
     def handle(self, event, _context):
-        path = event.get("path", "")
+        http_method = event.get("httpMethod", "GET")
+        path = event.get("path", "default")
 
-        description = ""
-        statusCode = 200
-        body = {}
-        api_key_id = (
-            event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
+        method_name = (
+            f'handle_{path.strip("/").replace("-", "_")}_{http_method.lower()}'
         )
+        handler = getattr(self, method_name, self.handle_default)
 
-        if path == "/healthcheck":
-            body = {"git_sha1": REVISION, "healthy": True}
+        return handler(event, _context)
 
-            return {"statusCode": statusCode, "body": json.dumps(body)}
+    @log_handler
+    def handle_fpo_code_search_post(self, event, _context):
+        try:
+            body = json.loads(event.get("body", {}))
+        except json.JSONDecodeError as e:
+            return {
+                "statusCode": 400,
+                "body": json.dumps(
+                    {"message": "Invalid JSON in request body", "detail": str(e)}
+                ),
+                "headers": self._headers(event),
+            }
 
-        if event.get("httpMethod", "GET") == "POST":
-            try:
-                body = json.loads(event.get("body", {}))
-            except json.JSONDecodeError as e:
-                return {
-                    "statusCode": 400,
-                    "body": json.dumps(
-                        {"message": "Invalid JSON in request body", "detail": str(e)}
-                    ),
-                }
+        description = body.get("description", "")
+        digits = body.get("digits", "6")
+        limit = body.get("limit", "5")
 
-            description = body.get("description", "")
-            digits = body.get("digits", "6")
-            limit = body.get("limit", "5")
-        else:
-            queryParams = event.get("queryStringParameters", {})
+        response = self._handle_classification(description, digits, limit)
+        response["headers"] = self._headers(event)
 
-            description = queryParams.get("q", "")
-            digits = queryParams.get("digits", "6")
-            limit = queryParams.get("limit", "5")
+        return response
 
-        statusCode = 200
-        body = {}
+    @log_handler
+    def handle_fpo_code_search_get(self, event, _context):
+        description = event.get("queryStringParameters", {}).get("q", "")
+        digits = event.get("queryStringParameters", {}).get("digits", "6")
+        limit = event.get("queryStringParameters", {}).get("limit", "5")
 
-        if description == "":
-            statusCode = 400
-            body = {"message": "No description specified"}
-        elif str(digits) not in ["6", "8"]:
-            statusCode = 400
-            body = {"message": "Invalid digits"}
-        elif not str(limit).isdecimal() or int(limit) < 1 or int(limit) > 10:
-            statusCode = 400
-            body = {"message": "Invalid limit"}
-        else:
-            start = time.perf_counter()
-            raw_results = self._classifier.classify(
-                description, int(limit), int(digits)
-            )
-            results = [
-                {"code": result.code, "score": result.score * 1000}
-                for result in raw_results
-            ]
-            body = {"results": results}
-            lapsed = (time.perf_counter() - start) * 1000
+        response = self._handle_classification(description, digits, limit)
+        response["headers"] = self._headers(event)
 
-            self._logger.info(
-                "Results generated in %.2fms",
-                lapsed,
-                extra={
-                    "api_key_id": api_key_id,
-                    "request_description": description,
-                    "request_digits": int(digits),
-                    "request_limit": int(limit),
-                    "result_time_ms": lapsed,
-                    "result_count": len(results),
-                    "results": results,
-                },
-            )
+        return response
 
-        return {"statusCode": statusCode, "body": json.dumps(body)}
+    @log_handler
+    def handle_default(self, event, _context):
+        return {
+            "statusCode": 404,
+            "body": json.dumps({"message": "Not Found"}),
+            "headers": self._headers(event),
+        }
+
+    def handle_healthcheck(self, event, _context):
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"git_sha1": REVISION, "healthy": True}),
+        }
+
+    def _handle_classification(
+        self, description: str, digits: Union[str, int], limit: Union[str, int]
+    ):
+        valid = self._validate(description, digits, limit)
+
+        if not valid[0]:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"message": f"Invalid value for {valid[1]}"}),
+            }
+
+        results = self._classifier.classify(description, int(limit), int(digits))
+        results = [
+            {"code": result.code, "score": result.score * 1000} for result in results
+        ]
+        results = {"results": results}
+
+        return {"statusCode": 200, "body": json.dumps(results)}
+
+    def _validate(
+        self, description: str, digits: Union[str, int], limit: Union[str, int]
+    ):
+        if not description:
+            return (False, "description")
+
+        if str(digits) not in ["6", "8"]:
+            return (False, "digits")
+
+        if not str(limit).isdecimal() or int(limit) < 1 or int(limit) > 10:
+            return (False, "limit")
+
+        return (True, "")
+
+    def _headers(self, event):
+        return {
+            "Content-Type": "application/json",
+            "X-Request-Id": event.get("requestContext", {}).get("requestId", ""),
+        }
