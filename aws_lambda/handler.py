@@ -95,18 +95,18 @@ class LambdaHandler:
 
         return response
 
+    def handle_healthcheck_get(self, event, _context):
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"git_sha1": REVISION, "healthy": True}),
+        }
+
     @log_handler
     def handle_default(self, event, _context):
         return {
             "statusCode": 404,
             "body": json.dumps({"message": "Not Found"}),
             "headers": self._headers(event),
-        }
-
-    def handle_healthcheck(self, event, _context):
-        return {
-            "statusCode": 200,
-            "body": json.dumps({"git_sha1": REVISION, "healthy": True}),
         }
 
     def _handle_classification(
