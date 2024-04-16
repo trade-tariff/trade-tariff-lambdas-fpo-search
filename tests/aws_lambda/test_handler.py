@@ -26,38 +26,6 @@ handler = LambdaHandler(classifier)
 
 
 class Test_handler_handle(unittest.TestCase):
-    def test_it_should_handle_a_valid_get_request(self):
-        event = self._create_get_event("test", "8", "5")
-
-        result = handler.handle(event, {})
-        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(
-            5, len(json.loads(result["body"])["results"]), "Expected 5 results"
-        )
-        self.assertEqual(
-            "6b85ab53-2b60-4178-81ce-342acdec65a2",
-            result["headers"]["X-Request-Id"],
-            "Expected a request id",
-        )
-
-    def test_it_should_handle_a_valid_get_request_default_args(self):
-        event = self._create_get_event_default("test")
-
-        result = handler.handle(event, {})
-        result_body = json.loads(result["body"])
-        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(
-            6,
-            len(result_body["results"][0]["code"]),
-            "Expected default results to have 6 digits",
-        )
-        self.assertEqual(5, len(result_body["results"]), "Expected 5 default results")
-        self.assertEqual(
-            "6b85ab53-2b60-4178-81ce-342acdec65a2",
-            result["headers"]["X-Request-Id"],
-            "Expected a request id",
-        )
-
     def test_it_should_handle_a_valid_post_request(self):
         event = self._create_post_event("test", "6", "5")
 
@@ -197,34 +165,6 @@ class Test_handler_handle(unittest.TestCase):
             "Expected a 200 status code",
         )
 
-    def _create_get_event(self, description: str, digits: str = "6", limit: str = "5"):
-        return {
-            "path": "/fpo-code-search",
-            "httpMethod": "GET",
-            "queryStringParameters": {
-                "q": description,
-                "digits": digits,
-                "limit": limit,
-            },
-            "headers": {
-                "x-api-key": "test_secret",
-            },
-            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
-        }
-
-    def _create_get_event_default(self, description: str):
-        return {
-            "path": "/fpo-code-search",
-            "httpMethod": "GET",
-            "queryStringParameters": {
-                "q": description,
-            },
-            "headers": {
-                "x-api-key": "test_secret",
-            },
-            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
-        }
-
     def _create_post_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
             "path": "/fpo-code-search",
@@ -232,9 +172,6 @@ class Test_handler_handle(unittest.TestCase):
             "body": json.dumps(
                 {"description": description, "digits": digits, "limit": limit}
             ),
-            "headers": {
-                "x-api-key": "test_secret",
-            },
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
@@ -247,9 +184,6 @@ class Test_handler_handle(unittest.TestCase):
             "body": json.dumps(
                 {"description": description, "digits": digits, "limit": limit}
             ),
-            "headers": {
-                "x-api-key": "test_secret",
-            },
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
@@ -258,9 +192,6 @@ class Test_handler_handle(unittest.TestCase):
             "path": "/fpo-code-search",
             "httpMethod": "POST",
             "body": json.dumps({"description": description}),
-            "headers": {
-                "x-api-key": "test_secret",
-            },
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
@@ -268,9 +199,6 @@ class Test_handler_handle(unittest.TestCase):
         return {
             "path": "/unknown",
             "httpMethod": "GET",
-            "headers": {
-                "x-api-key": "test_secret",
-            },
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 

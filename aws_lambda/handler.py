@@ -84,17 +84,6 @@ class LambdaHandler:
 
         return response
 
-    @log_handler
-    def handle_fpo_code_search_get(self, event, _context):
-        description = event.get("queryStringParameters", {}).get("q", "")
-        digits = event.get("queryStringParameters", {}).get("digits", "6")
-        limit = event.get("queryStringParameters", {}).get("limit", "5")
-
-        response = self._handle_classification(description, digits, limit)
-        response["headers"] = self._headers(event)
-
-        return response
-
     def handle_healthcheck_get(self, event, _context):
         return {
             "statusCode": 200,

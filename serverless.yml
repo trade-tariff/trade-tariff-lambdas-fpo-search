@@ -38,10 +38,6 @@ functions:
     events:
       - http:
           path: /fpo-code-search
-          method: get
-          private: true
-      - http:
-          path: /fpo-code-search
           method: post
           private: true
       - http:
