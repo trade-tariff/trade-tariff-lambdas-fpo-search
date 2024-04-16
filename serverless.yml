@@ -12,6 +12,10 @@ provider:
   timeout: 29
   memorySize: 3072
 
+  environment:
+    SENTRY_DSN: ${env:SENTRY_DSN}
+    SENTRY_ENVIRONMENT: ${env:STAGE}
+
   deploymentBucket:
     name: "trade-tariff-lambda-deployment-${aws:accountId}"
 
@@ -40,6 +44,10 @@ functions:
           path: /fpo-code-search
           method: post
           private: true
+      - http:
+          path: /will-testing
+          method: get
+          private: false
       - http:
           path: /healthcheck
           method: get

@@ -90,6 +90,13 @@ class LambdaHandler:
             "body": json.dumps({"git_sha1": REVISION, "healthy": True}),
         }
 
+    def handle_will_testing_get(self, event, _context):
+        1 / 0  # ZeroDivisionError
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"message": "Hello, World!"}),
+        }
+
     @log_handler
     def handle_default(self, event, _context):
         return {

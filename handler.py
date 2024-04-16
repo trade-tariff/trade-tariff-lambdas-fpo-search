@@ -2,7 +2,9 @@ from pathlib import Path
 import pickle
 import time
 import os
+import sentry_sdk
 
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from aws_lambda.handler import LambdaHandler
 from aws_lambda_powertools import Logger
 
@@ -31,6 +33,12 @@ logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )
 lambda_handler = LambdaHandler(classifier, logger=logger)
+
+sentry_sdk.init(
+    os.getenv("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration(timeout_warning=True)],
+    environment=os.getenv("SENTRY_ENVIRONMENT", ""),
+)
 
 
 @logger.inject_lambda_context
