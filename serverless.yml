@@ -45,10 +45,6 @@ functions:
           method: post
           private: true
       - http:
-          path: /will-testing
-          method: get
-          private: false
-      - http:
           path: /healthcheck
           method: get
           private: false
