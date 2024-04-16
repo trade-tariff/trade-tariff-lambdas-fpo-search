@@ -2,7 +2,9 @@ from pathlib import Path
 import pickle
 import time
 import os
+import sentry_sdk
 
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from aws_lambda.handler import LambdaHandler
 from aws_lambda_powertools import Logger
 
@@ -31,6 +33,32 @@ logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )
 lambda_handler = LambdaHandler(classifier, logger=logger)
+
+
+def strip_sensitive_headers(event, _hint):
+    if "request" in event:
+        request = event["request"]
+        headers = request.get("headers", {})
+        multi_value_headers = request.get("multiValueHeaders", {})
+
+        headers = {k.lower(): v for k, v in headers.items()}
+        multi_value_headers = {k.lower(): v for k, v in multi_value_headers.items()}
+
+        headers.pop("x-api-key", None)
+        multi_value_headers.pop("x-api-key", None)
+
+        event["request"]["headers"] = headers
+        event["request"]["multiValueHeaders"] = multi_value_headers
+
+    return event
+
+
+sentry_sdk.init(
+    os.getenv("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration(timeout_warning=True)],
+    environment=os.getenv("SENTRY_ENVIRONMENT", ""),
+    before_send=strip_sensitive_headers,
+)
 
 
 @logger.inject_lambda_context

@@ -94,10 +94,12 @@ jobs:
     steps:
       - checkout
       - serverless-framework/setup
+      - aws-cli/install
       - run: |
           npm install --dev serverless-domain-manager
       - run: |
           export DOCKER_TAG=$(git rev-parse --short HEAD)
+          export SENTRY_DSN=$(.circleci/bin/getsecret fpo-search-sentry-dsn)
 
           make deploy-<< parameters.stage  >>
       - slack/notify:
