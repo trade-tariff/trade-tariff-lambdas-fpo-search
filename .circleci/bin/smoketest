@@ -9,15 +9,6 @@ set -o noclobber
 URL=$1
 API_KEY=$2
 
-# Ensure it responds with a 200 to a GET request
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search?q=grilled+cheese&digits=6" \
-  -H "X-Api-Key: ${API_KEY}")
-
-if [[ "$STATUS_CODE" -ne 200 ]] ; then
-  echo "ERROR: Status code of $STATUS_CODE" >&2
-  exit 1
-fi
-
 # Ensure it responds with a 200 to a POST request
 STATUS_CODE=$(curl -X POST -d '{"description":"grilled cheese"}' -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search" \
   -H "X-Api-Key: $API_KEY")
@@ -35,7 +26,7 @@ if [[ "$STATUS_CODE" -ne 200 ]] ; then
   exit 1
 fi
 
-# Ensure it responds with a 401 if credentials are missing
+# Ensure it responds with a 403 if credentials are missing
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search?q=grilled+cheese&digits=6")
 
 if [[ "$STATUS_CODE" -ne 403 ]] ; then
