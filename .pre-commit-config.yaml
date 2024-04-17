@@ -31,3 +31,10 @@ repos:
     hooks:
       - id: shellcheck
         args: ["--severity=warning"]
+
+  - repo: https://github.com/zahorniak/pre-commit-circleci.git
+    rev: v0.6
+    hooks:
+      - id: circleci_validate
+        args:
+          - --org-id=da607531-93bb-4321-90ed-08710434ce1c
