@@ -120,6 +120,16 @@ jobs:
       - checkout
       - run: .circleci/bin/smoketest << parameters.endpoint >> $API_KEY
 
+  perftest:
+    executor: node
+    parameters:
+      endpoint:
+        type: string
+    steps:
+      - checkout
+      - run: yarn install
+      - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
+
   start-training-instance:
     executor: base
     steps:
@@ -158,6 +168,14 @@ workflows:
             - build-development
           <<: *filter-not-main
 
+      - perftest:
+          name: perftest-development
+          context: trade-tariff-fpo-smoketests-development
+          endpoint: https://search.dev.trade-tariff.service.gov.uk
+          requires:
+            - deploy-development
+          <<: *filter-not-main
+
       - smoketest:
           name: smoketest-development
           context: trade-tariff-fpo-smoketests-development
@@ -181,6 +199,14 @@ workflows:
           <<: *filter-main
           requires:
             - build-staging
+
+      - perftest:
+          name: perftest-staging
+          context: trade-tariff-fpo-smoketests-staging
+          endpoint: https://search.staging.trade-tariff.service.gov.uk
+          requires:
+            - deploy-staging
+          <<: *filter-main
 
       - smoketest:
           name: smoketest-staging
@@ -207,6 +233,14 @@ workflows:
           name: deploy-production
           stage: production
           context: trade-tariff-lambda-deployments-production
+          <<: *filter-release
+
+      - perftest:
+          name: perftest-production
+          context: trade-tariff-fpo-smoketests-production
+          endpoint: https://search.trade-tariff.service.gov.uk
+          requires:
+            - deploy-production
           <<: *filter-release
 
       - smoketest:
