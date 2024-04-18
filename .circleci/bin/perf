@@ -8,8 +8,9 @@ set -o noclobber
 
 URL=${1:-https://search.dev.trade-tariff.service.gov.uk/fpo-code-search}
 API_KEY=${2:-$API_KEY}
+DESIRED_RPS=400
 DESIRED_ERRORS=0
-DESIRED_LATENCY=2000
+DESIRED_P90_LATENCY=2000
 
 if [ "$API_KEY" = "" ]; then
   echo "API_KEY is not set"
@@ -21,7 +22,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Running performance test on $URL"
+echo "🤖 Running performance test on $URL"
 PERFORMANCE_DATA=$(
   npx --yes \
     autocannon@7.15.0 \
@@ -34,21 +35,35 @@ PERFORMANCE_DATA=$(
     --json \
     2>/dev/null | grep url
 )
-ACTUAL_LATENCY=$(jq '.latency.p90' <<< "$PERFORMANCE_DATA")
+
+ACTUAL_RPS=$(jq '.requests.mean' <<< "$PERFORMANCE_DATA")
 ACTUAL_ERRORS=$(jq '.errors' <<< "$PERFORMANCE_DATA")
+ACTUAL_P90_LATENCY=$(jq '.latency.p90' <<< "$PERFORMANCE_DATA")
 
-if [ "$ACTUAL_LATENCY" -lt "$DESIRED_LATENCY" ]; then
-  echo "P90 latency is below $DESIRED_LATENCY ms: $ACTUAL_LATENCY ms"
-else
-  echo "P90 latency exceeds $DESIRED_LATENCY ms: $ACTUAL_LATENCY ms"
+MEET_RPS_THRESHOLD=$(awk 'BEGIN {print ('"$ACTUAL_RPS"' >= '"$DESIRED_RPS"') ? 1 : 0}')
+MEET_P90_THRESHOLD=$(awk 'BEGIN {print ('"$ACTUAL_P90_LATENCY"' <= '"$DESIRED_P90_LATENCY"') ? 1 : 0}')
+MEET_ERRORS_THRESHOLD=$(awk 'BEGIN {print ('"$ACTUAL_ERRORS"' == '"$DESIRED_ERRORS"') ? 1 : 0}')
+
+echo "ℹ️  RPS: $ACTUAL_RPS, Desired: >= $DESIRED_RPS"
+echo "ℹ️  Errors: $ACTUAL_ERRORS, Desired: == $DESIRED_ERRORS"
+echo "ℹ️  P90 Latency: $ACTUAL_P90_LATENCY, Desired: <= $DESIRED_P90_LATENCY"
+
+if [ "$MEET_RPS_THRESHOLD" -eq 0 ]; then
+  echo "💣 Average requests per second is below $DESIRED_RPS: $ACTUAL_RPS"
   echo "$PERFORMANCE_DATA" | jq
   exit 1
 fi
 
-if [ "$ACTUAL_ERRORS" -eq "$DESIRED_ERRORS" ]; then
-  echo "No errors"
-else
-  echo "Errors occurred"
+if [ "$MEET_P90_THRESHOLD" -eq 0 ]; then
+  echo "💣 P90 latency exceeds $DESIRED_P90_LATENCY ms: $ACTUAL_P90_LATENCY ms"
   echo "$PERFORMANCE_DATA" | jq
   exit 1
 fi
+
+if [ "$MEET_ERRORS_THRESHOLD" -eq 0 ]; then
+  echo "💣 $ACTUAL_ERRORS errors and ""$DESIRED_ERRORS expected"
+  echo "$PERFORMANCE_DATA" | jq
+  exit 1
+fi
+
+echo "🚀 Performance test passed"
