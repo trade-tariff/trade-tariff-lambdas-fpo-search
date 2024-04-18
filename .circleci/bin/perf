@@ -23,7 +23,8 @@ fi
 
 echo "Running performance test on $URL"
 PERFORMANCE_DATA=$(
-  yarn run autocannon \
+  npx --yes \
+    autocannon@7.15.0 \
     --duration 30 \
     --connections 50 \
     --method POST \

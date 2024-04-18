@@ -127,7 +127,6 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: yarn install
       - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
 
   start-training-instance:
