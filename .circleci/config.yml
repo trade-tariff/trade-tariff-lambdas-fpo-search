@@ -96,7 +96,7 @@ jobs:
       - serverless-framework/setup
       - aws-cli/install
       - run: |
-          npm install --dev serverless-domain-manager
+          npm install serverless-domain-manager
       - run: |
           export DOCKER_TAG=$(git rev-parse --short HEAD)
           export SENTRY_DSN=$(.circleci/bin/getsecret fpo-search-sentry-dsn)
