@@ -173,3 +173,5 @@ lambda/
 benchmarking_data
 *.pkl
 *.pt
+
+node_modules/

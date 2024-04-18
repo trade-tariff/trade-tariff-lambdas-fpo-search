@@ -1,0 +1,54 @@
+#!/bin/bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+URL=${1:-https://search.dev.trade-tariff.service.gov.uk/fpo-code-search}
+API_KEY=${2:-$API_KEY}
+DESIRED_ERRORS=0
+DESIRED_LATENCY=2000
+
+if [ "$API_KEY" = "" ]; then
+  echo "API_KEY is not set"
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is not installed"
+  exit 1
+fi
+
+echo "Running performance test on $URL"
+PERFORMANCE_DATA=$(
+  npx --yes \
+    autocannon@7.15.0 \
+    --duration 30 \
+    --connections 50 \
+    --method POST \
+    --headers "X-Api-Key=$API_KEY" \
+    --body "{\"description\":\"fish milkshake\"}" \
+    "$URL" \
+    --json \
+    2>/dev/null | grep url
+)
+ACTUAL_LATENCY=$(jq '.latency.p90' <<< "$PERFORMANCE_DATA")
+ACTUAL_ERRORS=$(jq '.errors' <<< "$PERFORMANCE_DATA")
+
+if [ "$ACTUAL_LATENCY" -lt "$DESIRED_LATENCY" ]; then
+  echo "P90 latency is below $DESIRED_LATENCY ms: $ACTUAL_LATENCY ms"
+else
+  echo "P90 latency exceeds $DESIRED_LATENCY ms: $ACTUAL_LATENCY ms"
+  echo "$PERFORMANCE_DATA" | jq
+  exit 1
+fi
+
+if [ "$ACTUAL_ERRORS" -eq "$DESIRED_ERRORS" ]; then
+  echo "No errors"
+else
+  echo "Errors occurred"
+  echo "$PERFORMANCE_DATA" | jq
+  exit 1
+fi
