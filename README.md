@@ -4,6 +4,8 @@
 
 ## Create your development environment
 
+> Make sure you install and enable all pre-commit hooks https://pre-commit.com/
+
 ### Initial development environment setup (one-time setup)
 
 - Set up a developer environment: `make dev-env`

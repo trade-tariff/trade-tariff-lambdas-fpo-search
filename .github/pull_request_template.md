@@ -1,6 +1,5 @@
 ### Jira link
 
-
 ### What?
 
 I have added/removed/altered:
