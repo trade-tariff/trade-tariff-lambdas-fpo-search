@@ -50,6 +50,11 @@ functions:
           private: false
 
 custom:
+  productionSettings:
+    alarmsEnabled: true
+  defaultSettings:
+    alarmsEnabled: false
+
   customDomain:
     domainName: ${param:custom_domain}
     stage: ${env:STAGE}
@@ -61,3 +66,47 @@ custom:
     securityPolicy: tls_1_2
     apiType: rest
     autoDomain: true
+
+resources:
+  Resources:
+    # AWS/Lambda Errors are triggered for:
+    #
+    # - Unhandled exceptions thrown by the Lambda function.
+    # - Timeouts (when your function execution exceeds the configured timeout).
+    # - Out of memory errors (when your function uses more memory than allocated).
+    # - Permissions or configuration errors that prevent a function from running.
+    ErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: "Alarm if FPO search function errors exceed a threshold"
+        Namespace: "AWS/Lambda"
+        MetricName: "Errors"
+        Dimensions:
+          - Name: "FunctionName"
+            Value: ${self:service}-${env:STAGE}-fpo_search
+        Statistic: Sum
+        Period: 300 # 5 minutes
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions:
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+        TreatMissingData: notBreaching
+
+    DurationAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: "Alarm when FPO search function execution duration exceeds threshold"
+        Namespace: "AWS/Lambda"
+        MetricName: "Duration"
+        Dimensions:
+          - Name: "FunctionName"
+            Value: ${self:service}-${env:STAGE}-fpo_search
+        Statistic: Average
+        Period: 300 # 5 minutes
+        EvaluationPeriods: 1
+        Threshold: 2000 # 2 seconds
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions:
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+        TreatMissingData: notBreaching

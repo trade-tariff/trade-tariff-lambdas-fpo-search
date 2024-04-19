@@ -38,3 +38,8 @@ repos:
       - id: circleci_validate
         args:
           - --org-id=da607531-93bb-4321-90ed-08710434ce1c
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.16.1
+    hooks:
+      - id: gitleaks

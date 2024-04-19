@@ -1,5 +1,11 @@
 #!/bin/bash
 
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
 INSTANCE_ID=$(aws ec2 describe-instances          \
   --region us-east-1                              \
   --query Reservations[0].Instances[0].InstanceId \
@@ -7,5 +13,5 @@ INSTANCE_ID=$(aws ec2 describe-instances          \
 )
 
 aws ec2 start-instances       \
-  --instance-ids $INSTANCE_ID \
+  --instance-ids "$INSTANCE_ID" \
   --region us-east-1
