@@ -62,7 +62,7 @@ jobs:
       - aws-cli/install
       - run:
           name: "Build and Push to ECR"
-          command: ./.circleci/ecr.sh "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
+          command: ./.circleci/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
 
   check:
     executor: python
@@ -134,7 +134,7 @@ jobs:
     steps:
       - checkout
       - aws-cli/install
-      - run: .circleci/ec2.sh
+      - run: .circleci/ec2
 
 workflows:
   version: 2
