@@ -89,7 +89,6 @@ resources:
         EvaluationPeriods: 1
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        ActionsEnabled: ${self:custom.${env:STAGE, 'default'}Settings.actionsEnabled}
         AlarmActions:
           - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
         TreatMissingData: notBreaching
@@ -108,7 +107,6 @@ resources:
         EvaluationPeriods: 1
         Threshold: 2000 # 2 seconds
         ComparisonOperator: GreaterThanOrEqualToThreshold
-        ActionsEnabled: ${self:custom.${env:STAGE, 'default'}Settings.actionsEnabled}
         AlarmActions:
           - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
         TreatMissingData: notBreaching
