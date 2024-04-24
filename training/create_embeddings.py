@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 import pickle
+import shutil
 import tempfile
 from typing import Optional
 import numpy as np
@@ -56,7 +57,7 @@ class EmbeddingsProcessor:
 
                 temp_file_path = temp_file.name
 
-            os.replace(temp_file_path, self._cache_file)
+            shutil.move(temp_file_path, self._cache_file)
 
     def create_embeddings(self, texts: list[str]):
         self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
