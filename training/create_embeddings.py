@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 import pickle
 import shutil
-import tempfile
 from typing import Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -50,12 +49,12 @@ class EmbeddingsProcessor:
     def _save_cache(self):
         if self._cache_file is not None:
             self._logger.info("💾⇦ Saving embedding cache")
+
             # Write to a temp file first so that we don't corrupt an existing file
+            temp_file_path = str(self._cache_file) + ".tmp"
 
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            with open(temp_file_path, "wb") as temp_file:
                 pickle.dump(self._cache, temp_file)
-
-                temp_file_path = temp_file.name
 
             shutil.move(temp_file_path, self._cache_file)
 
