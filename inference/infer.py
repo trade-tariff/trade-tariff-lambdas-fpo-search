@@ -50,7 +50,7 @@ class FlatClassifier(Classifier):
         )
 
         self._subheadings = subheadings
-        self._device = torch.device("cpu")
+        self._device = torch.device(device)
         self._logger = logger
 
         # Load the model from disk
