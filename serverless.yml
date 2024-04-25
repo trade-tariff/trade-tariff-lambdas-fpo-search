@@ -50,11 +50,6 @@ functions:
           private: false
 
 custom:
-  productionSettings:
-    alarmsEnabled: true
-  defaultSettings:
-    alarmsEnabled: false
-
   customDomain:
     domainName: ${param:custom_domain}
     stage: ${env:STAGE}
