@@ -6,13 +6,11 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-source .circleci/needsami
+source .circleci/bin/needsami
 
-deployami() {
-  if needsami; then
-    echo "Building new AMI"
-    .packer/build
-  else
-    echo "No need to build a new AMI"
-  fi
-}
+if needsami; then
+  echo "Building new AMI"
+  .packer/build
+else
+  echo "No need to build a new AMI"
+fi

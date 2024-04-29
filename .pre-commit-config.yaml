@@ -39,14 +39,14 @@ repos:
         args:
           - --org-id=da607531-93bb-4321-90ed-08710434ce1c
 
-  # - repo: https://github.com/igorshubovych/markdownlint-cli
-  #   rev: v0.38.0
-  #   hooks:
-  #     - id: markdownlint
-  #       args:
-  #         - "--fix"
-  #         - "--ignore"
-  #         - terraform
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args:
+          - "--fix"
+          - "--ignore"
+          - terraform
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.16.1

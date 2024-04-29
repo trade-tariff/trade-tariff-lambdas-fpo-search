@@ -13,6 +13,8 @@ if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
   exit 1
 fi
 
+AMI_VERSION=$(cat .packer/ami-version.txt)
+
 docker build .packer/ -t "$IMAGE_NAME"
 
 docker run -v "$PWD"/:/packer \
@@ -20,7 +22,7 @@ docker run -v "$PWD"/:/packer \
   -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
   -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
   -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
-  "$IMAGE_NAME" build "$PACKER_TEMPLATE"
+  "$IMAGE_NAME" build "$PACKER_TEMPLATE" -var "ami_version=$AMI_VERSION"
 
 if [ $? -eq 0 ]; then
   echo "Packer build completed successfully."

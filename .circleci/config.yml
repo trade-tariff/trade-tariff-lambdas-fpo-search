@@ -129,13 +129,11 @@ jobs:
       - checkout
       - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
 
-
   build-and-deploy-ami:
     executor: base
     steps:
       - checkout
       - run: .circleci/bin/deployami
-
 
   start-training-instance:
     executor: base

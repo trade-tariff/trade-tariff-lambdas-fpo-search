@@ -7,8 +7,13 @@ packer {
   }
 }
 
+variable "ami_version" {
+  type = string
+  description = "Our internally managed version for our own custom AMI. We bump this when we make changes to the AMI and use it in the name of the AMI."
+}
+
 source "amazon-ebs" "source" {
-  ami_name      = "Deep Learning AMI Neuron PyTorch - {{timestamp}}"
+  ami_name      = "Deep Learning AMI Neuron PyTorch - ${var.ami_version}"
   ami_users     = [
     "844815912454",
     "382373577178",
@@ -30,7 +35,6 @@ source "amazon-ebs" "source" {
 
 build {
   sources = ["source.amazon-ebs.source"]
-
 
   provisioner "shell" {
     script = ".packer/provision"
