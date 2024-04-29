@@ -1,0 +1,86 @@
+#! /usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# GIT_REPO="trade-tariff-lambdas-fpo-search"
+# PROJECT_ROOT="$HOME/$GIT_REPO"
+
+# handle_error() {
+#   echo "Forcing shutdown"
+
+#   if is_running_in_aws; then
+#     shutdown -h
+#   else
+#     exit 1
+#   fi
+# }
+
+# cleanup() {
+#   if [ -d "raw_source_data" ]; then
+#     rm -rf raw_source_data
+#   fi
+
+#   if [ -d "target" ]; then
+#     rm -rf target
+#   fi
+# }
+
+# initialize() {
+#   trap handle_error ERR
+
+#   cleanup()
+
+#   mkdir raw_source_data
+#   mkdir target
+#   echo "Retrieving fresh raw source data."
+#   aws s3 cp "${bucket_uri}/raw_source_data/" raw_source_data/ --recursive
+# }
+
+# train() {
+#   echo -e "\nStarting model training.\n"
+
+#   python train.py --force
+# }
+
+# persist_results() {
+#   echo -e "\nPersisting model training results.\n"
+
+#   echo -e "\nUploading trained model to S3.\n"
+#   aws s3 sync target/ "${bucket_uri}/model/"
+# }
+
+# teardown() {
+#   if is_running_in_aws; then
+#     shutdown -h
+#   else
+#     exit 0
+#   fi
+# }
+
+# is_running_in_aws() {
+#   if curl -s -m 5 http://169.254.169.254/latest/dynamic/instance-identity/document | grep -q availabilityZone ; then
+#     return 0
+#   else
+#     return 1
+#   fi
+# }
+
+# bucket_uri() {
+#   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+#   echo -n "s3://trade-tariff-models-${ACCOUNT_ID}"
+# }
+
+# main() {
+#   pushd "$PROJECT_ROOT"
+#   initialize
+#   train
+#   persist_results
+#   teardown
+#   popd
+# }
+
+# main

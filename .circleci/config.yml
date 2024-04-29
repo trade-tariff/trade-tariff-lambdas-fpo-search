@@ -129,6 +129,14 @@ jobs:
       - checkout
       - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
 
+
+  build-and-deploy-ami:
+    executor: base
+    steps:
+      - checkout
+      - run: .circleci/bin/deployami
+
+
   start-training-instance:
     executor: base
     steps:
@@ -151,6 +159,10 @@ workflows:
           requires:
             - check
           <<: *filter-not-main
+
+      - build-and-deploy-ami:
+          name: build-ami-development
+          context: trade-tariff-terraform-aws-development
 
       - build:
           name: build-development

@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+
+IMAGE_NAME="packer-builder"
+PACKER_TEMPLATE=".packer/template.pkr.hcl"
+
+if [ ! -f "$PACKER_TEMPLATE" ]; then
+  echo "Packer template not found."
+  exit 1
+fi
+
+if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
+  echo "AWS credentials not found."
+  exit 1
+fi
+
+docker build .packer/ -t "$IMAGE_NAME"
+
+docker run -v "$PWD"/:/packer \
+  -w /packer \
+  -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+  -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+  -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+  "$IMAGE_NAME" build "$PACKER_TEMPLATE"
+
+if [ $? -eq 0 ]; then
+  echo "Packer build completed successfully."
+else
+  echo "Packer build failed."
+  exit 1
+fi

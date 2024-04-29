@@ -1,0 +1,20 @@
+#! /usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+needsami() {
+  # TODO: We could probably build a new AMI if either the packer files have changed or
+  # the pip dependencies have changed. For now, we'll just check the statically configured
+  # version
+  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- .packer/ami-version.txt
+
+  if [[ $? -eq 1 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
