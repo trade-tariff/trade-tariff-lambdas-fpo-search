@@ -37,6 +37,6 @@ build {
   sources = ["source.amazon-ebs.source"]
 
   provisioner "shell" {
-    script = ".packer/provision"
+    script = "provision"
   }
 }
