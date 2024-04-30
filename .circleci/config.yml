@@ -136,7 +136,10 @@ jobs:
       - setup_remote_docker:
           version: 20.10.11
           docker_layer_caching: false
-      - run: .circleci/bin/deployami
+      - run:
+          name: "Build and Deploy AMI"
+          command: .circleci/bin/deployami
+          no_output_timeout: 30m # Takes about 25 minutes to build and deploy the AMI
 
   start-training-instance:
     executor: base
