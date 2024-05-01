@@ -23,20 +23,8 @@ data "aws_iam_policy_document" "this" {
       "s3:PutObject",
     ]
     resources = [
-      module.bucket.s3_bucket_arn,
-      "${module.bucket.s3_bucket_arn}/*"
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-    actions = [
-      "ssm:DescribeParameters",
-      "ssm:GetParameter",
-      "ssm:GetParameters"
-    ]
-    resources = [
-      aws_ssm_parameter.github_token.arn
+      data.aws_s3_bucket.this.arn,
+      "${data.aws_s3_bucket.this.arn}/*"
     ]
   }
 }

@@ -1,0 +1,54 @@
+#! /usr/bin/env bash
+
+set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+GIT_REPO="trade-tariff-lambdas-fpo-search"
+PYTHON_VERSION="3.11"
+
+if aws --version | grep "aws-cli/1"; then
+  sudo yum remove -y awscli
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  sudo ./aws/install
+fi
+
+export PYENV_ROOT="$HOME/.pyenv"
+curl https://pyenv.run | bash
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+sudo yum remove openssl-devel -y
+sudo yum install -y \
+  gcc               \
+  make              \
+  patch             \
+  zlib-devel        \
+  bzip2             \
+  bzip2-devel       \
+  readline-devel    \
+  sqlite            \
+  sqlite-devel      \
+  openssl11-devel   \
+  tk-devel          \
+  libffi-devel      \
+  xz-devel
+
+pyenv install "$PYTHON_VERSION"
+pyenv global "$PYTHON_VERSION"
+
+# Configure pyenv for login/non-login shells
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> "$HOME/.bashrc"
+echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> "$HOME/.bashrc"
+echo 'eval "$(pyenv init --path)"' >> "$HOME/.bashrc"
+echo 'eval "$(pyenv init -)"' >> "$HOME/.bash_profile"
+
+git clone "https://github.com/trade-tariff/${GIT_REPO}.git" --depth=1
+echo "$PYTHON_VERSION" > "$GIT_REPO/.python-version"
+
+cd "$GIT_REPO"
+
+python -m venv .venv && source .venv/bin/activate
+make install

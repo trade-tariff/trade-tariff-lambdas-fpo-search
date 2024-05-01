@@ -1,0 +1,37 @@
+#! /usr/bin/env bash
+
+IMAGE_NAME="packer-builder"
+PACKER_TEMPLATE=".packer/template.pkr.hcl"
+
+set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+if [ ! -f "$PACKER_TEMPLATE" ]; then
+  echo "Packer template not found."
+  exit 1
+fi
+
+if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
+  echo "AWS credentials not found."
+  exit 1
+fi
+
+AMI_VERSION=$(cat .packer/ami-version.txt)
+
+docker build .packer/ -t "$IMAGE_NAME"
+
+docker run -v "$PWD"/:/packer \
+  -w /app \
+  -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+  -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+  "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" "$(basename $PACKER_TEMPLATE)" 
+
+if [ $? -eq 0 ]; then
+  echo "Packer build completed successfully."
+else
+  echo "Packer build failed."
+  exit 1
+fi
