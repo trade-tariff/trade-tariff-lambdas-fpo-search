@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+fetch_account_id ()
+{
+  aws sts get-caller-identity --query Account --output text
+}
+
+fetch_latest_ami_image_id_by_name ()
+{
+  image_name_query=$1
+  region='us-east-1'
+  owner=$(fetch_account_id)
+
+  aws ec2 describe-images \
+    --region "$region" \
+    --owners "$owner" \
+    --filters "Name=name,Values=${image_name_query}" 'Name=state,Values=available' \
+    --query 'reverse(sort_by(Images, &CreationDate))[:1].ImageId' \
+    --output text
+}
+
+fetch_subnet_by_cidr ()
+{
+  region='us-east-1'
+
+  aws ec2 describe-subnets --filters "Name=cidrBlock,Values=$1" --region "$region" --query 'Subnets[0].SubnetId' --output text
+}
+
+fetch_security_group_by_name ()
+{
+  region='us-east-1'
+
+  aws ec2 describe-security-groups --filters "Name=group-name,Values=$1" --region "$region" --query 'SecurityGroups[0].GroupId' --output text
+}
+
+launch_ec2_instance ()
+{
+  aws ec2 run-instances \
+    --image-id "$LATEST_AMI" \
+    --subnet-id "$SUBNET_ID" \
+    --security-group-ids "$SECURITY_GROUP_IDS" \
+    --iam-instance-profile Name="$INSTANCE_PROFILE_NAME" \
+    --instance-type trn1.2xlarge \
+    --key-name "$KEY_PAIR_NAME" \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"DeleteOnTermination":true}}]' \
+    --associate-public-ip-address \
+    --output text \
+    --query 'Instances[0].InstanceId'
+}
+
+fetch_ec2_instance_public_ip ()
+{
+  aws ec2 describe-instances --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
+}
+
+store_ec2_private_key ()
+{
+  key=$(aws secretsmanager get-secret-value --secret-id "$1" --query SecretString --output text)
+  echo "$key" > ~/.ssh/"$KEY_PAIR_NAME".pem
+  chmod 400 ~/.ssh/"$KEY_PAIR_NAME".pem
+}
+# {
+#   aws ec2 describe-instances --instance-ids $1 --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text
+# }
+
+run_training_script_on_ec2_instance ()
+{
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "bash cd trade-tariff-lambdas-fpo-search && train.py --config-file search-config.toml"
+}
+
+copy_model_from_ec2_instance ()
+{
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/trade-tariff-lambdas-fpo-search/model.tar.gz "$2"
+}
+
+copy_model_to_s3 ()
+{
+  aws s3 cp "$1" s3://"$MODEL_BUCKET_NAME/$2"
+}
+
+terminate_ec2_instance ()
+{
+  aws ec2 terminate-instances --instance-ids "$1"
+}
+
+LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
+SUBNET_ID=$(fetch_subnet_by_cidr "10.0.101.0/24") # see vpc.tf
+SECURITY_GROUP_IDS=$(fetch_security_group_by_name "fpo-sg") # see vpc.tf
+INSTANCE_PROFILE_NAME=fpo_profile # see iam.tf
+KEY_PAIR_NAME=fpo-training-instance
+MODEL_BUCKET_NAME=trade-tariff-models-$(fetch_account_id)
+
+echo "Launching EC2 instance with configuration"
+echo "\tAMI: $LATEST_AMI"
+echo "\tSubnet ID: $SUBNET_ID"
+echo "\tSecurity Group IDs: $SECURITY_GROUP_IDS"
+echo "\tInstance Profile Name: $INSTANCE_PROFILE_NAME"
+echo "\tKey Pair Name: $KEY_PAIR_NAME"
+echo "\tModel Bucket Name: $MODEL_BUCKET_NAME"
+echo "\tAccount ID: $(fetch_account_id)"
