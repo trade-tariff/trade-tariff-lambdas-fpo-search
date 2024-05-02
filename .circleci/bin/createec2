@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -o xtrace
+# set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -45,13 +45,18 @@ launch_ec2_instance ()
     --image-id "$LATEST_AMI" \
     --subnet-id "$SUBNET_ID" \
     --security-group-ids "$SECURITY_GROUP_IDS" \
-    --iam-instance-profile Name="$INSTANCE_PROFILE_NAME" \
     --instance-type trn1.2xlarge \
     --key-name "$KEY_PAIR_NAME" \
     --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"DeleteOnTermination":true}}]' \
     --associate-public-ip-address \
+    --region 'us-east-1' \
     --output text \
     --query 'Instances[0].InstanceId'
+}
+
+wait_for_instance_to_be_available ()
+{
+  aws ec2 wait instance-running --instance-ids "$1"
 }
 
 fetch_ec2_instance_public_ip ()
@@ -61,13 +66,22 @@ fetch_ec2_instance_public_ip ()
 
 store_ec2_private_key ()
 {
-  key=$(aws secretsmanager get-secret-value --secret-id "$1" --query SecretString --output text)
-  echo "$key" > ~/.ssh/"$KEY_PAIR_NAME".pem
-  chmod 400 ~/.ssh/"$KEY_PAIR_NAME".pem
+  secret_id="fpo-search-training-pem"
+  region='eu-west-2'
+
+  aws secretsmanager get-secret-value \
+    --secret-id "$secret_id" \
+    --region "$region" \
+    --query 'SecretString' \
+    --output text > ~/.ssh/fpo-search-training.pem
+
+  chmod 400 ~/.ssh/fpo-search-training.pem
 }
-# {
-#   aws ec2 describe-instances --instance-ids $1 --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text
-# }
+
+validate_connection ()
+{
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "echo 'Connection successful!'"
+}
 
 run_training_script_on_ec2_instance ()
 {
@@ -86,21 +100,56 @@ copy_model_to_s3 ()
 
 terminate_ec2_instance ()
 {
-  aws ec2 terminate-instances --instance-ids "$1"
+  aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
 }
 
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
-SUBNET_ID=$(fetch_subnet_by_cidr "10.0.101.0/24") # see vpc.tf
-SECURITY_GROUP_IDS=$(fetch_security_group_by_name "fpo-sg") # see vpc.tf
-INSTANCE_PROFILE_NAME=fpo_profile # see iam.tf
+SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
+SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
 KEY_PAIR_NAME=fpo-training-instance
-MODEL_BUCKET_NAME=trade-tariff-models-$(fetch_account_id)
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
-echo "Launching EC2 instance with configuration"
-echo "\tAMI: $LATEST_AMI"
-echo "\tSubnet ID: $SUBNET_ID"
-echo "\tSecurity Group IDs: $SECURITY_GROUP_IDS"
-echo "\tInstance Profile Name: $INSTANCE_PROFILE_NAME"
-echo "\tKey Pair Name: $KEY_PAIR_NAME"
-echo "\tModel Bucket Name: $MODEL_BUCKET_NAME"
-echo "\tAccount ID: $(fetch_account_id)"
+echo "Launching EC2 instance with configuration..."
+echo "   📀 AMI: $LATEST_AMI"
+echo "   📞 Subnet ID: $SUBNET_ID"
+echo "   🔓 Security Group IDs: $SECURITY_GROUP_IDS"
+echo "   🔓 Key Pair Name: $KEY_PAIR_NAME"
+echo "   💿 Model Bucket Name: $MODEL_BUCKET_NAME"
+echo "   💻 Account ID: $(fetch_account_id)"
+
+INSTANCE_ID=$(launch_ec2_instance)
+
+echo "Instance ID: $INSTANCE_ID"
+echo
+echo "Waiting for instance to be available..."
+echo
+echo "This may take a few minutes..."
+echo "⏳"
+
+wait_for_instance_to_be_available "$INSTANCE_ID"
+
+echo "Instance is now available!"
+echo
+echo "Fetching public IP address..."
+PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
+echo "   📞 Public IP: $PUBLIC_IP"
+echo
+
+echo "Retrieving private key..."
+store_ec2_private_key "fpo-search-training-pem"
+
+echo "Validating connection..."
+validate_connection "$PUBLIC_IP"
+echo "Connection successful!"
+
+echo "Running training script on EC2 instance..."
+# run_training_script_on_ec2_instance "$PUBLIC_IP"
+
+echo "Copying model from EC2 instance..."
+# copy_model_from_ec2_instance "$PUBLIC_IP" "model.tar.gz"
+
+echo "Copying model to S3..."
+# copy_model_to_s3 "model.tar.gz" "model.tar.gz"
+
+echo "Terminating EC2 instance..."
+terminate_ec2_instance "$INSTANCE_ID"
