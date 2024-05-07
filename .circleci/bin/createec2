@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# set -o xtrace
+set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -135,10 +135,11 @@ LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
 SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
 KEY_PAIR_NAME=fpo-training
-MODEL_BUCKET_NAME=trade-tariff-models-844815912454
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 ACCOUNT_ID=$(fetch_account_id)
 PROJECT=trade-tariff-lambdas-fpo-search
 SHA=$(git rev-parse --short HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo "Launching EC2 instance with configuration..."
 echo
@@ -150,6 +151,7 @@ echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
 echo "💻 Account ID: $ACCOUNT_ID"
 echo "📦 Project: $PROJECT"
 echo "🌐 SHA: $SHA"
+echo "🌳 Branch: $BRANCH"
 echo
 
 INSTANCE_ID=$(launch_ec2_instance)

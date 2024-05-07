@@ -18,8 +18,8 @@ from training.train_model import (
 
 args = TrainScriptArgsParser()
 
-limit = args.limit
-batch_size = args.batch_size
+limit = args.limit()
+batch_size = args.batch_size()
 embeddings_batch_size = args.embedding_batch_size()
 embedding_cache_checkpoint = args.embedding_cache_checkpoint()
 
