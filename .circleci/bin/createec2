@@ -41,6 +41,8 @@ fetch_security_group_by_name ()
 
 launch_ec2_instance ()
 {
+  name="fpo-search-training-$SHA"
+
   aws ec2 run-instances \
     --image-id "$LATEST_AMI" \
     --subnet-id "$SUBNET_ID" \
@@ -51,17 +53,22 @@ launch_ec2_instance ()
     --associate-public-ip-address \
     --region 'us-east-1' \
     --output text \
-    --query 'Instances[0].InstanceId'
+    --query 'Instances[0].InstanceId' \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]"
 }
 
 wait_for_instance_to_be_available ()
 {
-  aws ec2 wait instance-running --instance-ids "$1"
+  region='us-east-1'
+
+  aws ec2 wait instance-status-ok --instance-ids "$1" --region "$region"
 }
 
 fetch_ec2_instance_public_ip ()
 {
-  aws ec2 describe-instances --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
+  region='us-east-1'
+
+  aws ec2 describe-instances --region "$region" --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
 }
 
 store_ec2_private_key ()
@@ -69,28 +76,40 @@ store_ec2_private_key ()
   secret_id="fpo-search-training-pem"
   region='eu-west-2'
 
+  rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
+
   aws secretsmanager get-secret-value \
     --secret-id "$secret_id" \
     --region "$region" \
     --query 'SecretString' \
-    --output text > ~/.ssh/fpo-search-training.pem
+    --output text > ~/.ssh/"$KEY_PAIR_NAME".pem
 
-  chmod 400 ~/.ssh/fpo-search-training.pem
+  chmod 600 ~/.ssh/"$KEY_PAIR_NAME".pem
+}
+
+execute_command ()
+{
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "$2"
 }
 
 validate_connection ()
 {
-  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "echo 'Connection successful!'"
+  execute_command "$1" "echo 'Connection successful!'"
+}
+
+bring_code_inline ()
+{
+  execute_command "$1" "cd $PROJECT && git fetch && git checkout $SHA"
 }
 
 run_training_script_on_ec2_instance ()
 {
-  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "bash cd trade-tariff-lambdas-fpo-search && train.py --config-file search-config.toml"
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "cd $PROJECT && train.py --config-file search-config.toml"
 }
 
 copy_model_from_ec2_instance ()
 {
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/trade-tariff-lambdas-fpo-search/model.tar.gz "$2"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.tar.gz "$2"
 }
 
 copy_model_to_s3 ()
@@ -106,16 +125,23 @@ terminate_ec2_instance ()
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
 SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
-KEY_PAIR_NAME=fpo-training-instance
+KEY_PAIR_NAME=fpo-training
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+ACCOUNT_ID=$(fetch_account_id)
+PROJECT=trade-tariff-lambdas-fpo-search
+SHA=$(git rev-parse --short HEAD)
 
 echo "Launching EC2 instance with configuration..."
-echo "   📀 AMI: $LATEST_AMI"
-echo "   📞 Subnet ID: $SUBNET_ID"
-echo "   🔓 Security Group IDs: $SECURITY_GROUP_IDS"
-echo "   🔓 Key Pair Name: $KEY_PAIR_NAME"
-echo "   💿 Model Bucket Name: $MODEL_BUCKET_NAME"
-echo "   💻 Account ID: $(fetch_account_id)"
+echo
+echo "📀 AMI: $LATEST_AMI"
+echo "📞 Subnet ID: $SUBNET_ID"
+echo "🔓 Security Group IDs: $SECURITY_GROUP_IDS"
+echo "🔓 Key Pair Name: $KEY_PAIR_NAME"
+echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
+echo "💻 Account ID: $ACCOUNT_ID"
+echo "📦 Project: $PROJECT"
+echo "🌐 SHA: $SHA"
+echo
 
 INSTANCE_ID=$(launch_ec2_instance)
 
@@ -132,7 +158,8 @@ echo "Instance is now available!"
 echo
 echo "Fetching public IP address..."
 PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
-echo "   📞 Public IP: $PUBLIC_IP"
+echo
+echo "📞 Public IP: $PUBLIC_IP"
 echo
 
 echo "Retrieving private key..."
@@ -140,7 +167,9 @@ store_ec2_private_key "fpo-search-training-pem"
 
 echo "Validating connection..."
 validate_connection "$PUBLIC_IP"
-echo "Connection successful!"
+
+echo "Bringing code inline..."
+bring_code_inline "$PUBLIC_IP"
 
 echo "Running training script on EC2 instance..."
 # run_training_script_on_ec2_instance "$PUBLIC_IP"

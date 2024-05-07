@@ -15,22 +15,21 @@ from training.train_model import (
     FlatClassifierModelTrainerParameters,
 )
 
-args = TrainScriptArgsParser().parsed_args
+args = TrainScriptArgsParser()
 
 limit = args.limit
 batch_size = args.batch_size
-embeddings_batch_size = args.embedding_batch_size
-embedding_cache_checkpoint = args.embedding_cache_checkpoint
+embeddings_batch_size = args.embedding_batch_size()
+embedding_cache_checkpoint = args.embedding_cache_checkpoint()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 training_parameters = FlatClassifierModelTrainerParameters(
-    args.learning_rate, args.max_epochs
+    args.learning_rate(), args.max_epochs()
 )
 
-device = TrainScriptArgsParser().torch_device()
-print(f"⚙️  Using device {device}")
+print(f"⚙️  Using device {args.device()}")
 
 cwd = Path(__file__).resolve().parent
 
@@ -52,16 +51,11 @@ data_sources: list[DataSource] = []
 
 reference_data_dir = cwd / "reference_data"
 
-# Vague terms data source
-vague_terms_data_file = reference_data_dir / "vague_terms.csv"
-data_sources.append(VagueTermsCSVDataSource(vague_terms_data_file))
-
-# Extra references data source
-extra_data_file = reference_data_dir / "extra_references.csv"
+data_sources.append(VagueTermsCSVDataSource(args.vague_terms_data_file()))
 
 data_sources.append(
     BasicCSVDataSource(
-        extra_data_file,
+        args.extra_references_data_file(),
         code_col=1,
         description_col=0,
         authoritative=True,
@@ -69,15 +63,11 @@ data_sources.append(
     )
 )
 
-# Search references data source
 data_sources.append(SearchReferencesDataSource())
-
-# Combined Nomenclature self-explanatory data source
-cn_data_file = reference_data_dir / "CN2024_SelfText_EN_DE_FR.csv"
 
 data_sources.append(
     BasicCSVDataSource(
-        cn_data_file,
+        args.cn_data_file(),
         code_col=1,
         description_col=3,
         authoritative=True,
@@ -85,14 +75,9 @@ data_sources.append(
     )
 )
 
-# Append all the Tradesets data sources
-source_dir = cwd / "raw_source_data"
-
-tradesets_data_dir = source_dir / "tradesets_descriptions"
-
 data_sources += [
     BasicCSVDataSource(filename, encoding="latin_1")
-    for filename in tradesets_data_dir.glob("*.csv")
+    for filename in args.tradesets_data_dir().glob("*.csv")
 ]
 
 training_data_loader = TrainingDataLoader()
@@ -125,16 +110,16 @@ print("Creating the embeddings")
 
 embeddings_processor = EmbeddingsProcessor(
     data_dir,
-    torch_device=device,
-    batch_size=embeddings_batch_size,
-    cache_checkpoint=embedding_cache_checkpoint,
+    torch_device=args.torch_device(),
+    batch_size=args.embedding_batch_size(),
+    cache_checkpoint=args.embedding_cache_checkpoint(),
 )
 
 unique_embeddings = embeddings_processor.create_embeddings(text_values)
 
 # Now build and train the network
 trainer = FlatClassifierModelTrainer(
-    training_parameters, device=device, batch_size=batch_size
+    training_parameters, device=args.torch_device(), batch_size=args.batch_size()
 )
 
 # Convert the labels to a Tensor
