@@ -138,8 +138,17 @@ jobs:
           docker_layer_caching: false
       - run:
           name: "Build and Deploy AMI"
-          command: .circleci/bin/deployami
-          no_output_timeout: 30m # Takes about 25 minutes to build and deploy the AMI
+          command: .circleci/bin/buildami
+          no_output_timeout: 30m
+
+  build-model:
+    executor: base
+    steps:
+      - checkout
+      - run:
+          name: "Build and Deploy Model"
+          command: .circleci/bin/buildmodel
+          no_output_timeout: 30m
 
   start-training-instance:
     executor: base
@@ -168,10 +177,18 @@ workflows:
           name: build-ami-development
           context: trade-tariff-terraform-aws-development
 
+      - build-model:
+          name: build-model-development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-ami-development
+
       - build:
           name: build-development
           context: trade-tariff-terraform-aws-development
           environment: development
+          requires:
+            - build-model-development
           <<: *filter-not-main
 
       - deploy:
