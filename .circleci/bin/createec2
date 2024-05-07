@@ -99,12 +99,21 @@ validate_connection ()
 
 bring_code_inline ()
 {
-  execute_command "$1" "cd $PROJECT && git fetch && git checkout $SHA"
+  branch_name=$(git rev-parse --abbrev-ref HEAD)
+
+  execute_command "$1" "cd $PROJECT && git fetch origin $branch_name:$branch_name && git checkout $branch_name"
+}
+
+load_latest_input_data ()
+{
+  aws s3 cp s3://"$MODEL_BUCKET_NAME/raw_source_data.zip" .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
+  execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
 }
 
 run_training_script_on_ec2_instance ()
 {
-  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "cd $PROJECT && train.py --config-file search-config.toml"
+  execute_command "$1" "cd $PROJECT && make train"
 }
 
 copy_model_from_ec2_instance ()
@@ -126,7 +135,7 @@ LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
 SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
 KEY_PAIR_NAME=fpo-training
-MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+MODEL_BUCKET_NAME=trade-tariff-models-844815912454
 ACCOUNT_ID=$(fetch_account_id)
 PROJECT=trade-tariff-lambdas-fpo-search
 SHA=$(git rev-parse --short HEAD)
@@ -171,8 +180,11 @@ validate_connection "$PUBLIC_IP"
 echo "Bringing code inline..."
 bring_code_inline "$PUBLIC_IP"
 
+echo "Loading latest input data..."
+load_latest_input_data "$PUBLIC_IP"
+
 echo "Running training script on EC2 instance..."
-# run_training_script_on_ec2_instance "$PUBLIC_IP"
+run_training_script_on_ec2_instance "$PUBLIC_IP"
 
 echo "Copying model from EC2 instance..."
 # copy_model_from_ec2_instance "$PUBLIC_IP" "model.tar.gz"
@@ -181,4 +193,4 @@ echo "Copying model to S3..."
 # copy_model_to_s3 "model.tar.gz" "model.tar.gz"
 
 echo "Terminating EC2 instance..."
-terminate_ec2_instance "$INSTANCE_ID"
+# terminate_ec2_instance "$INSTANCE_ID"

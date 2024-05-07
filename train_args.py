@@ -27,7 +27,7 @@ class TrainScriptArgsParser:
         parser.add_argument(
             "--config",
             type=str,
-            help="the path to the configuration file to use for training (e.g. search-config.toml)",
+            help="the path to the configuration file to use for training (e.g. search-config.toml). Either this or specific arguments must be provided.",
         )
         parser.add_argument(
             "--digits",

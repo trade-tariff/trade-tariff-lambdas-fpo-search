@@ -2,6 +2,8 @@ from data_sources.vague_terms import VagueTermsCSVDataSource
 from train_args import TrainScriptArgsParser
 import logging
 from pathlib import Path
+import glob
+
 import pickle
 
 import torch
@@ -77,7 +79,7 @@ data_sources.append(
 
 data_sources += [
     BasicCSVDataSource(filename, encoding="latin_1")
-    for filename in args.tradesets_data_dir().glob("*.csv")
+    for filename in Path(args.tradesets_data_dir()).glob("*.csv")
 ]
 
 training_data_loader = TrainingDataLoader()

@@ -12,8 +12,8 @@ dev-env: install-dev .git/hooks/pre-commit
 	@echo "    source $(VENV)/bin/activate"
 	@echo "---------------------------------------------------------"
 
-train: install
-	${PYTHON} train.py
+train:
+	${PYTHON} train.py --config search-config.toml
 
 $(VENV)/bin/activate:
 	python3 -m venv $(VENV)
