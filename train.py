@@ -2,7 +2,6 @@ from data_sources.vague_terms import VagueTermsCSVDataSource
 from train_args import TrainScriptArgsParser
 import logging
 from pathlib import Path
-import glob
 
 import pickle
 
