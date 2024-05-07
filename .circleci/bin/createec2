@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -89,7 +88,7 @@ store_ec2_private_key ()
 
 execute_command ()
 {
-  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "$2"
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem ec2-user@"$1" "$2"
 }
 
 validate_connection ()
@@ -107,7 +106,7 @@ bring_code_inline ()
 load_latest_input_data ()
 {
   aws s3 cp s3://"$MODEL_BUCKET_NAME/raw_source_data.zip" .
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
   execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
 }
 
@@ -118,12 +117,12 @@ run_training_script_on_ec2_instance ()
 
 copy_model_from_ec2_instance ()
 {
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.tar.gz "$2"
-}
+  s3_prefix="$VERSION-$SHA"
 
-copy_model_to_s3 ()
-{
-  aws s3 cp "$1" s3://"$MODEL_BUCKET_NAME/$2"
+  execute_command "$1" "cd $PROJECT && zip model.zip target/* target/training_data/*"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem ec2-user@"$1":~/"$PROJECT"/model.zip .
+  aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
+  echo -n "" | aws s3 cp - s3://"$MODEL_BUCKET_NAME/$s3_prefix/development"
 }
 
 terminate_ec2_instance ()
@@ -139,7 +138,10 @@ MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 ACCOUNT_ID=$(fetch_account_id)
 PROJECT=trade-tariff-lambdas-fpo-search
 SHA=$(git rev-parse --short HEAD)
+VERSION=$(cat search-config.toml | grep version | awk '{print $3}' | sed 's/"//g')
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+INSTANCE_ID=$(launch_ec2_instance)
+PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
 
 echo "Launching EC2 instance with configuration..."
 echo
@@ -151,27 +153,15 @@ echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
 echo "💻 Account ID: $ACCOUNT_ID"
 echo "📦 Project: $PROJECT"
 echo "🌐 SHA: $SHA"
+echo "🔖 Version: $VERSION"
 echo "🌳 Branch: $BRANCH"
-echo
-
-INSTANCE_ID=$(launch_ec2_instance)
-
-echo "Instance ID: $INSTANCE_ID"
-echo
-echo "Waiting for instance to be available..."
-echo
-echo "This may take a few minutes..."
-echo "⏳"
-
-wait_for_instance_to_be_available "$INSTANCE_ID"
-
-echo "Instance is now available!"
-echo
-echo "Fetching public IP address..."
-PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
-echo
+echo "🚀 Instance ID: $INSTANCE_ID"
 echo "📞 Public IP: $PUBLIC_IP"
 echo
+
+echo "Waiting for instance to be available..."
+wait_for_instance_to_be_available "$INSTANCE_ID"
+echo "Instance is now available!"
 
 echo "Retrieving private key..."
 store_ec2_private_key "fpo-search-training-pem"
@@ -189,10 +179,7 @@ echo "Running training script on EC2 instance..."
 run_training_script_on_ec2_instance "$PUBLIC_IP"
 
 echo "Copying model from EC2 instance..."
-# copy_model_from_ec2_instance "$PUBLIC_IP" "model.tar.gz"
-
-echo "Copying model to S3..."
-# copy_model_to_s3 "model.tar.gz" "model.tar.gz"
+copy_model_from_ec2_instance "$PUBLIC_IP"
 
 echo "Terminating EC2 instance..."
-# terminate_ec2_instance "$INSTANCE_ID"
+terminate_ec2_instance "$INSTANCE_ID"
