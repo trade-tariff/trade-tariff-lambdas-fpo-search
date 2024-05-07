@@ -88,7 +88,7 @@ store_ec2_private_key ()
 
 execute_command ()
 {
-  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem ec2-user@"$1" "$2"
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "$2"
 }
 
 validate_connection ()
@@ -106,7 +106,7 @@ bring_code_inline ()
 load_latest_input_data ()
 {
   aws s3 cp s3://"$MODEL_BUCKET_NAME/raw_source_data.zip" .
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
   execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
 }
 
@@ -120,7 +120,7 @@ copy_model_from_ec2_instance ()
   s3_prefix="$VERSION-$SHA"
 
   execute_command "$1" "cd $PROJECT && zip model.zip target/* target/training_data/*"
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem ec2-user@"$1":~/"$PROJECT"/model.zip .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
   aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
   echo -n "" | aws s3 cp - s3://"$MODEL_BUCKET_NAME/$s3_prefix/development"
 }

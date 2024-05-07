@@ -56,7 +56,7 @@ jobs:
       - aws-cli/install
       - run:
           name: "Build and Push to ECR"
-          command: ./.circleci/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
+          command: ./.circleci/bin/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
 
   check:
     executor: python
