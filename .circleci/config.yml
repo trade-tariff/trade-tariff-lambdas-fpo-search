@@ -143,7 +143,6 @@ jobs:
       - run:
           name: "Build and Deploy Model"
           command: .circleci/bin/buildmodel
-          no_output_timeout: 30m
 
   clear-model-instances:
     executor: base
@@ -153,7 +152,6 @@ jobs:
       - run:
           name: "Clear Lingering Model Instances"
           command: .circleci/bin/clearinstances
-          no_output_timeout: 30m
 
 workflows:
   version: 2
