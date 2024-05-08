@@ -162,6 +162,7 @@ jobs:
       - run:
           name: "Build Model"
           command: .circleci/bin/buildmodel
+          no_output_timeout: 1h
 
   clear-model-instances:
     executor: base

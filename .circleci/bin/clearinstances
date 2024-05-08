@@ -11,8 +11,7 @@ fetch_ec2_instances_for_termination ()
           --region "us-east-1" \
           --query 'Reservations[*].Instances[?Tags[?Key==`Name` && starts_with(Value, `fpo-search-training-`)] && State.Name==`running`].InstanceId' \
           --output text |
-    awk '{for (i=1; i<=NF; i++) print "\"" $i "\""}' | # Terminate instances expects a quoted list of instance IDs in a single line
-    tr '\n' ' '
+          tr '\n' ' '
 }
 
 terminate_ec2_instances ()
