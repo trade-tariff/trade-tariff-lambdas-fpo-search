@@ -5,6 +5,17 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
+needsmodel ()
+{
+  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- search-config.toml
+
+  if [[ $? -eq 1 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 fetch_account_id ()
 {
   aws sts get-caller-identity --query Account --output text
@@ -72,7 +83,7 @@ fetch_ec2_instance_public_ip ()
 
 store_ec2_private_key ()
 {
-  secret_id="fpo-search-training-pem"
+  secret_id=$1
   region='eu-west-2'
 
   rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
@@ -122,6 +133,7 @@ copy_model_from_ec2_instance ()
   execute_command "$1" "cd $PROJECT && zip model.zip target/* target/training_data/*"
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
   aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
+  aws s3 cp search-config.toml s3://"$MODEL_BUCKET_NAME/$s3_prefix/search-config.toml"
   echo -n "" | aws s3 cp - s3://"$MODEL_BUCKET_NAME/$s3_prefix/development"
 }
 
@@ -129,6 +141,13 @@ terminate_ec2_instance ()
 {
   aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
 }
+
+# if needsmodel; then
+#   echo "Model needs to be trained"
+# else
+#   echo "Model does not need to be trained"
+#   exit 0
+# fi
 
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
