@@ -3,12 +3,47 @@ import os
 from pathlib import Path
 import pickle
 import shutil
-from typing import Optional
-import numpy as np
+from typing import Optional, List, Tuple
+import math
 from sentence_transformers import SentenceTransformer
 import torch
 import fnv_c
+from multiprocessing import Pool, cpu_count
 from inference.infer import transformer
+
+# Global variables for multiprocessing
+global_model = None
+global_torch_device = "cpu"
+global_batch_size = 100
+
+
+def init_worker(transformer_model: str, torch_device: str, batch_size: int):
+    """Initialize the model in each worker process."""
+    global global_model, global_torch_device, global_batch_size
+    global_model = SentenceTransformer(transformer_model, device=torch_device)
+    global_torch_device = torch_device
+    global_batch_size = batch_size
+
+
+def encode_texts(texts_batch: List[str]) -> List[torch.Tensor]:
+    """Encodes a batch of texts using the global SentenceTransformer model."""
+    return global_model.encode(
+        texts_batch,
+        batch_size=global_batch_size,
+        show_progress_bar=False,
+        convert_to_numpy=False,
+        device=global_torch_device,
+    )
+
+
+def process_batch(args: Tuple[List[str], List[int]]) -> List[Tuple[int, torch.Tensor]]:
+    """Helper function to process a batch concurrently."""
+    batch_texts, batch_indexes = args
+    batch_embeddings = encode_texts(batch_texts)
+    return [
+        (idx, embedding.cpu())
+        for idx, embedding in zip(batch_indexes, batch_embeddings)
+    ]
 
 
 class EmbeddingsProcessor:
@@ -29,9 +64,7 @@ class EmbeddingsProcessor:
         self._torch_device = torch_device
         self._batch_size = batch_size
         self._cache_checkpoint = cache_checkpoint
-        self._sentence_transformer_model = SentenceTransformer(
-            transformer_model, device=torch_device
-        )
+        self._transformer_model = transformer_model
         self._logger = logger
 
         self._load_cache()
@@ -60,63 +93,56 @@ class EmbeddingsProcessor:
 
             shutil.move(temp_file_path, self._cache_file)
 
-    def create_embeddings(self, texts: list[str]):
+    def create_embeddings(self, texts: List[str]) -> List[Optional[torch.Tensor]]:
         self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
-        # Initialize an empty list to store the embeddings
-        sentence_embeddings = []
+        sentence_embeddings = [None] * len(texts)
 
         texts_to_encode = []
         indexes_to_encode = []
 
         for idx, text in enumerate(texts):
             hash = fnv_c.fnv1a_64(str.encode(text))
-
             if self._cache is not None and hash in self._cache:
-                sentence_embeddings.append(torch.Tensor(self._cache[hash]))
+                sentence_embeddings[idx] = torch.Tensor(self._cache[hash])
             else:
-                sentence_embeddings.append(None)
                 texts_to_encode.append(text)
                 indexes_to_encode.append(idx)
 
         self._logger.info(f"ℹ️  Need to calculate {len(texts_to_encode)} uncached texts")
 
-        max_checkpoint = int(np.ceil(len(texts_to_encode) / self._cache_checkpoint))
+        max_checkpoint = math.ceil(len(texts_to_encode) / self._cache_checkpoint)
 
-        # Process texts in batches
-        for i in range(max_checkpoint):
-            self._logger.info(
-                f"ℹ️  Create embeddings - checkpoint {i + 1} of {max_checkpoint}..."
+        # Prepare batches for parallel processing
+        batches = [
+            (
+                texts_to_encode[
+                    i * self._cache_checkpoint : (i + 1) * self._cache_checkpoint
+                ],
+                indexes_to_encode[
+                    i * self._cache_checkpoint : (i + 1) * self._cache_checkpoint
+                ],
             )
+            for i in range(max_checkpoint)
+        ]
 
-            start_index = i * self._cache_checkpoint
-            end_index = min((i + 1) * self._cache_checkpoint, len(texts_to_encode))
+        # Initialize multiprocessing pool with model and device info
+        with Pool(
+            processes=cpu_count(),
+            initializer=init_worker,
+            initargs=(self._transformer_model, self._torch_device, self._batch_size),
+        ) as pool:
+            results = pool.map(process_batch, batches)
 
-            batch_texts = texts_to_encode[start_index:end_index]
-            batch_indexes = indexes_to_encode[start_index:end_index]
-
-            # Encode the batch of texts
-            batch_embeddings = self._sentence_transformer_model.encode(
-                batch_texts,
-                batch_size=self._batch_size,
-                show_progress_bar=True,
-                convert_to_numpy=False,
-                device=self._torch_device,
-            )
-
-            # Append the batch embeddings to the list
-            for idx, embedding in enumerate(batch_embeddings):
-                sentence_embeddings[batch_indexes[idx]] = embedding.cpu()
+        # Update sentence_embeddings and cache
+        for batch_results in results:
+            for idx, embedding in batch_results:
+                sentence_embeddings[idx] = embedding
 
                 if self._cache is not None:
-                    self._cache[fnv_c.fnv1a_64(str.encode(batch_texts[idx]))] = (
+                    self._cache[fnv_c.fnv1a_64(str.encode(texts[idx]))] = (
                         embedding.tolist()
                     )
 
-            self._save_cache()
-
-            if self._torch_device == "mps":
-                torch.mps.empty_cache()
-            elif self._torch_device == "cuda":
-                torch.cuda.empty_cache()
+        self._save_cache()
 
         return sentence_embeddings
