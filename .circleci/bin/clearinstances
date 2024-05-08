@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+fetch_ec2_instances_for_termination ()
+{
+  aws ec2 describe-instances \
+          --region "us-east-1" \
+          --query 'Reservations[*].Instances[?Tags[?Key==`Name` && starts_with(Value, `fpo-search-training-`)] && State.Name==`running`].InstanceId' \
+          --output text |
+    awk '{for (i=1; i<=NF; i++) print "\"" $i "\""}' | # Terminate instances expects a quoted list of instance IDs in a single line
+    tr '\n' ' '
+}
+
+terminate_ec2_instances ()
+{
+  aws ec2 terminate-instances --instance-ids $1 --region 'us-east-1'
+}
+
+echo "Fetching EC2 instances for termination..."
+instance_ids=$(fetch_ec2_instances_for_termination)
+if [ "$instance_ids" = "" ]; then
+  echo "No instances found for termination."
+  exit 0
+fi
+
+echo "Found instances: $instance_ids"
+
+echo "Terminating EC2 instances..."
+terminate_ec2_instances $instance_ids

@@ -145,6 +145,16 @@ jobs:
           command: .circleci/bin/buildmodel
           no_output_timeout: 30m
 
+  clear-model-instances:
+    executor: base
+    steps:
+      - checkout
+      - aws-cli/install
+      - run:
+          name: "Clear Lingering Model Instances"
+          command: .circleci/bin/clearinstances
+          no_output_timeout: 30m
+
 workflows:
   version: 2
 
@@ -267,3 +277,12 @@ workflows:
           requires:
             - deploy-production
           <<: *filter-release
+
+  nightly-clear-model-instances:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"    # Every day at midnight UTC
+          <<: *filter-main
+    jobs:
+      - clear-model-instances:
+          context: trade-tariff-fpo-models-development
