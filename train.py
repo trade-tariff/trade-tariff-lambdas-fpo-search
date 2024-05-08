@@ -86,6 +86,7 @@ training_data_loader = TrainingDataLoader()
 (text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
     data_sources, 8
 )
+print(f"Found {len(text_values)} unique descriptions")
 
 print("💾⇦ Saving subheadings")
 with open(subheadings_file, "wb") as fp:

@@ -29,7 +29,9 @@ class EmbeddingsProcessor:
         self._torch_device = torch_device
         self._batch_size = batch_size
         self._cache_checkpoint = cache_checkpoint
-        self._sentence_transformer_model = SentenceTransformer(transformer_model, device=torch_device)
+        self._sentence_transformer_model = SentenceTransformer(
+            transformer_model, device=torch_device
+        )
         self._logger = logger
 
         self._load_cache()
@@ -60,7 +62,8 @@ class EmbeddingsProcessor:
 
     def create_embeddings(self, texts: list[str]):
         self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
-
+        if len(texts) == 8:
+            self._logger.info(f"ℹ️  Creating embeddings for {texts}")
         # Initialize an empty list to store the embeddings
         sentence_embeddings = []
 
@@ -107,9 +110,9 @@ class EmbeddingsProcessor:
                 sentence_embeddings[batch_indexes[idx]] = embedding.cpu()
 
                 if self._cache is not None:
-                    self._cache[
-                        fnv_c.fnv1a_64(str.encode(batch_texts[idx]))
-                    ] = embedding.tolist()
+                    self._cache[fnv_c.fnv1a_64(str.encode(batch_texts[idx]))] = (
+                        embedding.tolist()
+                    )
 
             self._save_cache()
 
