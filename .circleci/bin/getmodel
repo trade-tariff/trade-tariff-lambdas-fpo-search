@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+current_model_version=$(cat search-config.toml | grep version | awk '{print $3}' | sed 's/"//g')
+
+# Find the latest model.zip file that matches our version
+# There can be multiple of these depending on how many models were built for this version across feature branches
+#
+# We always take the latest model using a jmespath query to reverse sort by LastModified and take the first result
+aws s3api list-objects-v2 \
+  --bucket "trade-tariff-models-382373577178" \
+  --prefix "$current_model_version" \
+  --query "reverse(sort_by(Contents[?ends_with(Key, 'model.zip')], &LastModified))[:1].Key" \
+  --output text
