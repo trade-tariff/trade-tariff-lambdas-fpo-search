@@ -29,7 +29,7 @@ class EmbeddingsProcessor:
         self._torch_device = torch_device
         self._batch_size = batch_size
         self._cache_checkpoint = cache_checkpoint
-        self._sentence_transformer_model = SentenceTransformer(transformer_model)
+        self._sentence_transformer_model = SentenceTransformer(transformer_model, device=torch_device)
         self._logger = logger
 
         self._load_cache()
