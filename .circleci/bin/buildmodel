@@ -142,12 +142,12 @@ terminate_ec2_instance ()
   aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
 }
 
-# if needsmodel; then
-#   echo "Model needs to be trained"
-# else
-#   echo "Model does not need to be trained"
-#   exit 0
-# fi
+if needsmodel; then
+  echo "Model needs to be trained"
+else
+  echo "Model does not need to be trained"
+  exit 0
+fi
 
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
