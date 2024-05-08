@@ -5,16 +5,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-needsmodel ()
-{
-  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- search-config.toml
-
-  if [[ $? -eq 1 ]]; then
-    return 0
-  else
-    return 1
-  fi
-}
+source .circleci/bin/needsmodel
 
 fetch_account_id ()
 {

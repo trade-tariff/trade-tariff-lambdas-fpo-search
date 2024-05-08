@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+needsmodel ()
+{
+  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- search-config.toml | grep -q search-config.toml
+
+  if [[ $? -eq 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
