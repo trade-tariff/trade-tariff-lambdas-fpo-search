@@ -62,8 +62,6 @@ class EmbeddingsProcessor:
 
     def create_embeddings(self, texts: list[str]):
         self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
-        if len(texts) == 8:
-            self._logger.info(f"ℹ️  Creating embeddings for {texts}")
         # Initialize an empty list to store the embeddings
         sentence_embeddings = []
 

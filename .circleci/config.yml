@@ -43,6 +43,23 @@ executors:
     resource_class: small
 
 jobs:
+  fetch-model:
+    executor: base
+    parameters:
+      environment:
+        type: string
+    steps:
+      - checkout
+      - aws-cli/install
+      - run:
+          name: "Fetch Model"
+          command: .circleci/bin/fetchmodel << parameters.environment >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - model.zip
+            - MODEL_VERSION
+
   build:
     executor: base
     parameters:
@@ -54,6 +71,8 @@ jobs:
           version: 20.10.11
           docker_layer_caching: false
       - aws-cli/install
+      - attach_workspace:
+          at: .
       - run:
           name: "Build and Push to ECR"
           command: ./.circleci/bin/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
@@ -131,7 +150,7 @@ jobs:
           version: 20.10.11
           docker_layer_caching: false
       - run:
-          name: "Build and Deploy AMI"
+          name: "Build AMI"
           command: .circleci/bin/buildami
           no_output_timeout: 30m
 
@@ -141,7 +160,7 @@ jobs:
       - checkout
       - aws-cli/install
       - run:
-          name: "Build and Deploy Model"
+          name: "Build Model"
           command: .circleci/bin/buildmodel
 
   clear-model-instances:
@@ -176,12 +195,19 @@ workflows:
           requires:
             - build-ami-development
 
+      - fetch-model:
+          name: fetch-model-development
+          environment: development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-model-development
+
       - build:
           name: build-development
           context: trade-tariff-terraform-aws-development
           environment: development
           requires:
-            - build-model-development
+            - fetch-model-development
           <<: *filter-not-main
 
       - deploy:
@@ -211,10 +237,18 @@ workflows:
 
   deploy-to-staging:
     jobs:
+      - fetch-model:
+          name: fetch-model-staging
+          environment: staging
+          context: trade-tariff-fpo-models-staging
+          <<: *filter-main
+
       - build:
           name: build-staging
           context: trade-tariff-terraform-aws-staging
           environment: staging
+          requires:
+            - fetch-model-staging
           <<: *filter-main
 
       - deploy:
@@ -254,10 +288,18 @@ workflows:
             - promote-to-production?
           <<: *filter-main
 
+      - fetch-model:
+          name: fetch-model-production
+          environment: production
+          context: trade-tariff-fpo-models-production
+          <<: *filter-release
+
       - deploy:
           name: deploy-production
           stage: production
           context: trade-tariff-lambda-deployments-production
+          requires:
+            - fetch-model-production
           <<: *filter-release
 
       - perftest:

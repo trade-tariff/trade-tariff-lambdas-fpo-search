@@ -37,8 +37,6 @@ class TrainingDataLoader:
             (data_source, data_source.get_codes(digits)) for data_source in data_sources
         ]
 
-        print(f"Found {len(data_sources_with_data)} data sources")
-
         # Go through all the code creating data sources and add them to the subheadings and the map
         for data_source, data in data_sources_with_data:
             if data_source.creates_codes:
