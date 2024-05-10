@@ -100,7 +100,6 @@ class EmbeddingsProcessor:
                 batch_size=self._batch_size,
                 show_progress_bar=True,
                 convert_to_numpy=False,
-                device=self._torch_device,
             )
 
             # Append the batch embeddings to the list

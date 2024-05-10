@@ -1,6 +1,7 @@
 import argparse
 import torch
 import tomllib
+import torch_xla.core.xla_model
 
 
 def config_from_file(func):
@@ -64,9 +65,9 @@ class TrainScriptArgsParser:
         parser.add_argument(
             "--device",
             type=str,
-            help="the torch device to use for training. if your hardware does not support the device, it will fall back to cpu.",
-            choices=["cpu", "mps", "cuda"],
-            default="cpu",
+            help="the torch device to use for training. if your hardware does not support the device, it will fall back to cpu. auto picks the best device available.",
+            choices=["xla", "cuda", "mps", "cpu", "auto"],
+            default="auto",
         )
         parser.add_argument(
             "--embedding-batch-size",
@@ -108,15 +109,20 @@ class TrainScriptArgsParser:
         self.parsed_args = parser.parse_args()
         self._parse_search_config()
 
-
     def torch_device(self):
         arg_device = self.device()
 
-        if arg_device == "cuda" and not torch.cuda.is_available():
-            return "cpu"
+        if arg_device == "xla":
+            return self._xla_device()
 
-        if arg_device == "mps" and not torch.backends.mps.is_available():
-            return "cpu"
+        if arg_device == "cuda":
+            return self._cuda_device()
+
+        if arg_device == "mps":
+            return self._mps_device()
+
+        if arg_device == "auto":
+            return self._auto_device()
 
         return arg_device
 
@@ -174,3 +180,31 @@ class TrainScriptArgsParser:
                 self.parsed_config = tomllib.load(f)
         else:
             self.parsed_config = None
+
+    def _auto_device(self):
+        if torch_xla.core.xla_model.xla_device_is_available():
+            return "xla"
+        elif torch.cuda.is_available():
+            return "cuda"
+        elif torch.backends.mps.is_available():
+            return "mps"
+        else:
+            return "cpu"
+
+    def _xla_device(self):
+        if not torch_xla.core.xla_model.xla_device_is_available():
+            return "cpu"
+
+        return "xla"
+
+    def _cuda_device(self):
+        if not torch.cuda.is_available():
+            return "cpu"
+
+        return "cuda"
+
+    def _mps_device(self):
+        if not torch.backends.mps.is_available():
+            return "cpu"
+
+        return "mps"
