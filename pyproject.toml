@@ -3,23 +3,21 @@ name = "hmrc_fpo_categorisation_api"
 description = "FPO Parcel Item Categorisation API"
 version = "0.1.0"
 dependencies = [
-    "numpy",
-    "sentence-transformers",
-    "torch",
-    "tqdm",
-    "fastapi",
-    "uvicorn",
-    "tqdm",
-    "aws-lambda-powertools",
-    "jmespath",
-    "prettytable",
-    "fnv-c"
+    "sentence-transformers", # Model/embedding generation
+    "torch", # Model/embedding generation
+    "torch-xla" # Model/embedding generation
+    "fnv-c", # Hashing of cached data keys during embedding generation
+    "tqdm", # Benchmarking
+    "prettytable", # Benchmarking
 ]
 
 [project.optional-dependencies]
 dev = [
+    "aws-lambda-powertools",
+    "fastapi",
     "pre-commit",
     "ruff"
+    "uvicorn",
 ]
 
 [tool.setuptools]

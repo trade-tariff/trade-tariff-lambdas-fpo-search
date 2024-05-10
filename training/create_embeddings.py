@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 import pickle
 import shutil
+import math
 from typing import Optional
-import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
 import fnv_c
@@ -80,7 +80,7 @@ class EmbeddingsProcessor:
 
         self._logger.info(f"ℹ️  Need to calculate {len(texts_to_encode)} uncached texts")
 
-        max_checkpoint = int(np.ceil(len(texts_to_encode) / self._cache_checkpoint))
+        max_checkpoint = int(math.ceil(len(texts_to_encode) / self._cache_checkpoint))
 
         # Process texts in batches
         for i in range(max_checkpoint):
