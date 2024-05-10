@@ -10,6 +10,9 @@ import time
 with open("REVISION", "r") as f:
     REVISION = f.read().strip()
 
+with open("MODEL_VERSION", "r") as f:
+    MODEL_VERSION = f.read().strip()
+
 
 def log_handler(func):
     def wrapper(self, event, _context):
@@ -87,7 +90,13 @@ class LambdaHandler:
     def handle_healthcheck_get(self, event, _context):
         return {
             "statusCode": 200,
-            "body": json.dumps({"git_sha1": REVISION, "healthy": True}),
+            "body": json.dumps(
+                {
+                    "git_sha1": REVISION,
+                    "model_version": MODEL_VERSION,
+                    "healthy": True,
+                }
+            ),
         }
 
     @log_handler

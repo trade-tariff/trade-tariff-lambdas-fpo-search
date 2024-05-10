@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-ENVIRONMENT=$1
+ENVIRONMENT=${1:?Environment not provided}
 MODEL_KEY=$(.circleci/bin/getmodel)
 VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
@@ -18,19 +18,21 @@ fi
 
 fetch_model() {
   echo "Fetching $ENVIRONMENT model"
-  aws s3 cp s3://"$MODEL_BUCKET_NAME/$MODEL_KEY" .
-  unzip model.zip
-  rm model.zip
+  aws s3 cp "s3://$MODEL_BUCKET_NAME/$MODEL_KEY" .
+  unzip -o "*.zip"
+  rm -f *.zip
 }
 
 mark_environment() {
-  marked_already=$(aws s3 ls s3://"$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT")
+  echo "Checking if $ENVIRONMENT is marked for $MODEL_KEY"
+  marked_already=$(aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT" || true)
+  echo "Marked already output: $marked_already"
 
-  if [ "$marked_already" == "0" ]; then
+  if [ "$marked_already" != "" ]; then
     echo "Marked already"
   else
     echo "Marking first $ENVIRONMENT deployment for $MODEL_KEY"
-    echo -n "" | aws s3 cp - s3://"$MODEL_BUCKET_NAME/$VERSION_PREFIX/staging"
+    echo -n "" | aws s3 cp - "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT/"
   fi
 }
 
