@@ -10,3 +10,4 @@ extra_data_file = "reference_data/extra_references.csv"
 cn_data_file = "reference_data/CN2024_SelfText_EN_DE_FR.csv"
 tradesets_data_dir = "raw_source_data/tradesets_descriptions"
 device = "xla" # see Trn1 guidance https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-neuronx/programming-guide/training/pytorch-neuron-programming-guide.html
+limit = 8
