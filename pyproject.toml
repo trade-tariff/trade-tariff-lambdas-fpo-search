@@ -5,7 +5,7 @@ version = "0.1.0"
 dependencies = [
     "sentence-transformers", # Model/embedding generation
     "torch", # Model/embedding generation
-    "torch-xla" # Model/embedding generation
+    "torch-xla", # Model/embedding generation
     "fnv-c", # Hashing of cached data keys during embedding generation
     "tqdm", # Benchmarking
     "prettytable", # Benchmarking
@@ -16,7 +16,7 @@ dev = [
     "aws-lambda-powertools",
     "fastapi",
     "pre-commit",
-    "ruff"
+    "ruff",
     "uvicorn",
 ]
 
