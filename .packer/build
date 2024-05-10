@@ -20,6 +20,7 @@ if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
 fi
 
 AMI_VERSION=$(cat .packer/ami-version.txt)
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 docker build .packer/ -t "$IMAGE_NAME"
 
@@ -27,7 +28,7 @@ docker run -v "$PWD"/:/packer \
   -w /app \
   -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
   -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-  "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" "$(basename $PACKER_TEMPLATE)"
+  "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" -var "git_branch=$GIT_BRANCH" "$(basename $PACKER_TEMPLATE)"
 
 if [ $? -eq 0 ]; then
   echo "Packer build completed successfully."

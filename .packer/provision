@@ -50,5 +50,7 @@ echo "$PYTHON_VERSION" > "$GIT_REPO/.python-version"
 
 cd "$GIT_REPO"
 
+git fetch origin $GIT_BRANCH:$GIT_BRANCH && git checkout $GIT_BRANCH
+
 python -m venv .venv && source .venv/bin/activate
 make install
