@@ -155,7 +155,8 @@ PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
 echo "Launching EC2 instance with configuration..."
 echo
 echo "📀 AMI: $LATEST_AMI"
-echo "📞 Subnet ID: $SUBNET_ID"
+echo "☎️📞Subnet ID: $SUBNET_ID"
+echo "☎️📞Public IP: $PUBLIC_IP"
 echo "🔓 Security Group IDs: $SECURITY_GROUP_IDS"
 echo "🔓 Key Pair Name: $KEY_PAIR_NAME"
 echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
@@ -165,7 +166,6 @@ echo "🌐 SHA: $SHA"
 echo "🔖 Version: $VERSION"
 echo "🌳 Branch: $BRANCH"
 echo "🚀 Instance ID: $INSTANCE_ID"
-echo "📞 Public IP: $PUBLIC_IP"
 echo
 
 echo "Waiting for instance to be available..."
