@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 import torch
 import tomllib
 
@@ -110,6 +111,12 @@ class TrainScriptArgsParser:
             help="the path to the tradesets data directory",
             default="raw_source_data/tradesets_descriptions",
         )
+        parser.add_argument(
+            "--embeddings-cache-enabled",
+            type=bool,
+            help="whether to cache embeddings or not",
+            default=True,
+        )
 
         self.parsed_args = parser.parse_args()
         self._parse_search_config()
@@ -130,6 +137,24 @@ class TrainScriptArgsParser:
             return self._auto_device()
 
         return arg_device
+
+    def target_dir(self):
+        cwd = Path(__file__).resolve().parent
+
+        return cwd / "target"
+
+    def data_dir(self):
+        return self.target_dir() / "training_data"
+
+    def cache_dir(self):
+        if self.embeddings_cache_enabled():
+            return self.data_dir()
+        else:
+            return None
+
+    @config_from_file
+    def embeddings_cache_enabled(self):
+        return self.parsed_args.embeddings_cache_enabled
 
     @config_from_file
     def device(self):

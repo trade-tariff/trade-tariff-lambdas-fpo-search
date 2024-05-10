@@ -29,23 +29,18 @@ print(f"⚙️  Using device {args.device()}")
 
 cwd = Path(__file__).resolve().parent
 
-target_dir = cwd / "target"
+target_dir = args.target_dir()
 target_dir.mkdir(parents=True, exist_ok=True)
 
-data_dir = target_dir / "training_data"
+data_dir = args.data_dir()
 data_dir.mkdir(parents=True, exist_ok=True)
 
 # First load in the training data
 print("💾⇨ Loading training data")
 
-text_values_file = data_dir / "text_values.pkl"
-texts_file = data_dir / "texts.pkl"
-labels_file = data_dir / "labels.pkl"
 subheadings_file = target_dir / "subheadings.pkl"
 
 data_sources: list[DataSource] = []
-
-reference_data_dir = cwd / "reference_data"
 
 data_sources.append(VagueTermsCSVDataSource(args.vague_terms_data_file()))
 
@@ -106,7 +101,7 @@ if args.limit() is not None:
 print("Creating the embeddings")
 
 embeddings_processor = EmbeddingsProcessor(
-    data_dir,
+    cache_path=args.cache_dir(),
     torch_device=args.torch_device(),
     batch_size=args.embedding_batch_size(),
     cache_checkpoint=args.embedding_cache_checkpoint(),
