@@ -38,6 +38,7 @@ mark_environment() {
 
 store_version() {
   echo "Storing version $VERSION_PREFIX"
+  rm -f MODEL_VERSION
   echo "$VERSION_PREFIX" > MODEL_VERSION
 }
 

@@ -18,11 +18,6 @@ from training.train_model import (
 
 args = TrainScriptArgsParser()
 
-limit = args.limit()
-batch_size = args.batch_size()
-embeddings_batch_size = args.embedding_batch_size()
-embedding_cache_checkpoint = args.embedding_cache_checkpoint()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
@@ -93,8 +88,8 @@ with open(subheadings_file, "wb") as fp:
     pickle.dump(subheadings, fp)
 
 # Impose the limit if required - this will limit the number of unique descriptions
-if limit is not None:
-    text_values = text_values[:limit]
+if args.limit() is not None:
+    text_values = text_values[:args.limit()]
 
     new_texts: list[int] = []
     new_labels: list[int] = []
@@ -121,7 +116,7 @@ unique_embeddings = embeddings_processor.create_embeddings(text_values)
 
 # Now build and train the network
 trainer = FlatClassifierModelTrainer(
-    training_parameters, device=args.torch_device(), batch_size=args.batch_size()
+    training_parameters, device=args.torch_device(), batch_size=args.model_batch_size()
 )
 
 # Convert the labels to a Tensor

@@ -62,7 +62,7 @@ class TrainScriptArgsParser:
             default=3,
         )
         parser.add_argument(
-            "--batch-size",
+            "--model-batch-size",
             type=int,
             help="the size of the batches to use when training the model. You should increase this if your GPU has tonnes of RAM!",
             default=1000,
@@ -144,8 +144,8 @@ class TrainScriptArgsParser:
         return self.parsed_args.max_epochs
 
     @config_from_file
-    def batch_size(self):
-        return self.parsed_args.batch_size
+    def model_batch_size(self):
+        return self.parsed_args.model_batch_size
 
     @config_from_file
     def embedding_batch_size(self):
