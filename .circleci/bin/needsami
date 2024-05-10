@@ -5,13 +5,40 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-needsami() {
-  # TODO: We could probably build a new AMI if either the packer files have changed or
-  # the pip dependencies have changed. For now, we'll just check the statically configured
-  # version
+amiexists() {
+  region=us-east-1
+  ami_version=$(cat .packer/ami-version.txt)
+  name="Deep Learning AMI Neuron PyTorch - ${ami_version}"
+  owner=$(aws sts get-caller-identity --query Account --output text)
+
+  image=$(aws ec2 describe-images \
+    --region "$region" \
+    --owners "$owner" \
+    --filters "Name=name,Values=${name}" 'Name=state,Values=available' \
+    --query 'reverse(sort_by(Images, &CreationDate))[:1].ImageId' \
+    --output text
+  )
+
+  if [[ -n "$image" ]]; then
+    echo "AMI $image already exists"
+    return 0
+  else
+    return 1
+  fi
+}
+
+versionchanged() {
   git diff --name-only "$(git merge-base main HEAD)"..HEAD -- .packer/ami-version.txt | grep -q .packer/ami-version.txt
 
   if [[ $? -eq 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+needsami() {
+  if ! amiexists || versionchanged; then
     return 0
   else
     return 1
