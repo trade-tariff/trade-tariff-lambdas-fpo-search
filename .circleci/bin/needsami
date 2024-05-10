@@ -38,9 +38,9 @@ versionchanged() {
 }
 
 needsami() {
-  if ! amiexists || versionchanged; then
-    return 0
-  else
+  if amiexists || ! versionchanged; then
     return 1
+  else
+    return 0
   fi
 }
