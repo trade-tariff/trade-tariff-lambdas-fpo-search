@@ -1,7 +1,12 @@
 import argparse
 import torch
 import tomllib
-import torch_xla.core.xla_model
+
+try:
+    # torch_xla is only available when running in EC2 so we dynamically import it if we're running in EC2
+    import torch_xla.core.xla_model
+except ImportError:
+    pass
 
 
 def config_from_file(func):
@@ -182,9 +187,13 @@ class TrainScriptArgsParser:
             self.parsed_config = None
 
     def _auto_device(self):
-        if torch_xla.core.xla_model.xla_device_is_available():
-            return "xla"
-        elif torch.cuda.is_available():
+        try:
+            if torch_xla.core.xla_model.xla_device_is_available():
+                return "xla"
+        except NameError:
+            pass
+
+        if torch.cuda.is_available():
             return "cuda"
         elif torch.backends.mps.is_available():
             return "mps"
@@ -192,7 +201,10 @@ class TrainScriptArgsParser:
             return "cpu"
 
     def _xla_device(self):
-        if not torch_xla.core.xla_model.xla_device_is_available():
+        try:
+            if not torch_xla.core.xla_model.xla_device_is_available():
+                return "cpu"
+        except NameError:
             return "cpu"
 
         return "xla"

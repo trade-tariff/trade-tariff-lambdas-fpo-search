@@ -53,4 +53,5 @@ cd "$GIT_REPO"
 git fetch origin $GIT_BRANCH:$GIT_BRANCH && git checkout $GIT_BRANCH
 python -m venv .venv && source .venv/bin/activate
 make install
+pip install torch-xla # Required for PyTorch XLA support
 git checkout main && git branch -D $GIT_BRANCH
