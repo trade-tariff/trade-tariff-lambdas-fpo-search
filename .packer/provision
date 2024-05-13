@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="3.10"
 
 if aws --version | grep "aws-cli/1"; then
   sudo yum remove -y awscli
