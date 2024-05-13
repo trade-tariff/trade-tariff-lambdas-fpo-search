@@ -19,6 +19,7 @@ from training.train_model import (
 args = TrainScriptArgsParser()
 args.print()
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
@@ -85,7 +86,7 @@ with open(subheadings_file, "wb") as fp:
 
 # Impose the limit if required - this will limit the number of unique descriptions
 if args.limit() is not None:
-    text_values = text_values[:args.limit()]
+    text_values = text_values[: args.limit()]
 
     new_texts: list[int] = []
     new_labels: list[int] = []

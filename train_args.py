@@ -11,7 +11,7 @@ except ImportError:
     pass
 
 
-logger = logging.getLogger()
+logger = logging.getLogger("config")
 logging.basicConfig(level=logging.INFO)
 
 
