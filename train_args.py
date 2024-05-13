@@ -5,7 +5,6 @@ import tomllib
 import logging
 
 try:
-    # torch_xla is only available when running in EC2 so we dynamically import it if we're running in EC2
     import torch_xla.core.xla_model
 except ImportError:
     pass
