@@ -236,7 +236,7 @@ class TrainScriptArgsParser:
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
             with open(self.parsed_args.config, "rb") as f:
-                self.parsed_config = toml.load(f)
+                self.parsed_config = toml.loads(str(f))
         else:
             self.parsed_config = None
 
