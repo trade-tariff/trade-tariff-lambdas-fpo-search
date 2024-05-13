@@ -2,12 +2,17 @@ import argparse
 from pathlib import Path
 import torch
 import tomllib
+import logging
 
 try:
     # torch_xla is only available when running in EC2 so we dynamically import it if we're running in EC2
     import torch_xla.core.xla_model
 except ImportError:
     pass
+
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO)
 
 
 def config_from_file(func):
@@ -120,6 +125,31 @@ class TrainScriptArgsParser:
 
         self.parsed_args = parser.parse_args()
         self._parse_search_config()
+
+    def print(self):
+        logger.info("Configuration:")
+        logger.info(f"  device: {self.device()}")
+        logger.info(f"  learning_rate: {self.learning_rate()}")
+        logger.info(f"  max_epochs: {self.max_epochs()}")
+        logger.info(f"  model_batch_size: {self.model_batch_size()}")
+        logger.info(f"  embedding_batch_size: {self.embedding_batch_size()}")
+        logger.info(
+            f"  embedding_cache_checkpoint: {self.embedding_cache_checkpoint()}"
+        )
+        logger.info(f"  vague_terms_data_file: {self.vague_terms_data_file()}")
+        logger.info(f"  limit: {self.limit()}")
+        logger.info(f"  digits: {self.digits()}")
+        logger.info(
+            f"  extra_references_data_file: {self.extra_references_data_file()}"
+        )
+        logger.info(f"  cn_data_file: {self.cn_data_file()}")
+        logger.info(f"  tradesets_data_dir: {self.tradesets_data_dir()}")
+        logger.info(f"  embeddings_cache_enabled: {self.embeddings_cache_enabled()}")
+        logger.info(f"  cache_dir: {self.cache_dir()}")
+        logger.info(f"  data_dir: {self.data_dir()}")
+        logger.info(f"  target_dir: {self.target_dir()}")
+        logger.info(f"  torch_device: {self.torch_device()}")
+        logger.info(f"  torch_version: {torch.__version__}")
 
     def torch_device(self):
         arg_device = self.device()

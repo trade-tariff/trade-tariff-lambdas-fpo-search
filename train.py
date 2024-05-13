@@ -17,6 +17,7 @@ from training.train_model import (
 )
 
 args = TrainScriptArgsParser()
+args.print()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
