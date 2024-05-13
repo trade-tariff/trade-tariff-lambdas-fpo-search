@@ -7,6 +7,12 @@ import math
 from typing import Optional
 from sentence_transformers import SentenceTransformer
 import torch
+
+try:
+    import torch_neuron
+except ImportError:
+    pass
+
 import fnv_c
 from inference.infer import transformer
 
@@ -29,36 +35,10 @@ class EmbeddingsProcessor:
         self._torch_device = torch_device
         self._batch_size = batch_size
         self._cache_checkpoint = cache_checkpoint
-        self._sentence_transformer_model = SentenceTransformer(
-            transformer_model, device=torch_device
-        )
+        self._sentence_transformer_model = SentenceTransformer(transformer_model)
         self._logger = logger
 
         self._load_cache()
-
-    def _load_cache(self):
-        if self._cache_file is not None:
-            if os.path.isfile(self._cache_file):
-                print("💾⇨ Loading embedding cache")
-                with open(str(self._cache_file), "rb") as fp:
-                    self._cache = pickle.load(fp)
-            else:
-                self._logger.info("ℹ️  Creating new embedding cache")
-                self._cache = {}
-        else:
-            self._cache = None
-
-    def _save_cache(self):
-        if self._cache_file is not None:
-            self._logger.info("💾⇦ Saving embedding cache")
-
-            # Write to a temp file first so that we don't corrupt an existing file
-            temp_file_path = str(self._cache_file) + ".tmp"
-
-            with open(temp_file_path, "wb") as temp_file:
-                pickle.dump(self._cache, temp_file)
-
-            shutil.move(temp_file_path, self._cache_file)
 
     def create_embeddings(self, texts: list[str]):
         self._logger.info(f"ℹ️  Creating embeddings for {len(texts)} texts")
@@ -119,3 +99,42 @@ class EmbeddingsProcessor:
                 torch.cuda.empty_cache()
 
         return sentence_embeddings
+
+    def _load_cache(self):
+        if self._cache_file is not None:
+            if os.path.isfile(self._cache_file):
+                print("💾⇨ Loading embedding cache")
+                with open(str(self._cache_file), "rb") as fp:
+                    self._cache = pickle.load(fp)
+            else:
+                self._logger.info("ℹ️  Creating new embedding cache")
+                self._cache = {}
+        else:
+            self._cache = None
+
+    def _save_cache(self):
+        if self._cache_file is not None:
+            self._logger.info("💾⇦ Saving embedding cache")
+
+            # Write to a temp file first so that we don't corrupt an existing file
+            temp_file_path = str(self._cache_file) + ".tmp"
+
+            with open(temp_file_path, "wb") as temp_file:
+                pickle.dump(self._cache, temp_file)
+
+            shutil.move(temp_file_path, self._cache_file)
+
+    def _transformer_model(self):
+        # TODO: Make these a sample of the input texts and probably cache somewhere
+        example_inputs = torch.randn(1, 128)
+
+        try:
+            neuron_model = torch_neuron.trace(
+                self._sentence_transformer_model, example_inputs=example_inputs
+            )
+        except NameError:
+            print("Torch-Neuron not available, skipping")
+            return None
+
+        # neuron_model.save("path_to_save_neuron_model")
+        return neuron_model

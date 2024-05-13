@@ -50,7 +50,7 @@ launch_ec2_instance ()
     --security-group-ids "$SECURITY_GROUP_IDS" \
     --instance-type trn1.2xlarge \
     --key-name "$KEY_PAIR_NAME" \
-    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":100,"DeleteOnTermination":true}}]' \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
     --associate-public-ip-address \
     --region 'us-east-1' \
     --output text \
