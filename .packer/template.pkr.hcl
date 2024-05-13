@@ -28,6 +28,7 @@ source "amazon-ebs" "source" {
   instance_type = "trn1.2xlarge"
   ssh_username  = "ec2-user"
   region        = "us-east-1"
+
   source_ami_filter {
     filters = {
       name                = "Deep Learning AMI Neuron PyTorch 1.13*" # Pin to a specific version for now
@@ -36,6 +37,13 @@ source "amazon-ebs" "source" {
     }
     most_recent = true
     owners      = ["898082745236"]
+  }
+
+  launch_block_device_mappings {
+    device_name           = "/dev/xvda"
+    volume_type           = "gp3"
+    volume_size           = 50
+    delete_on_termination = true
   }
 }
 
