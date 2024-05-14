@@ -2,8 +2,11 @@ from logging import Logger
 import logging
 import os
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
+import toml
+
 import torch
+from sentence_transformers import SentenceTransformer
+from model.model import SimpleNN
 
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
 vague_term_code = "vvvvvvvvvv"
@@ -17,6 +20,8 @@ transformer_cache_directory = os.environ.get(
 sentence_transformer_model_directory = (
     transformer_cache_directory + "sentence-transformers_" + transformer
 )
+
+logger: Logger = (logging.getLogger(),)
 
 
 class ClassificationResult:
@@ -38,10 +43,8 @@ class Classifier:
 class FlatClassifier(Classifier):
     def __init__(
         self,
-        model_file: Path,
         subheadings: list[str],
         device: str,
-        logger: Logger = logging.getLogger(),
     ) -> None:
         super().__init__()
 
@@ -54,11 +57,7 @@ class FlatClassifier(Classifier):
         self._logger = logger
 
         # Load the model from disk
-        logger.info(f"💾⇨ Loading model file: {model_file}")
-
-        # Make sure the model is on the correct device
-        self._model = torch.load(model_file, map_location=self._device)
-        logger.info("🧠⚡ Model loaded")
+        self._model = self.load_current_model().to(self._device)
 
         # Use predownloaded transformer if available
         if Path(sentence_transformer_model_directory).exists():
@@ -122,3 +121,28 @@ class FlatClassifier(Classifier):
             result.append(ClassificationResult(i[0], i[1]))
 
         return result
+
+    def load_current_model(self):
+        if self._model is not None:
+            return self._model
+
+        model_config = toml.load("search_config.toml")
+        model_file = model_config["model_file"]
+        model_input_size = model_config["model_input_size"]
+        model_hidden_size = model_config["model_hidden_size"]
+        model_output_size = model_config["model_output_size"]
+
+        logger.info(f"💾⇨ Loading model file: {model_file}")
+
+        model = SimpleNN(model_input_size, model_hidden_size, model_output_size)
+        try:
+            model.load_state_dict(torch.load(model_file, map_location=self._device))
+        except Exception as e:
+            logger.error(f"Failed to load the model: {e}")
+            raise e
+        model.eval()
+
+        self._model = model
+        logger.info("🧠⚡ Model loaded")
+
+        return model

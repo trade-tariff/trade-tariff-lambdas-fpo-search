@@ -4,12 +4,6 @@ import torch
 import toml
 import logging
 
-try:
-    import torch_xla.core.xla_model
-except ImportError:
-    pass
-
-
 logger = logging.getLogger("config")
 logging.basicConfig(level=logging.INFO)
 
@@ -235,18 +229,11 @@ class TrainScriptArgsParser:
 
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
-            with open(self.parsed_args.config, "rb") as f:
-                self.parsed_config = toml.loads(str(f))
+            self.parsed_config = toml.load(self.parsed_args.config)
         else:
             self.parsed_config = None
 
     def _auto_device(self):
-        try:
-            if torch_xla.core.xla_model.xla_device_is_available():
-                return "xla"
-        except NameError:
-            pass
-
         if torch.cuda.is_available():
             return "cuda"
         elif torch.backends.mps.is_available():
@@ -255,12 +242,6 @@ class TrainScriptArgsParser:
             return "cpu"
 
     def _xla_device(self):
-        try:
-            if not torch_xla.core.xla_model.xla_device_is_available():
-                return "cpu"
-        except NameError:
-            return "cpu"
-
         return "xla"
 
     def _cuda_device(self):

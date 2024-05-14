@@ -51,12 +51,15 @@ echo "$PYTHON_VERSION" > "$GIT_REPO/.python-version"
 cd "$GIT_REPO"
 
 git fetch origin "$GIT_BRANCH:$GIT_BRANCH" && git checkout "$GIT_BRANCH"
-python -m venv .venv && source .venv/bin/activate
-make install
+python -m venv venv
+source venv/bin/activate
 
-# Install torch-neuron framework plus compiler and deps
-pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com
-pip install neuronx-cc==2.12.68.0 torch-neuronx==1.13.1.1.13.1
-pip install toml
+make install
+pip install \
+  neuronx-cc==2.12.68.0 \
+  torch-neuronx==1.13.1.1.13.1 \
+  torch-xla==1.13.1 \
+  toml \
+  --extra-index-url https://pip.repos.neuron.amazonaws.com
 
 git checkout main && git branch -D "$GIT_BRANCH"
