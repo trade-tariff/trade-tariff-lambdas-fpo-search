@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.10"
+PYTHON_VERSION="3.11"
 
 if aws --version | grep "aws-cli/1"; then
   sudo yum remove -y awscli
@@ -53,13 +53,6 @@ cd "$GIT_REPO"
 git fetch origin "$GIT_BRANCH:$GIT_BRANCH" && git checkout "$GIT_BRANCH"
 python -m venv venv
 source venv/bin/activate
-
 make install
-pip install \
-  neuronx-cc==2.12.68.0 \
-  torch-neuronx==1.13.1.1.13.1 \
-  torch-xla==1.13.1 \
-  toml \
-  --extra-index-url https://pip.repos.neuron.amazonaws.com
 
 git checkout main && git branch -D "$GIT_BRANCH"

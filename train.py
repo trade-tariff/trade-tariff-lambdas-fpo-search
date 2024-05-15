@@ -122,7 +122,7 @@ labels = torch.tensor(labels, dtype=torch.long)
 
 embeddings = torch.stack([unique_embeddings[idx] for idx in texts])
 
-state_dict, model_class, input_size, hidden_size, output_size = trainer.run(embeddings, labels, len(subheadings))
+state_dict, input_size, hidden_size, output_size = trainer.run(embeddings, labels, len(subheadings))
 
 print("💾⇦ Saving model")
 
@@ -130,7 +130,6 @@ model_file = target_dir / "model.pt"
 torch.save(state_dict, model_file)
 
 config = toml.load("search-config.toml")
-config["model_file"] = model_file
 config["model_input_size"] = input_size
 config["model_hidden_size"] = hidden_size
 config["model_output_size"] = output_size

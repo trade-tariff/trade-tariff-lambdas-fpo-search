@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
 import torch
-import toml
+import tomllib
+import os
 import logging
 
 logger = logging.getLogger("config")
@@ -70,7 +71,7 @@ class TrainScriptArgsParser:
             "--device",
             type=str,
             help="the torch device to use for training. if your hardware does not support the device, it will fall back to cpu. auto picks the best device available.",
-            choices=["xla", "cuda", "mps", "cpu", "auto"],
+            choices=["cuda", "mps", "cpu", "auto"],
             default="auto",
         )
         parser.add_argument(
@@ -115,6 +116,18 @@ class TrainScriptArgsParser:
             help="whether to cache embeddings or not",
             default=True,
         )
+        parser.add_argument(
+            "--transformer",
+            type=str,
+            help="the transformer to use for generating the embeddings",
+            default="all-MiniLM-L6-v2",
+        )
+        parser.add_argument(
+            "--transformer-cache-directory",
+            type=str,
+            help="the cache directory for the transformer",
+            default="/tmp/sentence_transformers/",
+        )
 
         self.parsed_args = parser.parse_args()
         self._parse_search_config()
@@ -122,6 +135,8 @@ class TrainScriptArgsParser:
     def print(self):
         logger.info("Configuration:")
         logger.info(f"  device: {self.device()}")
+        logger.info(f"  torch_device: {self.torch_device()}")
+        logger.info(f"  torch_version: {torch.__version__}")
         logger.info(f"  learning_rate: {self.learning_rate()}")
         logger.info(f"  max_epochs: {self.max_epochs()}")
         logger.info(f"  model_batch_size: {self.model_batch_size()}")
@@ -141,14 +156,16 @@ class TrainScriptArgsParser:
         logger.info(f"  cache_dir: {self.cache_dir()}")
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
-        logger.info(f"  torch_device: {self.torch_device()}")
-        logger.info(f"  torch_version: {torch.__version__}")
+        logger.info(f"  transformer: {self.transformer()}")
+        logger.info(
+            f"  transformer_cache_directory: {self.transformer_cache_directory()}"
+        )
+        logger.info(
+            f"  transformer_model_directory: {self.transformer_model_directory()}"
+        )
 
     def torch_device(self):
         arg_device = self.device()
-
-        if arg_device == "xla":
-            return self._xla_device()
 
         if arg_device == "cuda":
             return self._cuda_device()
@@ -174,6 +191,13 @@ class TrainScriptArgsParser:
             return self.data_dir()
         else:
             return None
+
+    def transformer_model_directory(self):
+        return (
+            self.transformer_cache_directory()
+            + "sentence-transformers_"
+            + self.transformer()
+        )
 
     @config_from_file
     def embeddings_cache_enabled(self):
@@ -227,9 +251,32 @@ class TrainScriptArgsParser:
     def tradesets_data_dir(self):
         return self.parsed_args.tradesets_data_dir
 
+    @config_from_file
+    def transformer(self):
+        return self.parsed_args.transformer
+
+    @config_from_file
+    def transformer_cache_directory(self):
+        return self.parsed_args.transformer_cache_directory
+
+    # The following methods are all pulled from search config at
+    # inference time
+    @config_from_file
+    def model_input_size(self):
+        raise NotImplementedError
+
+    @config_from_file
+    def model_hidden_size(self):
+        raise NotImplementedError
+
+    @config_from_file
+    def model_output_size(self):
+        raise NotImplementedError
+
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
-            self.parsed_config = toml.load(self.parsed_args.config)
+            with open(self.parsed_args.config, "rb") as f:
+                self.parsed_config = tomllib.load(f)
         else:
             self.parsed_config = None
 
@@ -240,9 +287,6 @@ class TrainScriptArgsParser:
             return "mps"
         else:
             return "cpu"
-
-    def _xla_device(self):
-        return "xla"
 
     def _cuda_device(self):
         if not torch.cuda.is_available():

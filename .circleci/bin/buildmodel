@@ -48,7 +48,7 @@ launch_ec2_instance ()
     --image-id "$LATEST_AMI" \
     --subnet-id "$SUBNET_ID" \
     --security-group-ids "$SECURITY_GROUP_IDS" \
-    --instance-type trn1.2xlarge \
+    --instance-type p3.2xlarge \
     --key-name "$KEY_PAIR_NAME" \
     --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
     --associate-public-ip-address \
@@ -139,7 +139,7 @@ else
   exit 0
 fi
 
-LATEST_AMI=$(fetch_latest_ami_image_id_by_name "Deep Learning AMI Neuron PyTorch*")
+LATEST_AMI=$(fetch_latest_ami_image_id_by_name "FPO Training*")
 SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
 SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
 KEY_PAIR_NAME=fpo-training

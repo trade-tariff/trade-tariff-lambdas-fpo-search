@@ -8,20 +8,14 @@ import torch
 from sentence_transformers import SentenceTransformer
 from model.model import SimpleNN
 
+from train_args import TrainScriptArgsParser
+
+
+args = TrainScriptArgsParser()
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
 vague_term_code = "vvvvvvvvvv"
 
-transformer = os.environ.get(
-    "SENTENCE_TRANSFORMER_PRETRAINED_MODEL", "all-MiniLM-L6-v2"
-)
-transformer_cache_directory = os.environ.get(
-    "SENTENCE_TRANSFORMERS_HOME", "/tmp/sentence_transformers/"
-)
-sentence_transformer_model_directory = (
-    transformer_cache_directory + "sentence-transformers_" + transformer
-)
-
-logger: Logger = (logging.getLogger(),)
+logger: Logger = logging.getLogger("inference")
 
 
 class ClassificationResult:
@@ -49,7 +43,7 @@ class FlatClassifier(Classifier):
         super().__init__()
 
         logger.info(
-            f"💾⇨ Sentence Transformer cache directory: {sentence_transformer_model_directory}"
+            f"💾⇨ Sentence Transformer cache directory: {args.transformer_model_directory()}"
         )
 
         self._subheadings = subheadings
@@ -58,24 +52,7 @@ class FlatClassifier(Classifier):
 
         # Load the model from disk
         self._model = self.load_current_model().to(self._device)
-
-        # Use predownloaded transformer if available
-        if Path(sentence_transformer_model_directory).exists():
-            logger.info(
-                f"💾⇨ Loading Sentence Transformer model from {sentence_transformer_model_directory}"
-            )
-
-            exists = os.path.isdir(sentence_transformer_model_directory)
-            logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
-            self._sentence_transformer_model = SentenceTransformer(
-                sentence_transformer_model_directory, device=device
-            )
-        else:
-            logger.info(f"💾⇨ Downloading Sentence Transformer model {transformer}")
-            # Otherwise download it from the HuggingFace model hub
-            self._sentence_transformer_model = SentenceTransformer(
-                transformer, device=device
-            )
+        self._sentence_transformer_model = self.load_sentence_transformer()
 
     def classify(
         self, search_text: str, limit: int = 5, digits: int = 6
@@ -127,7 +104,9 @@ class FlatClassifier(Classifier):
             return self._model
 
         model_config = toml.load("search_config.toml")
-        model_file = model_config["model_file"]
+        cwd = Path(__file__).resolve().parent
+
+        model_file = cwd / "target" / "model.pt"
         model_input_size = model_config["model_input_size"]
         model_hidden_size = model_config["model_hidden_size"]
         model_output_size = model_config["model_output_size"]
@@ -146,3 +125,28 @@ class FlatClassifier(Classifier):
         logger.info("🧠⚡ Model loaded")
 
         return model
+
+    def load_sentence_transformer(self, args: TrainScriptArgsParser) -> SentenceTransformer:
+        if self._sentence_transformer_model is not None:
+            return self._sentence_transformer_model
+
+        if Path(args.transformer_model_directory()).exists():
+            logger.info(
+                f"💾⇨ Loading Sentence Transformer model from {args.transformer_model_directory()}"
+            )
+
+            exists = os.path.isdir(args.transformer_model_directory())
+            logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
+            self._sentence_transformer_model = SentenceTransformer(
+                args.transformer_model_directory(), device=self._device
+            )
+        else:
+            logger.info(
+                f"💾⇨ Downloading Sentence Transformer model {args.transformer()}"
+            )
+            # Otherwise download it from the HuggingFace model hub
+            self._sentence_transformer_model = SentenceTransformer(
+                args.transformer(), device=self._device
+            )
+
+        return self._sentence_transformer_model

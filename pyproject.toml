@@ -4,6 +4,7 @@ description = "FPO Parcel Item Categorisation API"
 version = "0.1.0"
 dependencies = [
     "sentence-transformers", # Model/embedding generation
+    "torch", # Model/embedding generation
     "fnv-c", # Hashing of cached data keys during embedding generation
     "tqdm", # Benchmarking
     "prettytable", # Benchmarking

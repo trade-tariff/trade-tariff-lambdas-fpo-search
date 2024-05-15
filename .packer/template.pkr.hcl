@@ -19,30 +19,30 @@ variable "git_branch" {
 }
 
 source "amazon-ebs" "source" {
-  ami_name = "Deep Learning AMI Neuron PyTorch - ${var.ami_version}"
+  ami_name = "FPO Training ${var.ami_version}"
   ami_users = [
     "844815912454",
     "382373577178",
     "451934005581"
   ]
-  instance_type = "trn1.2xlarge"
+  instance_type = "t2.micro"
   ssh_username  = "ec2-user"
   region        = "us-east-1"
 
   source_ami_filter {
     filters = {
-      name                = "Deep Learning AMI Neuron PyTorch 1.13*" # Pin to a specific version for now
+      name                = "Amazon Linux 2023*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["898082745236"]
+    owners      = ["679593333241"]
   }
 
   launch_block_device_mappings {
     device_name           = "/dev/xvda"
     volume_type           = "gp3"
-    volume_size           = 50
+    volume_size           = 30 # default block mappings are for 8 gb which isn't enough for our dependencies
     delete_on_termination = true
   }
 }
