@@ -33,6 +33,7 @@ class TrainScriptArgsParser:
             "--config",
             type=str,
             help="the path to the configuration file to use for training (e.g. search-config.toml). Either this or specific arguments must be provided.",
+            required=False
         )
         parser.add_argument(
             "--digits",
@@ -128,7 +129,7 @@ class TrainScriptArgsParser:
             default="/tmp/sentence_transformers/",
         )
 
-        self.parsed_args = parser.parse_args()
+        self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
 
     def print(self):
