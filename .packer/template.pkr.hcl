@@ -25,24 +25,15 @@ source "amazon-ebs" "source" {
     "382373577178",
     "451934005581"
   ]
-  instance_type = "t3.large"
+  instance_type = "p2.xlarge"
   ssh_username  = "ec2-user"
   region        = "us-east-1"
 
-  source_ami_filter {
-    filters = {
-      description         = "Amazon Linux 2 Graphics AMI 2.0.20240329.0"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-      architecture        = "x86_64"
-    }
-    most_recent = true
-    owners      = ["679593333241"]
-  }
+  source_ami = "ami-0a8b4201c73c1b68f"
 
   launch_block_device_mappings {
     device_name           = "/dev/xvda"
-    volume_type           = "gp3"
+    volume_type           = "gp2"
     volume_size           = 30 # default block mappings are for 8 gb which isn't enough for our dependencies
     delete_on_termination = true
   }
