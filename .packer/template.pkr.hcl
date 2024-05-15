@@ -35,9 +35,9 @@ source "amazon-ebs" "source" {
       root-device-type    = "ebs"
       virtualization-type = "hvm"
       architecture        = "x86_64"
-      image-owner-alias   = ["amazon"]
     }
     most_recent = true
+    owners      = ["137112412989"]
   }
 
   launch_block_device_mappings {
