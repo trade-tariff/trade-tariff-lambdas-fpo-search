@@ -25,7 +25,7 @@ source "amazon-ebs" "source" {
     "382373577178",
     "451934005581"
   ]
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   ssh_username  = "ec2-user"
   region        = "us-east-1"
 
