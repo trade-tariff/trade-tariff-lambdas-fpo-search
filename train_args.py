@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 import torch
 import tomllib
-import os
 import logging
 
 logger = logging.getLogger("config")
