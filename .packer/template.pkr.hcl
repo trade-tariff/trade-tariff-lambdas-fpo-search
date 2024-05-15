@@ -31,13 +31,13 @@ source "amazon-ebs" "source" {
 
   source_ami_filter {
     filters = {
-      name                = "Amazon Linux 2023*"
+      description         = "Amazon Linux 2 AMI 2.0*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
       architecture        = "x86_64"
+      image-owner-alias   = ["amazon"]
     }
     most_recent = true
-    owners      = ["679593333241"]
   }
 
   launch_block_device_mappings {
