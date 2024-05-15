@@ -104,6 +104,7 @@ if args.limit() is not None:
 print("Creating the embeddings")
 
 embeddings_processor = EmbeddingsProcessor(
+    transformer_model=args.transformer(),
     cache_path=args.cache_dir(),
     torch_device=args.torch_device(),
     batch_size=args.embedding_batch_size(),

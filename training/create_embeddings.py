@@ -13,11 +13,11 @@ import fnv_c
 class EmbeddingsProcessor:
     def __init__(
         self,
+        transformer_model: str,
         cache_path: Optional[Path] = None,
         torch_device: str = "cpu",
         batch_size: int = 100,
         cache_checkpoint: int = 50000,
-        transformer_model: str = transformer,
         logger: logging.Logger = logging.getLogger(),
     ) -> None:
         if cache_path is None:
