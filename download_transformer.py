@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
-from inference.infer import transformer
+from train_args import TrainScriptArgsParser
 
+args = TrainScriptArgsParser()
 
 # Just a simple script to download the Sentence Transformer model so that they can be baked into the docker build for quicker startup
-SentenceTransformer(transformer)
+SentenceTransformer(args.transformer())

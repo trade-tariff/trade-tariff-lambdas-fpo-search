@@ -8,7 +8,6 @@ from typing import Optional
 from sentence_transformers import SentenceTransformer
 import torch
 import fnv_c
-from inference.infer import transformer
 
 
 class EmbeddingsProcessor:
