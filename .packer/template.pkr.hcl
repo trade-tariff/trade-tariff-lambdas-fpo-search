@@ -34,6 +34,7 @@ source "amazon-ebs" "source" {
       name                = "Amazon Linux 2023*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
+      architecture        = "x86_64"
     }
     most_recent = true
     owners      = ["679593333241"]
