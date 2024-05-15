@@ -8,7 +8,7 @@ set -o noclobber
 amiexists() {
   region=us-east-1
   ami_version=$(cat .packer/ami-version.txt)
-  name="Deep Learning AMI Neuron PyTorch - ${ami_version}"
+  name="FPO Training ${ami_version}"
   owner=$(aws sts get-caller-identity --query Account --output text)
 
   image=$(aws ec2 describe-images \
