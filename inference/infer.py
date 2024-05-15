@@ -2,7 +2,6 @@ from logging import Logger
 import logging
 import os
 from pathlib import Path
-import toml
 
 import torch
 from sentence_transformers import SentenceTransformer
@@ -51,7 +50,7 @@ class FlatClassifier(Classifier):
         self._logger = logger
 
         # Load the model from disk
-        self._model = self.load_current_model().to(self._device)
+        self._model = self.load_model().to(self._device)
         self._sentence_transformer_model = self.load_sentence_transformer()
 
     def classify(
@@ -99,37 +98,30 @@ class FlatClassifier(Classifier):
 
         return result
 
-    def load_current_model(self):
-        if self._model is not None:
-            return self._model
-
-        model_config = toml.load("search_config.toml")
-        cwd = Path(__file__).resolve().parent
-
-        model_file = cwd / "target" / "model.pt"
-        model_input_size = model_config["model_input_size"]
-        model_hidden_size = model_config["model_hidden_size"]
-        model_output_size = model_config["model_output_size"]
+    def load_model(self):
+        model_file = args.target_dir() / "model.pt"
 
         logger.info(f"💾⇨ Loading model file: {model_file}")
 
-        model = SimpleNN(model_input_size, model_hidden_size, model_output_size)
+        model = SimpleNN(
+            args.model_input_size(), args.model_hidden_size(), args.model_output_size()
+        )
+
         try:
             model.load_state_dict(torch.load(model_file, map_location=self._device))
         except Exception as e:
             logger.error(f"Failed to load the model: {e}")
             raise e
+
         model.eval()
 
-        self._model = model
         logger.info("🧠⚡ Model loaded")
 
         return model
 
-    def load_sentence_transformer(self, args: TrainScriptArgsParser) -> SentenceTransformer:
-        if self._sentence_transformer_model is not None:
-            return self._sentence_transformer_model
-
+    def load_sentence_transformer(
+        self, args: TrainScriptArgsParser
+    ) -> SentenceTransformer:
         if Path(args.transformer_model_directory()).exists():
             logger.info(
                 f"💾⇨ Loading Sentence Transformer model from {args.transformer_model_directory()}"
@@ -137,7 +129,7 @@ class FlatClassifier(Classifier):
 
             exists = os.path.isdir(args.transformer_model_directory())
             logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
-            self._sentence_transformer_model = SentenceTransformer(
+            return SentenceTransformer(
                 args.transformer_model_directory(), device=self._device
             )
         else:
@@ -145,8 +137,4 @@ class FlatClassifier(Classifier):
                 f"💾⇨ Downloading Sentence Transformer model {args.transformer()}"
             )
             # Otherwise download it from the HuggingFace model hub
-            self._sentence_transformer_model = SentenceTransformer(
-                args.transformer(), device=self._device
-            )
-
-        return self._sentence_transformer_model
+            return SentenceTransformer(args.transformer(), device=self._device)

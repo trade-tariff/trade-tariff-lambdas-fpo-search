@@ -258,8 +258,6 @@ class TrainScriptArgsParser:
     def transformer_cache_directory(self):
         return self.parsed_args.transformer_cache_directory
 
-    # The following methods are all pulled from search config at
-    # inference time
     @config_from_file
     def model_input_size(self):
         raise NotImplementedError
