@@ -28,6 +28,8 @@ docker run -v "$PWD"/:/packer \
   -w /app \
   -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
   -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+  -e AWS_MAX_ATTEMPTS=300 \
+  -e AWS_POLL_DELAY_SECONDS=10 \
   "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" -var "git_branch=$GIT_BRANCH" "$(basename $PACKER_TEMPLATE)"
 
 if [ $? -eq 0 ]; then
