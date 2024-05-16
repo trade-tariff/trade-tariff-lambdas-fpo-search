@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 import torch
-import tomllib
+import toml
 import logging
 
 logger = logging.getLogger("config")
@@ -273,8 +273,7 @@ class TrainScriptArgsParser:
 
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
-            with open(self.parsed_args.config, "rb") as f:
-                self.parsed_config = tomllib.load(f)
+            self.parsed_config = toml.load(self.parsed_args.config)
         else:
             self.parsed_config = None
 
