@@ -35,7 +35,7 @@ limit = args.limit
 digits = args.digits
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger("infer")
 
 subheadings_file = target_dir / "subheadings.pkl"
 if not subheadings_file.exists():

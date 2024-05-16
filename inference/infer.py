@@ -11,6 +11,8 @@ from train_args import TrainScriptArgsParser
 
 
 args = TrainScriptArgsParser()
+args.load_config_file()
+
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
 vague_term_code = "vvvvvvvvvv"
 

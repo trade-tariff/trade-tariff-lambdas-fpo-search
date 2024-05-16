@@ -271,6 +271,9 @@ class TrainScriptArgsParser:
     def model_output_size(self):
         raise NotImplementedError
 
+    def load_config_file(self):
+        self.parsed_config = toml.load('search-config.toml')
+
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
             self.parsed_config = toml.load(self.parsed_args.config)

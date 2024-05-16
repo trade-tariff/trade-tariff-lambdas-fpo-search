@@ -84,6 +84,9 @@ shell:
 test:
 	${PYTHON} -m unittest -v -b
 
+test-infer:
+	${PYTHON} infer.py "red herring"
+
 deploy-development:
 	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"
 
