@@ -261,15 +261,15 @@ class TrainScriptArgsParser:
 
     @config_from_file
     def model_input_size(self):
-        raise NotImplementedError
+        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
 
     @config_from_file
     def model_hidden_size(self):
-        raise NotImplementedError
+        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
 
     @config_from_file
     def model_output_size(self):
-        raise NotImplementedError
+        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
 
     def load_config_file(self):
         self.parsed_config = toml.load('search-config.toml')
