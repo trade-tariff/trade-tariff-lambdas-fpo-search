@@ -119,9 +119,7 @@ class FlatClassifier(Classifier):
 
         return model
 
-    def load_sentence_transformer(
-        self, args: TrainScriptArgsParser
-    ) -> SentenceTransformer:
+    def load_sentence_transformer(self) -> SentenceTransformer:
         if Path(args.transformer_model_directory()).exists():
             logger.info(
                 f"💾⇨ Loading Sentence Transformer model from {args.transformer_model_directory()}"
