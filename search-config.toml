@@ -12,3 +12,4 @@ tradesets_data_dir = "raw_source_data/tradesets_descriptions"
 device = "cuda"
 embeddings-cache-enabled = false
 transformer = "all-MiniLM-L6-v2"
+limit = 1
