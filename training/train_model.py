@@ -85,7 +85,6 @@ class FlatClassifierModelTrainer(ModelTrainer):
                     f"Epoch {epoch+1}/{max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
                 )
 
-        # Move the model to CPU before saving for compatible serialization for inference later
         return (
             model.to("cpu").state_dict(),
             input_size,

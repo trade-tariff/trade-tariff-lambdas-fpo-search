@@ -30,16 +30,7 @@ source "amazon-ebs" "source" {
   ssh_username  = "ec2-user"
   region        = "us-east-1"
 
-  source_ami_filter {
-    filters = {
-      description         = "Deep Learning AMI (Amazon Linux 2) v2022"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-      architecture        = "x86_64"
-    }
-    most_recent = true
-    owners      = ["679593333241"]
-  }
+  source_ami = "ami-0b0307e6a5c41a255"
 }
 
 build {
