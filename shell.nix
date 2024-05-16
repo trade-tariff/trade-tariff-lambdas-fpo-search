@@ -10,6 +10,14 @@ in pkgs.mkShell {
       ps.sentence-transformers
       ps.sentry-sdk
       ps.toml
+      ps.typing-extensions
     ]))
   ];
+  shellHook = ''
+    rm -rf venv
+    python -m venv venv
+    source venv/bin/activate
+    pip install ruff
+    pip install -r requirements_lambda.txt
+  '';
 }
