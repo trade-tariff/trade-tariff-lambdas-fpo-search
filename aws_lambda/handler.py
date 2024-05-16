@@ -49,7 +49,7 @@ class LambdaHandler:
     def __init__(
         self,
         classifier: Classifier,
-        logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger(),
+        logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger("handler"),
     ) -> None:
         self._classifier = classifier
         self._logger = logger

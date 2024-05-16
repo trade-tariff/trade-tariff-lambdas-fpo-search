@@ -58,6 +58,7 @@ jobs:
           root: .
           paths:
             - target/
+            - search-config.toml
             - MODEL_VERSION
 
   build:

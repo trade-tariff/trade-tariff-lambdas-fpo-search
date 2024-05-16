@@ -23,7 +23,7 @@ class FlatClassifierModelTrainer(ModelTrainer):
         parameters: FlatClassifierModelTrainerParameters = FlatClassifierModelTrainerParameters(),
         device: str = "cpu",
         batch_size: int = 1000,
-        logger: logging.Logger = logging.getLogger(),
+        logger: logging.Logger = logging.getLogger("train"),
     ) -> None:
         self._parameters = parameters
         self._device = device

@@ -20,15 +20,14 @@ from training.train_model import (
 args = TrainScriptArgsParser()
 args.print()
 
-
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger("train")
 
 training_parameters = FlatClassifierModelTrainerParameters(
     args.learning_rate(), args.max_epochs()
 )
 
-print(f"⚙️  Using device {args.device()}")
+print(f"⚙️  Using device {args.torch_device()}")
 
 cwd = Path(__file__).resolve().parent
 
@@ -123,7 +122,9 @@ labels = torch.tensor(labels, dtype=torch.long)
 
 embeddings = torch.stack([unique_embeddings[idx] for idx in texts])
 
-state_dict, input_size, hidden_size, output_size = trainer.run(embeddings, labels, len(subheadings))
+state_dict, input_size, hidden_size, output_size = trainer.run(
+    embeddings, labels, len(subheadings)
+)
 
 print("💾⇦ Saving model")
 

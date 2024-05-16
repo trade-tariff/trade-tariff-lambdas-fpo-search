@@ -18,7 +18,7 @@ class EmbeddingsProcessor:
         torch_device: str = "cpu",
         batch_size: int = 100,
         cache_checkpoint: int = 50000,
-        logger: logging.Logger = logging.getLogger(),
+        logger: logging.Logger = logging.getLogger("embeddings"),
     ) -> None:
         if cache_path is None:
             self._cache_file = None

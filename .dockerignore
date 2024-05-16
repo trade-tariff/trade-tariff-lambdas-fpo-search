@@ -24,5 +24,7 @@ venv
 raw_source_data
 target*/training_data
 target.zip
+model.zip
+embeddings.zip
 .vscode
 .DS_Store

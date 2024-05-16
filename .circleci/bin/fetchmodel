@@ -19,8 +19,8 @@ fi
 fetch_model() {
   echo "Fetching $ENVIRONMENT model"
   aws s3 cp "s3://$MODEL_BUCKET_NAME/$MODEL_KEY" .
+  aws s3 cp "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX"/search-config.toml .
   unzip model.zip
-  rm model.zip target/training_data/embeddings-cache*
 }
 
 mark_environment() {
