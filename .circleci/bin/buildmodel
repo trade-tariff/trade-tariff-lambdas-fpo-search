@@ -48,7 +48,7 @@ launch_ec2_instance ()
     --image-id "$LATEST_AMI" \
     --subnet-id "$SUBNET_ID" \
     --security-group-ids "$SECURITY_GROUP_IDS" \
-    --instance-type p3.2xlarge \
+    --instance-type p3.8xlarge \
     --key-name "$KEY_PAIR_NAME" \
     --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
     --associate-public-ip-address \
