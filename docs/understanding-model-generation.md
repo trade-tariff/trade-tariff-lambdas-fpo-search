@@ -1,16 +1,15 @@
 # Understanding model generation
 
-We generate models which are used to classify input descriptions as 6 or 8 digit
-goods nomenclature codes.
+In our pipeline, we generate machine learning models designed to classify input descriptions into specific goods nomenclature codes, either 6 or 8 digits long. This document outlines the key components and steps involved in this process, ensuring transparency and reproducibility.
 
-This process depends on a few things:
+## Key Components
 
-- [DLAMI][]
-- [Packer][packer]
-- EC2
-- CI (CircleCI)
-- raw_data_sources (the inputs to the embeddings)
-- some additional data sources (that change over time)
+- **DLAMI (Deep Learning AMI)**: Amazon Machine Images specially configured for deep learning tasks. [Learn more about DLAMI](https://docs.aws.amazon.com/dlami/latest/devguide/gs.html).
+- **Packer**: Used to create machine images from a single source configuration. [Learn more about Packer](https://www.packer.io/).
+- **EC2**: Amazon Elastic Compute Cloud where the models are trained and deployed.
+- **CircleCI**: Our continuous integration service that orchestrates the build and deployment processes.
+- **Raw Data Sources**: Essential inputs needed for generating embeddings and training the models.
+- **Additional Data Sources**: Supplementary data that may change over time and influence model training.
 
 A model is generated when changes are made to the search-config.toml file
 and a feature branch is opened.
@@ -33,7 +32,7 @@ aws s3 ls --human-readable --recursive s3://trade-tariff-models-382373577178/
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/development # indicates we've deployed this model to development
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/staging # indicates we've deployed this model to staging
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/production # indicates we've deployed this model to production
-2024-05-16 21:29:56    4.0 GiB  0.0.2-aff1242/embeddings.zip # contains the embeddings (needed to generate embeddings)
+2024-05-16 21:29:56    4.0 GiB  0.0.2-aff1242/embeddings.zip # contains the embeddings (needed to generate the model)
 2024-05-16 21:29:52  181.5 MiB  0.0.2-aff1242/model.zip # contains the model and suhbeadings file (needed for inference)
 2024-05-16 21:30:24  569 Bytes  0.0.2-aff1242/search-config.toml # includes the model inputs for instantiation of this model
 2024-05-16 21:30:24  1.5 KB     0.0.2-aff1242/benchmark_results.xml # a junit formatted results file including the accuracy results for this model
