@@ -143,7 +143,7 @@ jobs:
       - checkout
       - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
 
-  build-and-deploy-ami:
+  build-ami:
     executor: base
     steps:
       - checkout
@@ -188,7 +188,7 @@ workflows:
             - check
           <<: *filter-not-main
 
-      - build-and-deploy-ami:
+      - build-ami:
           name: build-ami-development
           context: trade-tariff-terraform-aws-development
 
