@@ -26,13 +26,12 @@ fetch_model() {
 mark_environment() {
   echo "Checking if $ENVIRONMENT is marked for $MODEL_KEY"
   marked_already=$(aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT" || true)
-  echo "Marked already output: $marked_already"
 
   if [ "$marked_already" != "" ]; then
     echo "Marked already"
   else
-    echo "Marking first $ENVIRONMENT deployment for $MODEL_KEY"
-    echo -n "" | aws s3 cp - "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT/"
+    echo "Marking first $ENVIRONMENT deployment for prefix $VERSION_PREFIX"
+    echo -n "" | aws s3 cp - "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$ENVIRONMENT"
   fi
 }
 
