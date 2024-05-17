@@ -23,7 +23,7 @@ class FlatClassifierModelTrainer(ModelTrainer):
         parameters: FlatClassifierModelTrainerParameters = FlatClassifierModelTrainerParameters(),
         device: str = "cpu",
         batch_size: int = 1000,
-        logger: logging.Logger = logging.getLogger(),
+        logger: logging.Logger = logging.getLogger("train"),
     ) -> None:
         self._parameters = parameters
         self._device = device
@@ -85,4 +85,9 @@ class FlatClassifierModelTrainer(ModelTrainer):
                     f"Epoch {epoch+1}/{max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
                 )
 
-        return model
+        return (
+            model.to("cpu").state_dict(),
+            input_size,
+            hidden_size,
+            output_size,
+        )

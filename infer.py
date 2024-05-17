@@ -35,7 +35,7 @@ limit = args.limit
 digits = args.digits
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger("infer")
 
 subheadings_file = target_dir / "subheadings.pkl"
 if not subheadings_file.exists():
@@ -44,10 +44,6 @@ if not subheadings_file.exists():
 with open(subheadings_file, "rb") as fp:
     subheadings = pickle.load(fp)
 
-model_file = target_dir / "model.pt"
-if not model_file.exists():
-    raise FileNotFoundError(f"Could not find model file: {model_file}")
-
-classifier = FlatClassifier(model_file, subheadings, device)
+classifier = FlatClassifier(subheadings, device)
 
 print(classifier.classify(search_text=query, limit=limit, digits=digits))

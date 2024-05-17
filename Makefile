@@ -12,8 +12,8 @@ dev-env: install-dev .git/hooks/pre-commit
 	@echo "    source $(VENV)/bin/activate"
 	@echo "---------------------------------------------------------"
 
-train: install
-	${PYTHON} train.py
+train:
+	${PYTHON} train.py --config search-config.toml
 
 $(VENV)/bin/activate:
 	python3 -m venv $(VENV)
@@ -83,6 +83,9 @@ shell:
 
 test:
 	${PYTHON} -m unittest -v -b
+
+test-infer:
+	${PYTHON} infer.py "red herring"
 
 deploy-development:
 	STAGE=development serverless deploy --verbose --param="custom_domain=search.dev.trade-tariff.service.gov.uk" --param="certificate_domain=dev.trade-tariff.service.gov.uk"

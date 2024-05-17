@@ -42,13 +42,25 @@ executors:
       - image: cimg/node:21.2.0
     resource_class: small
 
-parameters:
-  train_model:
-    description: if true, will start the training instance
-    type: boolean
-    default: false
-
 jobs:
+  fetch-model:
+    executor: base
+    parameters:
+      environment:
+        type: string
+    steps:
+      - checkout
+      - aws-cli/install
+      - run:
+          name: "Fetch Model"
+          command: .circleci/bin/fetchmodel << parameters.environment >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - target/
+            - search-config.toml
+            - MODEL_VERSION
+
   build:
     executor: base
     parameters:
@@ -60,9 +72,11 @@ jobs:
           version: 20.10.11
           docker_layer_caching: false
       - aws-cli/install
+      - attach_workspace:
+          at: .
       - run:
           name: "Build and Push to ECR"
-          command: ./.circleci/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
+          command: ./.circleci/bin/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
 
   check:
     executor: python
@@ -129,32 +143,42 @@ jobs:
       - checkout
       - run: .circleci/bin/perf << parameters.endpoint >> $API_KEY
 
-  build-and-deploy-ami:
+  build-ami:
     executor: base
     steps:
       - checkout
       - setup_remote_docker:
           version: 20.10.11
           docker_layer_caching: false
+      - aws-cli/install
       - run:
-          name: "Build and Deploy AMI"
-          command: .circleci/bin/deployami
-          no_output_timeout: 30m # Takes about 25 minutes to build and deploy the AMI
+          name: "Build AMI"
+          command: .circleci/bin/buildami
+          no_output_timeout: 30m
 
-  start-training-instance:
+  build-model:
     executor: base
     steps:
       - checkout
       - aws-cli/install
-      - run: .circleci/ec2
+      - run:
+          name: "Build Model"
+          command: .circleci/bin/buildmodel
+          no_output_timeout: 1h
+
+  clear-model-instances:
+    executor: base
+    steps:
+      - checkout
+      - aws-cli/install
+      - run:
+          name: "Clear Lingering Model Instances"
+          command: .circleci/bin/clearinstances
 
 workflows:
   version: 2
 
   deploy-to-development:
-    when:
-      equal: [ false, << pipeline.parameters.train_model >>]
-
     jobs:
       - check:
           <<: *filter-not-main
@@ -164,14 +188,29 @@ workflows:
             - check
           <<: *filter-not-main
 
-      - build-and-deploy-ami:
+      - build-ami:
           name: build-ami-development
           context: trade-tariff-terraform-aws-development
+
+      - build-model:
+          name: build-model-development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-ami-development
+
+      - fetch-model:
+          name: fetch-model-development
+          environment: development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-model-development
 
       - build:
           name: build-development
           context: trade-tariff-terraform-aws-development
           environment: development
+          requires:
+            - fetch-model-development
           <<: *filter-not-main
 
       - deploy:
@@ -201,10 +240,18 @@ workflows:
 
   deploy-to-staging:
     jobs:
+      - fetch-model:
+          name: fetch-model-staging
+          environment: staging
+          context: trade-tariff-fpo-models-staging
+          <<: *filter-main
+
       - build:
           name: build-staging
           context: trade-tariff-terraform-aws-staging
           environment: staging
+          requires:
+            - fetch-model-staging
           <<: *filter-main
 
       - deploy:
@@ -244,10 +291,18 @@ workflows:
             - promote-to-production?
           <<: *filter-main
 
+      - fetch-model:
+          name: fetch-model-production
+          environment: production
+          context: trade-tariff-fpo-models-production
+          <<: *filter-release
+
       - deploy:
           name: deploy-production
           stage: production
           context: trade-tariff-lambda-deployments-production
+          requires:
+            - fetch-model-production
           <<: *filter-release
 
       - perftest:
@@ -266,10 +321,11 @@ workflows:
             - deploy-production
           <<: *filter-release
 
-  start-training:
-    when:
-      equal: [ true, << pipeline.parameters.train_model >>]
-
+  nightly-clear-model-instances:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"    # Every day at midnight UTC
+          <<: *filter-main
     jobs:
-      - start-training-instance:
-          context: trade-tariff-terraform-aws-production
+      - clear-model-instances:
+          context: trade-tariff-fpo-models-development

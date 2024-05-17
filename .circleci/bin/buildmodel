@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+source .circleci/bin/needsmodel
+
+fetch_account_id ()
+{
+  aws sts get-caller-identity --query Account --output text
+}
+
+fetch_latest_ami_image_id_by_name ()
+{
+  image_name_query=$1
+  region='us-east-1'
+  owner=$(fetch_account_id)
+
+  aws ec2 describe-images \
+    --region "$region" \
+    --owners "$owner" \
+    --filters "Name=name,Values=${image_name_query}" 'Name=state,Values=available' \
+    --query 'reverse(sort_by(Images, &CreationDate))[:1].ImageId' \
+    --output text
+}
+
+fetch_subnet_by_cidr ()
+{
+  region='us-east-1'
+
+  aws ec2 describe-subnets --filters "Name=cidrBlock,Values=$1" --region "$region" --query 'Subnets[0].SubnetId' --output text
+}
+
+fetch_security_group_by_name ()
+{
+  region='us-east-1'
+
+  aws ec2 describe-security-groups --filters "Name=group-name,Values=$1" --region "$region" --query 'SecurityGroups[0].GroupId' --output text
+}
+
+launch_ec2_instance ()
+{
+  name="fpo-search-training-$SHA"
+
+  aws ec2 run-instances \
+    --image-id "$LATEST_AMI" \
+    --subnet-id "$SUBNET_ID" \
+    --security-group-ids "$SECURITY_GROUP_IDS" \
+    --instance-type p3.2xlarge \
+    --key-name "$KEY_PAIR_NAME" \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
+    --associate-public-ip-address \
+    --region 'us-east-1' \
+    --output text \
+    --query 'Instances[0].InstanceId' \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]"
+}
+
+wait_for_instance_to_be_available ()
+{
+  region='us-east-1'
+
+  aws ec2 wait instance-status-ok --instance-ids "$1" --region "$region"
+}
+
+fetch_ec2_instance_public_ip ()
+{
+  region='us-east-1'
+
+  aws ec2 describe-instances --region "$region" --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
+}
+
+store_ec2_private_key ()
+{
+  secret_id=$1
+  region='eu-west-2'
+
+  rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
+
+  aws secretsmanager get-secret-value \
+    --secret-id "$secret_id" \
+    --region "$region" \
+    --query 'SecretString' \
+    --output text > ~/.ssh/"$KEY_PAIR_NAME".pem
+
+  chmod 600 ~/.ssh/"$KEY_PAIR_NAME".pem
+}
+
+execute_command ()
+{
+  ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "$2"
+}
+
+validate_connection ()
+{
+  execute_command "$1" "echo 'Connection successful!'"
+}
+
+bring_code_inline ()
+{
+  branch_name=$(git rev-parse --abbrev-ref HEAD)
+
+  execute_command "$1" "cd $PROJECT && git fetch origin $branch_name:$branch_name && git checkout $branch_name"
+}
+
+load_latest_input_data ()
+{
+  aws s3 cp s3://"$MODEL_BUCKET_NAME/raw_source_data.zip" .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
+  execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
+}
+
+run_training_script_on_ec2_instance ()
+{
+  execute_command "$1" "cd $PROJECT && make train"
+}
+
+copy_model_from_ec2_instance ()
+{
+  s3_prefix="$VERSION-$SHA"
+
+  execute_command "$1" "cd $PROJECT && zip model.zip target/model.pt target/subheadings.pkl"
+  execute_command "$1" "cd $PROJECT && zip embeddings.zip target/training_data/*"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/embeddings.zip .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/search-config.toml .
+  aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
+  aws s3 cp embeddings.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/embeddings.zip"
+  aws s3 cp search-config.toml s3://"$MODEL_BUCKET_NAME/$s3_prefix/search-config.toml"
+}
+
+terminate_ec2_instance ()
+{
+  aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
+}
+
+if needsmodel; then
+  echo "Model needs to be trained"
+else
+  echo "Model does not need to be trained"
+  exit 0
+fi
+
+LATEST_AMI=$(fetch_latest_ami_image_id_by_name "FPO Training*")
+SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
+SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
+KEY_PAIR_NAME=fpo-training
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+ACCOUNT_ID=$(fetch_account_id)
+PROJECT=trade-tariff-lambdas-fpo-search
+SHA=$(git rev-parse --short HEAD)
+VERSION=$(cat search-config.toml | grep version | awk '{print $3}' | sed 's/"//g')
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+INSTANCE_ID=$(launch_ec2_instance)
+PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
+
+echo "Launching EC2 instance with configuration..."
+echo
+echo "📀 AMI: $LATEST_AMI"
+echo "☎️📞Subnet ID: $SUBNET_ID"
+echo "☎️📞Public IP: $PUBLIC_IP"
+echo "🔓 Security Group IDs: $SECURITY_GROUP_IDS"
+echo "🔓 Key Pair Name: $KEY_PAIR_NAME"
+echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
+echo "💻 Account ID: $ACCOUNT_ID"
+echo "📦 Project: $PROJECT"
+echo "🌐 SHA: $SHA"
+echo "🔖 Version: $VERSION"
+echo "🌳 Branch: $BRANCH"
+echo "🚀 Instance ID: $INSTANCE_ID"
+echo
+
+echo "Waiting for instance to be available..."
+wait_for_instance_to_be_available "$INSTANCE_ID"
+echo "Instance is now available!"
+
+echo "Retrieving private key..."
+store_ec2_private_key "fpo-search-training-pem"
+
+echo "Validating connection..."
+validate_connection "$PUBLIC_IP"
+
+echo "Bringing code inline..."
+bring_code_inline "$PUBLIC_IP"
+
+echo "Loading latest input data..."
+load_latest_input_data "$PUBLIC_IP"
+
+echo "Running training script on EC2 instance..."
+run_training_script_on_ec2_instance "$PUBLIC_IP"
+
+echo "Copying model from EC2 instance..."
+copy_model_from_ec2_instance "$PUBLIC_IP"
+
+echo "Terminating EC2 instance..."
+terminate_ec2_instance "$INSTANCE_ID"

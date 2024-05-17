@@ -13,7 +13,7 @@ class TrainingData(typing.NamedTuple):
 class TrainingDataLoader:
     def __init__(
         self,
-        logger: logging.Logger = logging.getLogger(),
+        logger: logging.Logger = logging.getLogger("training_data_loader"),
     ) -> None:
         self._logger = logger
 

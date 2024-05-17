@@ -1,13 +1,13 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
-IMAGE_NAME="packer-builder"
-PACKER_TEMPLATE=".packer/template.pkr.hcl"
-
-set -o xtrace
+[[ "$TRACE" ]] && set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
 set -o noclobber
+
+IMAGE_NAME="packer-builder"
+PACKER_TEMPLATE=".packer/template.pkr.hcl"
 
 if [ ! -f "$PACKER_TEMPLATE" ]; then
   echo "Packer template not found."
@@ -20,6 +20,7 @@ if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
 fi
 
 AMI_VERSION=$(cat .packer/ami-version.txt)
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 docker build .packer/ -t "$IMAGE_NAME"
 
@@ -27,7 +28,9 @@ docker run -v "$PWD"/:/packer \
   -w /app \
   -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
   -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-  "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" "$(basename $PACKER_TEMPLATE)" 
+  -e AWS_MAX_ATTEMPTS=300 \
+  -e AWS_POLL_DELAY_SECONDS=10 \
+  "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" -var "git_branch=$GIT_BRANCH" "$(basename $PACKER_TEMPLATE)"
 
 if [ $? -eq 0 ]; then
   echo "Packer build completed successfully."

@@ -1,5 +1,8 @@
 # The source data directory
 raw_source_data
+raw_source_data.zip
+model.zip
+embeddings.zip
 
 # VSCode files
 .vscode

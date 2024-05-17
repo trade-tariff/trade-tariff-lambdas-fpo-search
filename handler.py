@@ -20,15 +20,11 @@ with open(subheadings_file, "rb") as fp:
     subheadings = pickle.load(fp)
 logger.info("🚀⇨ Subheadings loaded in %.2fms", (time.perf_counter() - start) * 1000)
 
-model_file = target_dir / "model.pt"
 
 start = time.perf_counter()
-logger.info("🚀⇨ Loading static classifier from %s", model_file)
+logger.info("🚀⇨ Loading static classifier")
 
-model_exists = os.path.isfile(model_file)
-logger.info("🚀⇨ Model exists: %s", model_exists)
-
-classifier = FlatClassifier(model_file, subheadings, "cpu")
+classifier = FlatClassifier(subheadings, "cpu")
 logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )

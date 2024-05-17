@@ -1,20 +1,14 @@
-[core]
 name = "fpo-search-model-generator"
-version = "0.0.1"
-
-[training]
+version = "0.0.2"
 learning_rate = 0.001
 max_epochs = 3
-batch_size = 1000
-embedding_batch_size = 100
+model_batch_size = 1000
+embedding_batch_size = 1000
 embedding_cache_checkpoint = 50000
-
-[data]
 vague_terms_data_file = "reference_data/vague_terms.csv"
 extra_data_file = "reference_data/extra_references.csv"
 cn_data_file = "reference_data/CN2024_SelfText_EN_DE_FR.csv"
 tradesets_data_dir = "raw_source_data/tradesets_descriptions"
-
-[options]
-limit = 8
 device = "cuda"
+embeddings-cache-enabled = false
+transformer = "all-MiniLM-L6-v2"
