@@ -2,6 +2,15 @@
 
 In our pipeline, we generate machine learning models designed to classify input descriptions into specific goods nomenclature codes, either 6 or 8 digits long. This document outlines the key components and steps involved in this process, ensuring transparency and reproducibility.
 
+## Design Objectives for Model Generation
+
+To ensure that our model generation pipeline is efficient, reliable, and sustainable, we've established several key objectives:
+
+- **Separation from the Code**: It is vital that our codebase remains deployable independently of any specific model version. This separation ensures that updates to the application logic can occur without mandatory synchronizations with model updates, thus enhancing agility and reducing deployment complexities.
+- **Reproducibility**: Every aspect of model training, from data input to final model parameters, must be traceable and reproducible. This ensures that any previously developed model can be recreated exactly, providing essential support for debugging, auditing, and enhancing model transparency.
+- **Collision Protection**: Our infrastructure must support the concurrent generation of models. This allows for continuous integration and testing across multiple feature branches without risk of interference, thereby streamlining development workflows and reducing bottlenecks.
+- **Easy Garbage Collection**: The system should facilitate the straightforward management and deletion of outdated models. By automating the tracking and removal of models no longer in production use, we can optimize resource usage and maintain a clean operational environment.
+
 ## Key Components
 
 - **DLAMI (Deep Learning AMI)**: Amazon Machine Images specially configured for deep learning tasks. [Learn more about DLAMI](https://docs.aws.amazon.com/dlami/latest/devguide/gs.html).
