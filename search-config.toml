@@ -11,4 +11,4 @@ cn_data_file = "reference_data/CN2024_SelfText_EN_DE_FR.csv"
 tradesets_data_dir = "raw_source_data/tradesets_descriptions"
 device = "cuda"
 embeddings-cache-enabled = false
-transformer = "all-MiniLM-L6-v2"
+transformer = "all-mpnet-base-v2"
