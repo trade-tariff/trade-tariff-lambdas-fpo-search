@@ -13,10 +13,10 @@ in pkgs.mkShell {
     ]))
   ];
   shellHook = ''
-    rm -rf venv
-    python -m venv venv
     source venv/bin/activate
     pip install ruff
+    pip install pyright
+    pip install requirements.txt
     pip install -r requirements_lambda.txt
   '';
 }

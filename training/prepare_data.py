@@ -64,14 +64,14 @@ class TrainingDataLoader:
                                 authoritative_texts[description] = subheading
                             else:
                                 if authoritative_texts[description] != subheading:
-                                    self._logger.warn(
+                                    self._logger.debug(
                                         f"❗ Ambiguous codes for '{description}' from multiple authoritative data sources."
                                     )
-                                    self._logger.warn(
+                                    self._logger.debug(
                                         f"❗ Previous code was {authoritative_texts[description]}."
                                     )
-                                    self._logger.warn(f"❗ This code is {subheading}.")
-                                    self._logger.warn(
+                                    self._logger.debug(f"❗ This code is {subheading}.")
+                                    self._logger.debug(
                                         f"❗ Current data source is {data_source.description}."
                                     )
 
