@@ -95,16 +95,7 @@ class BasicCSVDataSource(DataSource):
                     elif language=='ENG' or language=='None':
                         description=description ##else only keep if assigned as english or None
                     else:
-                        continue ##else don't keep
-        
-
-            
-            if language == None:
-            language_min_rel_distance_point7.append((text, 'None', label, file))
-        else:
-            language_min_rel_distance_point7.append((text,language.iso_code_639_3.name, label, file))
-
-            
+                        continue ##else don't keep            
 
             if subheading in codes:
                 codes[subheading].add(description)
