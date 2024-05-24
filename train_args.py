@@ -52,14 +52,14 @@ class TrainScriptArgsParser:
             dest="learning_rate",
             type=float,
             help="the learning rate to train the network with",
-            default=0.001,
+            default=0.0011,
         )
         parser.add_argument(
             "--max-epochs",
             dest="max_epochs",
             type=int,
             help="the maximum number of epochs to train the network for",
-            default=3,
+            default=4,
         )
         parser.add_argument(
             "--model-batch-size",
