@@ -44,6 +44,26 @@ class BasicCSVDataSource(DataSource):
                 continue
 
             if not description.strip():
+                continue #Throw out any blank descriptions
+
+            if len(description) <= 4:  # Skip descriptions with 4 or less characters
+                continue
+            
+            if re.search(r"^\\d+$", description): ## Skip if the description consists entirely of digits only
+                continue 
+            if re.search(r'^[0-9-]+$', description): # Skip rows where description contains only numbers and dashes
+                continue
+            if re.search(r'^[./]+$', description): # Skip rows where description consists only of a '.' or a '/'
+                continue
+            if re.search(r"^\d+-\d+$", description): #skip numbers with hyphens in between
+                continue
+            if re.search(r'^[0-9*]+$', description): # Skip rows where description contains only numbers and asterisks
+                continue
+            if re.search(r"^[-+]?\d+(\.\d+)?$", description): ##skip if just decimal numbers
+                continue
+            if re.search(r'^\d+\s+\d+$', description): # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+                continue
+            if re.search(r'^[0-9,]+$', description): # Skip rows where description contains only numbers and commas
                 continue
 
             if subheading in codes:
