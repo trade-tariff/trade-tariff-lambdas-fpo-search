@@ -41,6 +41,9 @@ executors:
     docker:
       - image: cimg/node:21.2.0
     resource_class: small
+  node-browsers:
+    docker:
+      - image: circleci/node:lts-browsers
 
 jobs:
   fetch-model:
@@ -134,6 +137,25 @@ jobs:
       - checkout
       - run: .circleci/bin/smoketest << parameters.endpoint >> $API_KEY
 
+  e2etest:
+    executor: base
+    parameters:
+      environment:
+        type: string
+    steps:
+      - run:
+          name: build
+          command: |
+            git clone --depth=1 https://github.com/trade-tariff/trade-tariff-fpo-dev-hub-e2e
+            cd trade-tariff-fpo-dev-hub-e2e
+            yarn install
+            yarn playwright install --with-deps
+
+      - run:
+          name: run
+          command: yarn run test-<<parameters.environment>>
+
+
   perftest:
     executor: node
     parameters:
@@ -226,6 +248,14 @@ workflows:
           name: perftest-development
           context: trade-tariff-fpo-smoketests-development
           endpoint: https://search.dev.trade-tariff.service.gov.uk
+          requires:
+            - deploy-development
+          <<: *filter-not-main
+
+      - e2etest:
+          name: e2etest-development
+          context: trade-tariff-fpo-integration-development
+          environment: development
           requires:
             - deploy-development
           <<: *filter-not-main
