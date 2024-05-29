@@ -150,7 +150,7 @@ jobs:
             cd trade-tariff-fpo-dev-hub-e2e
 
             yarn install
-            yarn playwright install --with-deps
+            yarn playwright install --with-deps chromium
             yarn run test-<<parameters.environment>>
 
   perftest:
@@ -296,6 +296,14 @@ workflows:
           requires:
             - deploy-staging
           <<: *filter-main
+
+      - e2etest:
+          name: e2etest-staging
+          context: trade-tariff-fpo-integration-staging
+          environment: staging
+          requires:
+            - deploy-staging
+          <<: *filter-not-main
 
       - smoketest:
           name: smoketest-staging
