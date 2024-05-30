@@ -23,10 +23,10 @@ filter-release: &filter-release
       ignore: /.*/
 
 orbs:
+  aws-cli: circleci/aws-cli@4.1.1
   serverless-framework: circleci/serverless-framework@2.0.1
   slack: circleci/slack@4.3.0
   tariff: trade-tariff/trade-tariff-ci-orb@0
-  aws-cli: circleci/aws-cli@4.1.1
 
 executors:
   base:
@@ -41,6 +41,9 @@ executors:
     docker:
       - image: cimg/node:21.2.0
     resource_class: small
+  node-browsers:
+    docker:
+      - image: cimg/node:21.2.0-browsers
 
 jobs:
   fetch-model:
@@ -133,6 +136,22 @@ jobs:
     steps:
       - checkout
       - run: .circleci/bin/smoketest << parameters.endpoint >> $API_KEY
+
+  e2etest:
+    executor: node-browsers
+    parameters:
+      environment:
+        type: string
+    steps:
+      - run:
+          name: run
+          command: |
+            git clone --depth=1 https://github.com/trade-tariff/trade-tariff-fpo-dev-hub-e2e
+            cd trade-tariff-fpo-dev-hub-e2e
+
+            yarn install
+            yarn playwright install --with-deps chromium
+            yarn run test-<<parameters.environment>>
 
   perftest:
     executor: node
@@ -230,6 +249,14 @@ workflows:
             - deploy-development
           <<: *filter-not-main
 
+      - e2etest:
+          name: e2etest-development
+          context: trade-tariff-fpo-integration-development
+          environment: development
+          requires:
+            - deploy-development
+          <<: *filter-not-main
+
       - smoketest:
           name: smoketest-development
           context: trade-tariff-fpo-smoketests-development
@@ -269,6 +296,14 @@ workflows:
           requires:
             - deploy-staging
           <<: *filter-main
+
+      - e2etest:
+          name: e2etest-staging
+          context: trade-tariff-fpo-integration-staging
+          environment: staging
+          requires:
+            - deploy-staging
+          <<: *filter-not-main
 
       - smoketest:
           name: smoketest-staging

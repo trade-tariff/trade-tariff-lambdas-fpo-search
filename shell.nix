@@ -11,12 +11,9 @@ in pkgs.mkShell {
       ps.toml
       ps.typing-extensions
     ]))
+    pkgs.nodejs_21
   ];
   shellHook = ''
-    rm -rf venv
-    python -m venv venv
     source venv/bin/activate
-    pip install ruff
-    pip install -r requirements_lambda.txt
   '';
 }
