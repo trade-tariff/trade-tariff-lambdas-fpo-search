@@ -37,7 +37,7 @@ provider:
 
 functions:
   fpo_search:
-    provisionedConcurrency: 3
+    provisionedConcurrency: ${param:provisioned_concurrency}
     image: fpo-search
     events:
       - http:
