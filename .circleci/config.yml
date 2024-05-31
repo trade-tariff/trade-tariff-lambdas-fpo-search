@@ -303,7 +303,7 @@ workflows:
           environment: staging
           requires:
             - deploy-staging
-          <<: *filter-not-main
+          <<: *filter-main
 
       - smoketest:
           name: smoketest-staging
