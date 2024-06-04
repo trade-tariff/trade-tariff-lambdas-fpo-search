@@ -8,7 +8,8 @@ dependencies = [
     "fnv-c", # Hashing of cached data keys during embedding generation
     "tqdm", # Benchmarking
     "prettytable", # Benchmarking
-    "toml"
+    "toml",
+    "lingua-language-detector"
 ]
 
 [project.optional-dependencies]

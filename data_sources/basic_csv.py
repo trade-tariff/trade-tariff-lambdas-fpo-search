@@ -50,9 +50,8 @@ class BasicCSVDataSource(DataSource):
 
             if len(description) <= 4:  # Skip descriptions with 4 or less characters
                 continue
-            
             if re.search(r"^\\d+$", description): ## Skip if the description consists entirely of digits only
-                continue 
+                continue
             if re.search(r'^[0-9-]+$', description): # Skip rows where description contains only numbers and dashes
                 continue
             if re.search(r'^[./]+$', description): # Skip rows where description consists only of a '.' or a '/'
@@ -75,13 +74,13 @@ class BasicCSVDataSource(DataSource):
                 ,"test", "charger", "inverter", "laptop", "ipad", "tablet", "controller", "android", "samsung", "lenovo", "thinkpad"
                 ,"primocin", "amino", "liquid", "notebook", "lingerie", "globulin", "influenza", "blood", "human", "animal", "nissan","phone"
                 , "pure", "acid", "yl", "phos", "pyr", "thymidine", "nucleic", "oxide", "benz", "toshiba", "nokia", "chloro", "oxy", "hex"
-                ,"kaftan", "chemise", "tracolimus", "bra", "footmuff", "magnifier", "photoframe", "kinder bueno", "kinder chocolate" 
+                ,"kaftan", "chemise", "tracolimus", "bra", "footmuff", "magnifier", "photoframe", "kinder bueno", "kinder chocolate"
                  , "kinderbox", "katjes kinder", "mens bag", "mens shirt", "mens vest", "mens mini bag", "mens polo", "mens cologne"
                  , "mens parka", "mens shirt", "mens linen", "mens clothing", "vest mens", "mens vest", "mens pant"
                  , "mens bomber", "mens tshirt", "mens trainer", "mens shoes", "mens belt", "mens cap", "mens hat"
                  , "mens denim", "mens hat", "mens tie", "mens anorak", "mens boot", "eau de parfum"]
 
-            if authoritative=False:
+            if not self.authoritative:
                 language = detector.detect_language_of(description)
                 if description in specific_phrase:
                     # Check if any specified keywords are present in lowercase description
@@ -95,7 +94,7 @@ class BasicCSVDataSource(DataSource):
                     elif language=='ENG' or language=='None':
                         description=description ##else only keep if assigned as english or None
                     else:
-                        continue ##else don't keep            
+                        continue ##else don't keep
 
             if subheading in codes:
                 codes[subheading].add(description)

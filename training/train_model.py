@@ -1,13 +1,15 @@
 import logging
-import math
 import torch
 from torch import Tensor, optim, nn
 from torch.utils.data import DataLoader, TensorDataset
 from model.model import SimpleNN
+from typing import Any, Dict
 
 
 class ModelTrainer:
-    def run(self, embeddings: Tensor, labels: Tensor, num_labels: int) -> nn.Module:
+    def run(
+        self, embeddings: Tensor, labels: Tensor, num_labels: int
+    ) -> tuple[Dict[str, Any], int, int, int]:
         raise NotImplementedError()
 
 
@@ -30,18 +32,20 @@ class FlatClassifierModelTrainer(ModelTrainer):
         self._batch_size = batch_size
         self._logger = logger
 
-    def run(self, embeddings: Tensor, labels: Tensor, num_labels: int) -> nn.Module:
+    def run(
+        self, embeddings: Tensor, labels: Tensor, num_labels: int
+    ) -> tuple[Dict[str, Any], int, int, int]:
         train_dataset = TensorDataset(embeddings, labels)
 
         input_size = len(embeddings[0])  # Assuming embeddings have fixed size
         output_size = num_labels  # Number of unique classes in your labels
-        #hidden_size = math.floor(
-        #    input_size + (output_size - input_size) / 2
-        #)  # You can adjust this as needed
-        hidden_size= int(0.8 * (len(X_train[0]) + output_size))  
-        dropout_prob1 = 0.2 
+        hidden_size = int(0.8 * (input_size + output_size))
+        dropout_prob1 = 0.2
         dropout_prob2 = 0.5
-        model = SimpleNN(input_size, hidden_size, output_size, dropout_prob1, dropout_prob2).to(self._device)
+
+        model = SimpleNN(
+            input_size, hidden_size, output_size, dropout_prob1, dropout_prob2
+        ).to(self._device)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=self._parameters.learning_rate)

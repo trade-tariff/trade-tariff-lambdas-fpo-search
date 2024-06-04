@@ -99,6 +99,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install --no-cache-dir --upgrade torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir  lingua-language-detector
           pip install --no-cache-dir --upgrade -r requirements_lambda.txt
           # TODO: Add a separate requirements/test.txt
           python -m unittest -v -b
