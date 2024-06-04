@@ -5,13 +5,17 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
+versionchanged ()
+{
+  git diff "$(git merge-base main HEAD)"..HEAD -- search-config.toml \
+    | grep -e +version -e -version
+}
+
 needsmodel ()
 {
-  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- search-config.toml | grep -q search-config.toml
-
-  if [[ $? -eq 0 ]]; then
-    return 0
-  else
+  if [[ -z "$(versionchanged)" ]]; then
     return 1
+  else
+    return 0
   fi
 }
