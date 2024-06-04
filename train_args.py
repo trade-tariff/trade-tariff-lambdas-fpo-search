@@ -33,7 +33,7 @@ class TrainScriptArgsParser:
             "--config",
             type=str,
             help="the path to the configuration file to use for training (e.g. search-config.toml). Either this or specific arguments must be provided.",
-            required=False
+            required=False,
         )
         parser.add_argument(
             "--digits",
@@ -128,6 +128,36 @@ class TrainScriptArgsParser:
             help="the cache directory for the transformer",
             default="/tmp/sentence_transformers/",
         )
+        parser.add_argument(
+            "--known-english-words",
+            type=str,
+            help="the path to the known english words file. We preserve descriptions that match these words.",
+            default="reference_data/known_english_words.txt",
+        )
+        parser.add_argument(
+            "--known-non-english-words",
+            type=str,
+            help="the path to the known non-english words file. We discard descriptions that match these words.",
+            default="reference_data/known_non_english_words.txt",
+        )
+        parser.add_argument(
+            "--preferred-languages",
+            type=str,
+            help="the preferred languages to keep",
+            required=False,
+        )
+        parser.add_argument(
+            "--detected-languages",
+            type=str,
+            help="the detected languages to keep",
+            required=False,
+        )
+        parser.add_argument(
+            "--minimum-relative-distance",
+            type=float,
+            help="the minimum relative distance to use for language detection",
+            default=0.7,
+        )
 
         self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
@@ -163,6 +193,11 @@ class TrainScriptArgsParser:
         logger.info(
             f"  transformer_model_directory: {self.transformer_model_directory()}"
         )
+        logger.info(f"  known_english_words: {self.known_english_words()}")
+        logger.info(f"  known_non_english_words: {self.known_non_english_words()}")
+        logger.info(f"  preferred_languages: {self.preferred_languages()}")
+        logger.info(f"  detected_languages: {self.detected_languages()}")
+        logger.info(f"  minimum_relative_distance: {self.minimum_relative_distance()}")
 
     def torch_device(self):
         arg_device = self.device()
@@ -179,12 +214,16 @@ class TrainScriptArgsParser:
         return arg_device
 
     def target_dir(self):
-        cwd = Path(__file__).resolve().parent
-
-        return cwd / "target"
+        return self.pwd() / "target"
 
     def data_dir(self):
         return self.target_dir() / "training_data"
+
+    def reference_dir(self):
+        return self.pwd() / "reference_data"
+
+    def pwd(self):
+        return Path(__file__).resolve().parent
 
     def cache_dir(self):
         if self.embeddings_cache_enabled():
@@ -261,18 +300,44 @@ class TrainScriptArgsParser:
 
     @config_from_file
     def model_input_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
 
     @config_from_file
     def model_hidden_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
 
     @config_from_file
     def model_output_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
+
+    @config_from_file
+    def known_english_words(self):
+        return self.parsed_args.known_english_words
+
+    @config_from_file
+    def known_non_english_words(self):
+        return self.parsed_args.known_non_english_words
+
+    @config_from_file
+    def preferred_languages(self):
+        return self.parsed_args.preferred_languages
+
+    @config_from_file
+    def detected_languages(self):
+        return self.parsed_args.detected_languages
+
+    @config_from_file
+    def minimum_relative_distance(self):
+        return self.parsed_args.minimum_relative_distance
 
     def load_config_file(self):
-        self.parsed_config = toml.load('search-config.toml')
+        self.parsed_config = toml.load("search-config.toml")
 
     def _parse_search_config(self):
         if self.parsed_args.config is not None:

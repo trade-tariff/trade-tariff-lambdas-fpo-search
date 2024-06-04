@@ -10,12 +10,22 @@ import torch
 from data_sources.search_references import SearchReferencesDataSource
 from data_sources.data_source import DataSource
 from data_sources.basic_csv import BasicCSVDataSource
-from training.create_embeddings import EmbeddingsProcessor
+from training.cleaning_pipeline import (
+    CleaningPipeline,
+    LanguageCleaning,
+    RemoveDescriptionsMatchingRegexes,
+    RemoveEmptyDescription,
+    RemoveShortDescription,
+    RemoveSubheadingsNotMatchingRegexes,
+    StripExcessWhitespace,
+)
+
 from training.prepare_data import TrainingDataLoader
 from training.train_model import (
     FlatClassifierModelTrainer,
     FlatClassifierModelTrainerParameters,
 )
+from training.create_embeddings import EmbeddingsProcessor
 
 args = TrainScriptArgsParser()
 args.print()
@@ -37,10 +47,51 @@ target_dir.mkdir(parents=True, exist_ok=True)
 data_dir = args.data_dir()
 data_dir.mkdir(parents=True, exist_ok=True)
 
+args.reference_dir().mkdir(parents=True, exist_ok=True)
+
 # First load in the training data
 print("💾⇨ Loading training data")
 
 subheadings_file = target_dir / "subheadings.pkl"
+language_skips_file = args.pwd() / args.known_non_english_words()
+language_keeps_file = args.pwd() / args.known_english_words()
+
+with open(language_skips_file, "r") as f:
+    language_skips = f.read().splitlines()
+
+with open(language_keeps_file, "r") as f:
+    language_keeps = f.read().splitlines()
+
+pipeline = CleaningPipeline(
+    [
+        StripExcessWhitespace(),
+        RemoveEmptyDescription(),
+        RemoveShortDescription(min_length=4),
+        RemoveSubheadingsNotMatchingRegexes(
+            regexes=[
+                "^\d{" + str(args.digits()) + "}$",
+            ]
+        ),
+        RemoveDescriptionsMatchingRegexes(
+            regexes=[
+                r"^\\d+$",  # Skip rows where description contains only numbers
+                r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+                r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+                r"^\d+-\d+$",  # skip numbers with hyphens in between
+                r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+                r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+                r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+                r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+            ]
+        ),
+        LanguageCleaning(
+            detected_languages=args.detected_languages(),
+            preferred_languages=args.preferred_languages(),
+            skip=language_skips,
+            keep=language_keeps,
+        ),
+    ]
+)
 
 data_sources: list[DataSource] = []
 
@@ -69,7 +120,11 @@ data_sources.append(
 )
 
 data_sources += [
-    BasicCSVDataSource(filename, encoding="latin_1")
+    BasicCSVDataSource(
+        filename,
+        cleaning_pipeline=pipeline,
+        encoding="latin_1",
+    )
     for filename in Path(args.tradesets_data_dir()).glob("*.csv")
 ]
 

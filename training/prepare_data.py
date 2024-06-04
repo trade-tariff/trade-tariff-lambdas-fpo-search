@@ -1,6 +1,9 @@
 import logging
 import typing
 from data_sources.data_source import DataSource
+from train_args import TrainScriptArgsParser
+
+args = TrainScriptArgsParser()
 
 
 class TrainingData(typing.NamedTuple):
@@ -40,7 +43,7 @@ class TrainingDataLoader:
         # Go through all the code creating data sources and add them to the subheadings and the map
         for data_source, data in data_sources_with_data:
             if data_source.creates_codes:
-                self._logger.info(
+                self._logger.debug(
                     f"📇  Getting codes from code creating data source: {data_source.description}"
                 )
                 for subheading, descriptions in data.items():
@@ -49,12 +52,12 @@ class TrainingDataLoader:
                         subheadings_map[subheading] = subheading_idx
                         subheadings.append(subheading)
 
-        print(f"Found {len(subheadings)} subheadings")
+        self._logger.debug(f"Found {len(subheadings)} subheadings")
 
         # Go through all the authoritative data sources and store the descriptions against the codes
         for data_source, data in data_sources_with_data:
             if data_source.authoritative:
-                self._logger.info(
+                self._logger.debug(
                     f"📇  Getting authoritative description to code mappings from authoritative data source: {data_source.description}"
                 )
                 for subheading, descriptions in data.items():
@@ -64,14 +67,14 @@ class TrainingDataLoader:
                                 authoritative_texts[description] = subheading
                             else:
                                 if authoritative_texts[description] != subheading:
-                                    self._logger.warn(
+                                    self._logger.debug(
                                         f"❗ Ambiguous codes for '{description}' from multiple authoritative data sources."
                                     )
-                                    self._logger.warn(
+                                    self._logger.debug(
                                         f"❗ Previous code was {authoritative_texts[description]}."
                                     )
-                                    self._logger.warn(f"❗ This code is {subheading}.")
-                                    self._logger.warn(
+                                    self._logger.debug(f"❗ This code is {subheading}.")
+                                    self._logger.debug(
                                         f"❗ Current data source is {data_source.description}."
                                     )
 
@@ -115,10 +118,10 @@ class TrainingDataLoader:
                     labels.extend([this_subheading_idx] * data_source.multiplier)
                     texts.extend([unique_text_idx] * data_source.multiplier)
 
-        self._logger.info(
+        self._logger.debug(
             f"ℹ️  {invalid_subheading_count} entries with invalid subheadings were skipped"
         )
-        self._logger.info(
+        self._logger.debug(
             f"ℹ️  {incorrect_code_for_description_count} descriptions were overridden with an authoritative one"
         )
 
