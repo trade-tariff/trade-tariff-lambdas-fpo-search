@@ -129,16 +129,22 @@ class TrainScriptArgsParser:
             default="/tmp/sentence_transformers/",
         )
         parser.add_argument(
-            "--known-english-words",
+            "--exact-english-terms",
             type=str,
-            help="the path to the known english words file. We preserve descriptions that match these words.",
-            default="reference_data/known_english_words.txt",
+            help="the path to the known english terms that match descriptions exactly.",
+            default="reference_data/exact_english_terms.txt",
         )
         parser.add_argument(
-            "--known-non-english-words",
+            "--partial-english-terms",
             type=str,
-            help="the path to the known non-english words file. We discard descriptions that match these words.",
-            default="reference_data/known_non_english_words.txt",
+            help="the path to the known english terms file. We preserve descriptions that match these words.",
+            default="reference_data/partial_english_terms.txt",
+        )
+        parser.add_argument(
+            "--partial-non-english-terms",
+            type=str,
+            help="the path to the known non-english terms file. We discard descriptions that match these words.",
+            default="reference_data/partial_non_english_terms.txt",
         )
         parser.add_argument(
             "--preferred-languages",
@@ -193,8 +199,9 @@ class TrainScriptArgsParser:
         logger.info(
             f"  transformer_model_directory: {self.transformer_model_directory()}"
         )
-        logger.info(f"  known_english_words: {self.known_english_words()}")
-        logger.info(f"  known_non_english_words: {self.known_non_english_words()}")
+        logger.info(f"  partial_english_terms: {self.partial_english_terms()}")
+        logger.info(f"  partial_non_english_terms: {self.partial_non_english_terms()}")
+        logger.info(f"  exact_english_terms: {self.exact_english_terms()}")
         logger.info(f"  preferred_languages: {self.preferred_languages()}")
         logger.info(f"  detected_languages: {self.detected_languages()}")
         logger.info(f"  minimum_relative_distance: {self.minimum_relative_distance()}")
@@ -317,12 +324,16 @@ class TrainScriptArgsParser:
         )
 
     @config_from_file
-    def known_english_words(self):
-        return self.parsed_args.known_english_words
+    def partial_english_terms(self):
+        return self.parsed_args.partial_english_terms
 
     @config_from_file
-    def known_non_english_words(self):
-        return self.parsed_args.known_non_english_words
+    def partial_non_english_terms(self):
+        return self.parsed_args.partial_non_english_terms
+
+    @config_from_file
+    def exact_english_terms(self):
+        return self.parsed_args.exact_english_terms
 
     @config_from_file
     def preferred_languages(self):

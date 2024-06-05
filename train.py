@@ -53,8 +53,10 @@ args.reference_dir().mkdir(parents=True, exist_ok=True)
 print("💾⇨ Loading training data")
 
 subheadings_file = target_dir / "subheadings.pkl"
-language_skips_file = args.pwd() / args.known_non_english_words()
-language_keeps_file = args.pwd() / args.known_english_words()
+
+language_skips_file = args.pwd() / args.partial_non_english_terms()
+language_keeps_file = args.pwd() / args.partial_english_terms()
+language_keeps_exact_file = args.pwd() / args.exact_english_terms()
 
 with open(language_skips_file, "r") as f:
     language_skips = f.read().splitlines()
@@ -62,36 +64,43 @@ with open(language_skips_file, "r") as f:
 with open(language_keeps_file, "r") as f:
     language_keeps = f.read().splitlines()
 
-pipeline = CleaningPipeline(
-    [
-        StripExcessWhitespace(),
-        RemoveEmptyDescription(),
-        RemoveShortDescription(min_length=4),
-        RemoveSubheadingsNotMatchingRegexes(
-            regexes=[
-                "^\d{" + str(args.digits()) + "}$",
-            ]
-        ),
-        RemoveDescriptionsMatchingRegexes(
-            regexes=[
-                r"^\\d+$",  # Skip rows where description contains only numbers
-                r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
-                r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
-                r"^\d+-\d+$",  # skip numbers with hyphens in between
-                r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
-                r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
-                r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
-                r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
-            ]
-        ),
-        LanguageCleaning(
-            detected_languages=args.detected_languages(),
-            preferred_languages=args.preferred_languages(),
-            skip=language_skips,
-            keep=language_keeps,
-        ),
-    ]
-)
+with open(language_keeps_exact_file, "r") as f:
+    language_keeps_exact = f.read().splitlines()
+
+basic_filters = [
+    StripExcessWhitespace(),
+    RemoveEmptyDescription(),
+    RemoveShortDescription(min_length=4),
+    RemoveSubheadingsNotMatchingRegexes(
+        regexes=[
+            "^\\d{" + str(args.digits()) + "}$",
+        ]
+    ),
+]
+tradestats_filters = basic_filters + [
+    RemoveDescriptionsMatchingRegexes(
+        regexes=[
+            r"^\\d+$",  # Skip rows where description contains only numbers
+            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+            r"^\d+-\d+$",  # skip numbers with hyphens in between
+            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+        ]
+    ),
+    LanguageCleaning(
+        detected_languages=args.detected_languages(),
+        preferred_languages=args.preferred_languages(),
+        partial_skips=language_skips,
+        partial_keeps=language_keeps,
+        exact_keeps=language_keeps_exact,
+    ),
+]
+
+basic_pipeline = CleaningPipeline(basic_filters)
+tradestats_pipeline = CleaningPipeline(tradestats_filters)
 
 data_sources: list[DataSource] = []
 
@@ -114,6 +123,7 @@ data_sources.append(
         args.cn_data_file(),
         code_col=1,
         description_col=3,
+        cleaning_pipeline=basic_pipeline,
         authoritative=True,
         creates_codes=True,
     )
@@ -122,7 +132,7 @@ data_sources.append(
 data_sources += [
     BasicCSVDataSource(
         filename,
-        cleaning_pipeline=pipeline,
+        cleaning_pipeline=tradestats_pipeline,
         encoding="latin_1",
     )
     for filename in Path(args.tradesets_data_dir()).glob("*.csv")
@@ -131,8 +141,9 @@ data_sources += [
 training_data_loader = TrainingDataLoader()
 
 (text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
-    data_sources, 8
+    data_sources, args.digits()
 )
+
 print(f"Found {len(text_values)} unique descriptions")
 
 print("💾⇦ Saving subheadings")

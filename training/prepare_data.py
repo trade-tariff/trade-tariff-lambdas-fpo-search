@@ -1,9 +1,6 @@
 import logging
 import typing
 from data_sources.data_source import DataSource
-from train_args import TrainScriptArgsParser
-
-args = TrainScriptArgsParser()
 
 
 class TrainingData(typing.NamedTuple):

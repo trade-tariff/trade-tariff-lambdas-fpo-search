@@ -1,6 +1,3 @@
-from typing import List
-
-
 class DataSource:
     def __init__(
         self,
@@ -16,5 +13,5 @@ class DataSource:
         self.multiplier = multiplier
         self.cleaning_pipeline = cleaning_pipeline
 
-    def get_codes(self, digits: int) -> dict[str, List[str]]:
+    def get_codes(self, digits: int) -> dict[str, set[str]]:
         raise NotImplementedError()
