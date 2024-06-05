@@ -9,7 +9,8 @@ dependencies = [
     "tqdm", # Benchmarking
     "prettytable", # Benchmarking
     "toml",
-    "lingua-language-detector"
+    "lingua-language-detector",
+    "dill" # Flexible marshalling for forked multiprocessing
 ]
 
 [project.optional-dependencies]
