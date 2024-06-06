@@ -21,10 +21,7 @@ from training.cleaning_pipeline import (
 )
 
 from training.prepare_data import TrainingDataLoader
-from training.train_model import (
-    FlatClassifierModelTrainer,
-    FlatClassifierModelTrainerParameters,
-)
+from training.train_model import FlatClassifierModelTrainer
 from training.create_embeddings import EmbeddingsProcessor
 
 args = TrainScriptArgsParser()
@@ -32,12 +29,6 @@ args.print()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("train")
-
-training_parameters = FlatClassifierModelTrainerParameters(
-    args.learning_rate(), args.max_epochs()
-)
-
-print(f"⚙️  Using device {args.torch_device()}")
 
 cwd = Path(__file__).resolve().parent
 
@@ -179,9 +170,7 @@ embeddings_processor = EmbeddingsProcessor(
 unique_embeddings = embeddings_processor.create_embeddings(text_values)
 
 # Now build and train the network
-trainer = FlatClassifierModelTrainer(
-    training_parameters, device=args.torch_device(), batch_size=args.model_batch_size()
-)
+trainer = FlatClassifierModelTrainer(args)
 
 # Convert the labels to a Tensor
 labels = torch.tensor(labels, dtype=torch.long)

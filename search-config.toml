@@ -18,5 +18,5 @@ partial_non_english_terms = "reference_data/partial_non_english_terms.txt"
 preferred_languages = [ "ENGLISH",]
 detected_languages = [ "ENGLISH", "FRENCH", "GERMAN", "SPANISH",]
 minimum_relative_distance = 0.7
-dropout_layer_1_percentage = 0.2
-dropout_layer_2_percentage = 0.5
+model_dropout_layer_1_percentage = 0.2
+model_dropout_layer_2_percentage = 0.5

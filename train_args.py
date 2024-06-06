@@ -164,6 +164,18 @@ class TrainScriptArgsParser:
             help="the minimum relative distance to use for language detection",
             default=0.7,
         )
+        parser.add_argument(
+            "--model-dropout-layer-1-percentage",
+            type=float,
+            help="the percentage of dropout to use in the first dropout layer",
+            default=0.2,
+        )
+        parser.add_argument(
+            "--model-dropout-layer-2-percentage",
+            type=float,
+            help="the percentage of dropout to use in the second dropout layer",
+            default=0.5,
+        )
 
         self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
@@ -346,6 +358,14 @@ class TrainScriptArgsParser:
     @config_from_file
     def minimum_relative_distance(self):
         return self.parsed_args.minimum_relative_distance
+
+    @config_from_file
+    def model_dropout_layer_1_percentage(self):
+        return self.parsed_args.model_dropout_layer_1_percentage
+
+    @config_from_file
+    def model_dropout_layer_2_percentage(self):
+        return self.parsed_args.model_dropout_layer_2_percentage
 
     def load_config_file(self):
         self.parsed_config = toml.load("search-config.toml")
