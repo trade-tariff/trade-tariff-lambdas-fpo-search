@@ -106,7 +106,11 @@ class FlatClassifier(Classifier):
         logger.info(f"💾⇨ Loading model file: {model_file}")
 
         model = SimpleNN(
-            args.model_input_size(), args.model_hidden_size(), args.model_output_size()
+            args.model_input_size(),
+            args.model_hidden_size(),
+            args.model_output_size(),
+            args.model_dropout_layer_1_percentage(),
+            args.model_dropout_layer_2_percentage(),
         )
 
         try:
