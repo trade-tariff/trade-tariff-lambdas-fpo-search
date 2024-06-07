@@ -1,59 +1,53 @@
 import logging
-import math
 import torch
 from torch import Tensor, optim, nn
 from torch.utils.data import DataLoader, TensorDataset
 from model.model import SimpleNN
+from typing import Any, Dict
+from train_args import TrainScriptArgsParser
 
 
-class ModelTrainer:
-    def run(self, embeddings: Tensor, labels: Tensor, num_labels: int) -> nn.Module:
-        raise NotImplementedError()
+logger = logging.getLogger("train")
 
 
-class FlatClassifierModelTrainerParameters:
-    def __init__(self, learning_rate: float = 0.001, max_epochs: int = 3) -> None:
-        self.learning_rate = learning_rate
-        self.max_epochs = max_epochs
-
-
-class FlatClassifierModelTrainer(ModelTrainer):
+class FlatClassifierModelTrainer:
     def __init__(
         self,
-        parameters: FlatClassifierModelTrainerParameters = FlatClassifierModelTrainerParameters(),
-        device: str = "cpu",
-        batch_size: int = 1000,
-        logger: logging.Logger = logging.getLogger("train"),
+        args: TrainScriptArgsParser,
     ) -> None:
-        self._parameters = parameters
-        self._device = device
-        self._batch_size = batch_size
-        self._logger = logger
+        self._device = args.torch_device()
+        self._max_epochs = args.max_epochs()
+        self._learning_rate = args.learning_rate()
+        self._batch_size = args.model_batch_size()
+        self. dropout_prob1 = args.model_dropout_layer_1_percentage()
+        self. dropout_prob2 = args.model_dropout_layer_2_percentage()
 
-    def run(self, embeddings: Tensor, labels: Tensor, num_labels: int) -> nn.Module:
+    def run(
+        self, embeddings: Tensor, labels: Tensor, num_labels: int
+    ) -> tuple[Dict[str, Any], int, int, int]:
         train_dataset = TensorDataset(embeddings, labels)
 
         input_size = len(embeddings[0])  # Assuming embeddings have fixed size
         output_size = num_labels  # Number of unique classes in your labels
-        hidden_size = math.floor(
-            input_size + (output_size - input_size) / 2
-        )  # You can adjust this as needed
-        model = SimpleNN(input_size, hidden_size, output_size).to(self._device)
+        hidden_size = int(0.8 * (input_size + output_size))
+
+        model = SimpleNN(
+            input_size, hidden_size, output_size, self.dropout_prob1, self.dropout_prob2
+        ).to(self._device)
 
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=self._parameters.learning_rate)
+        optimizer = optim.Adam(model.parameters(), lr=self._learning_rate)
 
-        self._logger.info("Created model")
-        self._logger.info(model)
+        logger.info("Created model")
+        logger.info(model)
 
         train_loader = DataLoader(
             train_dataset, batch_size=self._batch_size, shuffle=True
         )
 
         batches = len(train_loader)
-        max_epochs = self._parameters.max_epochs
 
-        for epoch in range(max_epochs):
+        for epoch in range(self._max_epochs):
             model.train()
             running_loss = 0.0
             total = 0
@@ -81,8 +75,8 @@ class FlatClassifierModelTrainer(ModelTrainer):
                 del inputs
                 del loader_labels
 
-                self._logger.info(
-                    f"Epoch {epoch+1}/{max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
+                logger.info(
+                    f"Epoch {epoch+1}/{self._max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
                 )
 
         return (

@@ -33,7 +33,7 @@ class TrainScriptArgsParser:
             "--config",
             type=str,
             help="the path to the configuration file to use for training (e.g. search-config.toml). Either this or specific arguments must be provided.",
-            required=False
+            required=False,
         )
         parser.add_argument(
             "--digits",
@@ -52,14 +52,14 @@ class TrainScriptArgsParser:
             dest="learning_rate",
             type=float,
             help="the learning rate to train the network with",
-            default=0.001,
+            default=0.0011,
         )
         parser.add_argument(
             "--max-epochs",
             dest="max_epochs",
             type=int,
             help="the maximum number of epochs to train the network for",
-            default=3,
+            default=4,
         )
         parser.add_argument(
             "--model-batch-size",
@@ -128,6 +128,54 @@ class TrainScriptArgsParser:
             help="the cache directory for the transformer",
             default="/tmp/sentence_transformers/",
         )
+        parser.add_argument(
+            "--exact-english-terms",
+            type=str,
+            help="the path to the known english terms that match descriptions exactly.",
+            default="reference_data/exact_english_terms.txt",
+        )
+        parser.add_argument(
+            "--partial-english-terms",
+            type=str,
+            help="the path to the known english terms file. We preserve descriptions that match these words.",
+            default="reference_data/partial_english_terms.txt",
+        )
+        parser.add_argument(
+            "--partial-non-english-terms",
+            type=str,
+            help="the path to the known non-english terms file. We discard descriptions that match these words.",
+            default="reference_data/partial_non_english_terms.txt",
+        )
+        parser.add_argument(
+            "--preferred-languages",
+            type=str,
+            help="the preferred languages to keep",
+            required=False,
+        )
+        parser.add_argument(
+            "--detected-languages",
+            type=str,
+            help="the detected languages to keep",
+            required=False,
+        )
+        parser.add_argument(
+            "--minimum-relative-distance",
+            type=float,
+            help="the minimum relative distance to use for language detection",
+            default=0.7,
+        )
+        parser.add_argument(
+            "--model-dropout-layer-1-percentage",
+            type=float,
+            help="the percentage of dropout to use in the first dropout layer",
+            default=0.2,
+        )
+        parser.add_argument(
+            "--model-dropout-layer-2-percentage",
+            type=float,
+            help="the percentage of dropout to use in the second dropout layer",
+            default=0.5,
+        )
 
         self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
@@ -163,6 +211,12 @@ class TrainScriptArgsParser:
         logger.info(
             f"  transformer_model_directory: {self.transformer_model_directory()}"
         )
+        logger.info(f"  partial_english_terms: {self.partial_english_terms()}")
+        logger.info(f"  partial_non_english_terms: {self.partial_non_english_terms()}")
+        logger.info(f"  exact_english_terms: {self.exact_english_terms()}")
+        logger.info(f"  preferred_languages: {self.preferred_languages()}")
+        logger.info(f"  detected_languages: {self.detected_languages()}")
+        logger.info(f"  minimum_relative_distance: {self.minimum_relative_distance()}")
 
     def torch_device(self):
         arg_device = self.device()
@@ -179,12 +233,16 @@ class TrainScriptArgsParser:
         return arg_device
 
     def target_dir(self):
-        cwd = Path(__file__).resolve().parent
-
-        return cwd / "target"
+        return self.pwd() / "target"
 
     def data_dir(self):
         return self.target_dir() / "training_data"
+
+    def reference_dir(self):
+        return self.pwd() / "reference_data"
+
+    def pwd(self):
+        return Path(__file__).resolve().parent
 
     def cache_dir(self):
         if self.embeddings_cache_enabled():
@@ -261,18 +319,56 @@ class TrainScriptArgsParser:
 
     @config_from_file
     def model_input_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
 
     @config_from_file
     def model_hidden_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
 
     @config_from_file
     def model_output_size(self):
-        raise NotImplementedError("Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated.")
+        raise NotImplementedError(
+            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
+        )
+
+    @config_from_file
+    def partial_english_terms(self):
+        return self.parsed_args.partial_english_terms
+
+    @config_from_file
+    def partial_non_english_terms(self):
+        return self.parsed_args.partial_non_english_terms
+
+    @config_from_file
+    def exact_english_terms(self):
+        return self.parsed_args.exact_english_terms
+
+    @config_from_file
+    def preferred_languages(self):
+        return self.parsed_args.preferred_languages
+
+    @config_from_file
+    def detected_languages(self):
+        return self.parsed_args.detected_languages
+
+    @config_from_file
+    def minimum_relative_distance(self):
+        return self.parsed_args.minimum_relative_distance
+
+    @config_from_file
+    def model_dropout_layer_1_percentage(self):
+        return self.parsed_args.model_dropout_layer_1_percentage
+
+    @config_from_file
+    def model_dropout_layer_2_percentage(self):
+        return self.parsed_args.model_dropout_layer_2_percentage
 
     def load_config_file(self):
-        self.parsed_config = toml.load('search-config.toml')
+        self.parsed_config = toml.load("search-config.toml")
 
     def _parse_search_config(self):
         if self.parsed_args.config is not None:
