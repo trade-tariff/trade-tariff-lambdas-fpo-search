@@ -117,6 +117,24 @@ run_training_script_on_ec2_instance ()
   execute_command "$1" "cd $PROJECT && make train"
 }
 
+run_benchmarks_on_ec2_instance ()
+{
+  s3_prefix="$VERSION-$SHA"
+
+  # Prepare benchmarking data
+  aws s3 cp s3://"$MODEL_BUCKET_NAME/benchmarking_data.zip" .
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no benchmarking_data.zip ec2-user@"$1":~/"$PROJECT"
+  execute_command "$1" "cd $PROJECT && unzip benchmarking_data.zip"
+
+  # Run benchmarks
+  execute_command "$1" "cd $PROJECT && make benchmark"
+
+  # Copy benchmarking results
+  execute_command "$1" "cd $PROJECT && zip -r benchmark_results.zip benchmarking_data"
+  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/benchmark_results.zip .
+  aws s3 cp benchmark_results.zip s3://"$MODEL_BUCKET_NAME"/"$s3_prefix"/benchmark_results.zip
+}
+
 copy_model_from_ec2_instance ()
 {
   s3_prefix="$VERSION-$SHA"
@@ -193,6 +211,9 @@ run_training_script_on_ec2_instance "$PUBLIC_IP"
 
 echo "Copying model from EC2 instance..."
 copy_model_from_ec2_instance "$PUBLIC_IP"
+
+echo "Running benchmarks..."
+run_benchmarks_on_ec2_instance "$PUBLIC_IP"
 
 echo "Terminating EC2 instance..."
 terminate_ec2_instance "$INSTANCE_ID"
