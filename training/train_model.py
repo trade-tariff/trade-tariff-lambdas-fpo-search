@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from model.model import SimpleNN
 from typing import Any, Dict
 from train_args import TrainScriptArgsParser
+import json
 
 
 logger = logging.getLogger("train")
@@ -19,8 +20,8 @@ class FlatClassifierModelTrainer:
         self._max_epochs = args.max_epochs()
         self._learning_rate = args.learning_rate()
         self._batch_size = args.model_batch_size()
-        self. dropout_prob1 = args.model_dropout_layer_1_percentage()
-        self. dropout_prob2 = args.model_dropout_layer_2_percentage()
+        self._dropout_prob1 = args.model_dropout_layer_1_percentage()
+        self._dropout_prob2 = args.model_dropout_layer_2_percentage()
 
     def run(
         self, embeddings: Tensor, labels: Tensor, num_labels: int
@@ -32,7 +33,11 @@ class FlatClassifierModelTrainer:
         hidden_size = int(0.8 * (input_size + output_size))
 
         model = SimpleNN(
-            input_size, hidden_size, output_size, self.dropout_prob1, self.dropout_prob2
+            input_size,
+            hidden_size,
+            output_size,
+            self._dropout_prob1,
+            self._dropout_prob2,
         ).to(self._device)
 
         criterion = nn.CrossEntropyLoss()
@@ -47,9 +52,10 @@ class FlatClassifierModelTrainer:
 
         batches = len(train_loader)
 
+        current_loss = None
+
         for epoch in range(self._max_epochs):
             model.train()
-            running_loss = 0.0
             total = 0
             correct = 0
 
@@ -64,7 +70,7 @@ class FlatClassifierModelTrainer:
                 loss = criterion(outputs, loader_labels)
                 loss.backward()
                 optimizer.step()
-                running_loss += loss.item()
+                current_loss = loss.item()
 
                 _, predicted = torch.max(outputs.data, 1)
 
@@ -79,9 +85,8 @@ class FlatClassifierModelTrainer:
                     f"Epoch {epoch+1}/{self._max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
                 )
 
-        return (
-            model.to("cpu").state_dict(),
-            input_size,
-            hidden_size,
-            output_size,
-        )
+        with open("running_losses.json", "w") as f:
+            last_loss = {"loss": current_loss}
+            f.write(json.dumps(last_loss, indent=2))
+
+        return (model.to("cpu").state_dict(), input_size, hidden_size, output_size)

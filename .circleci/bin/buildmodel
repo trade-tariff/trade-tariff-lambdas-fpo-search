@@ -128,6 +128,7 @@ run_benchmarks_on_ec2_instance ()
 
   # Run benchmarks
   execute_command "$1" "cd $PROJECT && make benchmark"
+  execute_command "$1" "cd $PROJECT && mv running_losses.json benchmarking_data/results/running_losses.json"
 
   # Copy benchmarking results
   execute_command "$1" "cd $PROJECT && zip -r benchmark_results.zip benchmarking_data"
