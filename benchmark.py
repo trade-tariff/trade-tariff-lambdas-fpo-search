@@ -121,15 +121,11 @@ with open(language_keeps_file, "r") as f:
 with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
-tradestats_filters = [
+filters = [
     StripExcessWhitespace(),
     RemoveEmptyDescription(),
     RemoveShortDescription(min_length=4),
-    RemoveSubheadingsNotMatchingRegexes(
-        regexes=[
-            r"^\d{2,10}$",
-        ]
-    ),
+    RemoveSubheadingsNotMatchingRegexes(regexes=["^\d{" + str(args.digits) + "}$"]),
     RemoveDescriptionsMatchingRegexes(
         regexes=[
             r"^\\d+$",  # Skip rows where description contains only numbers
@@ -151,7 +147,7 @@ tradestats_filters = [
     ),
 ]
 
-pipeline = CleaningPipeline(tradestats_filters)
+pipeline = CleaningPipeline(filters)
 
 logging.basicConfig(level=getattr(logging, args.log_level))
 logger = logging.getLogger("benchmark")
