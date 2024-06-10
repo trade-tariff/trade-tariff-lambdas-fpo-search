@@ -3,15 +3,29 @@ import json
 import logging
 import os
 import pickle
+from typing import List
 import tqdm
 
 from data_sources.basic_csv import BasicCSVDataSource
 from data_sources.data_source import DataSource
-from datetime import datetime, timezone
 from inference.infer import FlatClassifier
 from pathlib import Path
 from prettytable import PrettyTable
 from prettytable.colortable import ColorTable, Themes
+from training.cleaning_pipeline import (
+    CleaningPipeline,
+    LanguageCleaning,
+    RemoveDescriptionsMatchingRegexes,
+    RemoveEmptyDescription,
+    RemoveShortDescription,
+    RemoveSubheadingsNotMatchingRegexes,
+    StripExcessWhitespace,
+)
+from train_args import TrainScriptArgsParser
+
+training_args = TrainScriptArgsParser()
+training_args.load_config_file()
+training_args.print()
 
 parser = argparse.ArgumentParser(description="Benchmark an FPO classification model.")
 
@@ -21,6 +35,29 @@ parser.add_argument(
     help="how many digits to classify the answer to",
     default=8,
     choices=[2, 4, 6, 8],
+)
+
+parser.add_argument(
+    "--number-of-items",
+    type=int,
+    help="how many description items to benchmark",
+    default=None,
+)
+
+parser.add_argument(
+    "--benchmark-classifieds",
+    help="benchmark classified data. Default is False",
+    required=False,
+    default=False,
+    action="store_true",
+)
+
+parser.add_argument(
+    "--benchmark-goods-descriptions",
+    help="benchmark good goods descriptions. Default is False",
+    required=False,
+    default=False,
+    action="store_true",
 )
 
 parser.add_argument(
@@ -55,6 +92,14 @@ parser.add_argument(
     action="store_true",
 )
 
+parser.add_argument(
+    "--log-level",
+    help="set the logging level",
+    required=False,
+    default="INFO",
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+)
+
 args = parser.parse_args()
 
 digits = args.digits
@@ -63,8 +108,49 @@ no_progress = args.no_progress
 colour = args.colour
 write_file = args.write_to_file
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+language_skips_file = training_args.pwd() / training_args.partial_non_english_terms()
+language_keeps_file = training_args.pwd() / training_args.partial_english_terms()
+language_keeps_exact_file = training_args.pwd() / training_args.exact_english_terms()
+
+with open(language_skips_file, "r") as f:
+    language_skips = f.read().splitlines()
+
+with open(language_keeps_file, "r") as f:
+    language_keeps = f.read().splitlines()
+
+with open(language_keeps_exact_file, "r") as f:
+    language_keeps_exact = f.read().splitlines()
+
+filters = [
+    StripExcessWhitespace(),
+    RemoveEmptyDescription(),
+    RemoveShortDescription(min_length=4),
+    RemoveSubheadingsNotMatchingRegexes(regexes=["^\d{" + str(args.digits) + "}$"]),
+    RemoveDescriptionsMatchingRegexes(
+        regexes=[
+            r"^\\d+$",  # Skip rows where description contains only numbers
+            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+            r"^\d+-\d+$",  # skip numbers with hyphens in between
+            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+        ]
+    ),
+    LanguageCleaning(
+        detected_languages=training_args.detected_languages(),
+        preferred_languages=training_args.preferred_languages(),
+        partial_skips=language_skips,
+        partial_keeps=language_keeps,
+        exact_keeps=language_keeps_exact,
+    ),
+]
+
+pipeline = CleaningPipeline(filters)
+
+logging.basicConfig(level=getattr(logging, args.log_level))
+logger = logging.getLogger("benchmark")
 
 # Everything except CPU seems to be super slow, I assume because of the time it
 # takes to shuffle the data about for each inference. So we'll default to CPU.
@@ -86,16 +172,45 @@ model_file = target_dir / "model.pt"
 if not model_file.exists():
     raise FileNotFoundError(f"Could not find model file: {model_file}")
 
-classifier = FlatClassifier(model_file, subheadings, device)
+classifier = FlatClassifier(subheadings, device)
 
-data_sources: list[DataSource] = []
+data_sources: List[DataSource] = []
 
-# Append all the benchmarking data sources
 benchmarking_data_dir = cwd / "benchmarking_data"
+files = list(benchmarking_data_dir.glob("**/*.csv"))
+
+
+def reject_paths(paths: List[str]):
+    def inner(file: Path):
+        for part in file.parts:
+            for remove_part in paths:
+                if remove_part in part:
+                    return False
+
+        return True
+
+    return inner
+
+
+if not args.benchmark_classifieds:
+    files = filter(reject_paths(["classified", "other.csv"]), files)
+
+if not args.benchmark_goods_descriptions:
+    files = filter(reject_paths(["good-goods-descriptions.csv"]), files)
+
+files = list(files)
+
+if len(files) == 0:
+    raise FileNotFoundError(f"No benchmarking data found in {benchmarking_data_dir}")
 
 data_sources += [
-    BasicCSVDataSource(filename, 1, 0)
-    for filename in benchmarking_data_dir.glob("**/*.csv")
+    BasicCSVDataSource(
+        filename=filename,
+        code_col=1,
+        description_col=0,
+        cleaning_pipeline=pipeline,
+    )
+    for filename in files
 ]
 
 benchmarking_data = {}
@@ -109,19 +224,11 @@ for data_source in data_sources:
             if description not in benchmarking_data:
                 benchmarking_data[description] = code
             elif benchmarking_data[description] != code:
-                logger.warning(
-                    f"🚨 Duplicate description with multiple codes! {description} => {benchmarking_data[description]} & {code} - SKIPPING"
-                )
+                logger.debug("Duplicate description with multiple codes - SKIPPING")
                 skip_descriptions.add(description)
 
 
 logger.info(f"Loaded {len(benchmarking_data)} items")
-logger.info(f"Skipping {len(skip_descriptions)} items with ambiguous classifications")
-
-
-logger.info(
-    f"Getting results for {len(benchmarking_data) - len(skip_descriptions)} items"
-)
 
 res = {
     "1": 0,
@@ -138,6 +245,10 @@ res = {
 
 num = 0
 items = benchmarking_data.items()
+results = None
+
+if args.number_of_items:
+    items = list(items)[: args.number_of_items]
 
 if not no_progress:
     items = tqdm.tqdm(items)  # Use a nice progress bar if it hasn't been disabled
@@ -225,7 +336,7 @@ if output == "text":
 
     print(results)
 else:  # output is json
-    row = {
+    results = {
         "total": num,
         "result1": res["1"],
         "result1Percent": 100 * res["1"] / num,
@@ -251,19 +362,20 @@ else:  # output is json
         "inSubheadingPercent": 100 * res["subheading"] / num,
     }
 
-    print(json.dumps(row))
+    print(json.dumps(results, indent=4))
 
-if write_file:
+
+if write_file and results:
     path = "benchmarking_data/results"
     os.makedirs(path, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    benchmark_type = "classified" if args.benchmark_classifieds else "good_goods"
     filetype = "json" if output == "json" else "txt"
-    file = open(f"{path}/benchmark_results_{timestamp}.{filetype}", "w")
+    file = open(f"{path}/benchmark_results_{benchmark_type}.{filetype}", "w")
 
     if output == "json":
-        file.write(json.dumps(row))
+        file.write(json.dumps(results, indent=2))
     else:
-        file.write(results)
+        file.write(str(results))
 
     file.close()

@@ -173,8 +173,11 @@ cython_debug/
 # Serverless directories
 .serverless
 lambda/
-benchmarking_data
 *.pkl
 *.pt
 
 node_modules/
+
+# Benchmarking inputs/outputs
+benchmarking_data
+running_losses.json

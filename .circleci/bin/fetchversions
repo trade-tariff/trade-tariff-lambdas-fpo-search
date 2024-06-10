@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+NUMBER_OF_VERSIONS=${1:-2}
+
+function get_latest_versions() {
+  aws s3 ls s3://trade-tariff-models-382373577178/ | awk '{print $2}' | sed 's/\///' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$' | awk -F '-' '
+  {
+      # Extract the base version (e.g., 1.0.1 from 1.0.1-6ba7405)
+      base_version = $1
+      # Update the latest version seen for this base version
+      latest[base_version] = $0
+  }
+  END {
+      # Print the latest version for each base version
+      for (version in latest) {
+          print latest[version]
+      }
+  }'
+}
+
+get_latest_versions | tail -n "$NUMBER_OF_VERSIONS"

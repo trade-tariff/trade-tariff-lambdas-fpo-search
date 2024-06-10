@@ -81,7 +81,9 @@ class BasicCSVDataSource(DataSource):
         chunks = self._chunk_rows(code_data, self._max_workers())
         all_results = self._do_work(chunks, digits)
         codes = self._merge_results(all_results)
-        logger.info(f"Loaded {len(codes)} unique subheadings from {self._filename}")
+        total_descriptions = sum(len(descriptions) for descriptions in codes.values())
+        unique_descriptions = len({description for descriptions in codes.values() for description in descriptions})
+        logger.info(f"Loaded {len(codes)} unique subheadings with {unique_descriptions} unique descriptions and {total_descriptions} total descriptions from {os.path.relpath(self._filename)}")
 
         return codes
 

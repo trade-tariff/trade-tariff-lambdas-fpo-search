@@ -1,0 +1,45 @@
+# Benchmark thresholds configuration for different sources
+# High watermark - red build and slack notification
+# Medium watermark - yellow build (just a slack notification)
+# Low watermark - green build
+
+[[thresholds]]
+name = "RIS Classified thresholds top 1"
+file = "benchmarking_data/results/benchmark_results_classified.json"
+key = "result1Percent"
+changeHigh = "5"
+changeMedium = "2"
+changeLow = "1"
+
+[[thresholds]]
+name = "RIS Classified thresholds in top 5"
+file = "benchmarking_data/results/benchmark_results_classified.json"
+key = "inTop5Percent"
+changeHigh = "5"
+changeMedium = "2"
+changeLow = "1"
+
+[[thresholds]]
+name = "HMRC Good Goods Descriptions top 1"
+file = "benchmarking_data/results/benchmark_results_good_goods.json"
+key = "result1Percent"
+changeHigh = "5"
+changeMedium = "2"
+changeLow = "1"
+
+[[thresholds]]
+name = "HMRC Good Goods Descriptions in top 5"
+file = "benchmarking_data/results/benchmark_results_good_goods.json"
+key = "inTop5Percent"
+changeHigh = "5"
+changeMedium = "2"
+changeLow = "1"
+
+# TODO: Configure benchmark outputs for the loss thresholds
+# [[thresholds]]
+# name = "Loss function thresholds"
+# file = "benchmarking_data/results/benchmark_results_loss_function.json"
+# key "finalLoss"
+# changeHigh = "0.1"
+# changeMedium = "0.5"
+# changeLow = "1.0"

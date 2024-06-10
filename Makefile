@@ -85,7 +85,24 @@ test:
 	${PYTHON} -m unittest -v -b
 
 test-infer:
-	${PYTHON} infer.py "red herring"
+	${PYTHON} infer.py "jewelry"
+
+benchmark-goods-descriptions:
+	${PYTHON} benchmark.py \
+		--output json \
+		--benchmark-goods-descriptions \
+		--no-progress \
+		--write-to-file
+
+benchmark-classifieds:
+	${PYTHON} benchmark.py \
+		--output json \
+		--benchmark-classifieds \
+		--number-of-items 100000 \
+		--no-progress \
+		--write-to-file
+
+benchmark: benchmark-goods-descriptions benchmark-classifieds
 
 deploy-development:
 	STAGE=development \
