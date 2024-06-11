@@ -7,39 +7,49 @@
 name = "RIS Classified thresholds top 1"
 file = "benchmarking_data/results/benchmark_results_classified.json"
 key = "result1Percent"
-changeHigh = "5"
-changeMedium = "2"
-changeLow = "1"
+changeHigh = -5.0
+changeMedium = -2.0
+changeLow = -1.0
 
 [[thresholds]]
 name = "RIS Classified thresholds in top 5"
 file = "benchmarking_data/results/benchmark_results_classified.json"
 key = "inTop5Percent"
-changeHigh = "5"
-changeMedium = "2"
-changeLow = "1"
+changeHigh = -5.0
+changeMedium = -2.0
+changeLow = -1.0
 
 [[thresholds]]
 name = "HMRC Good Goods Descriptions top 1"
 file = "benchmarking_data/results/benchmark_results_good_goods.json"
 key = "result1Percent"
-changeHigh = "5"
-changeMedium = "2"
-changeLow = "1"
+changeHigh = -5.0
+changeMedium = -2.0
+changeLow = -1.0
 
 [[thresholds]]
 name = "HMRC Good Goods Descriptions in top 5"
 file = "benchmarking_data/results/benchmark_results_good_goods.json"
 key = "inTop5Percent"
-changeHigh = "5"
-changeMedium = "2"
-changeLow = "1"
+changeHigh = -5.0
+changeMedium = -2.0
+changeLow = -1.0
 
-# TODO: Configure benchmark outputs for the loss thresholds
-# [[thresholds]]
-# name = "Loss function thresholds"
-# file = "benchmarking_data/results/benchmark_results_loss_function.json"
-# key "finalLoss"
-# changeHigh = "0.1"
-# changeMedium = "0.5"
-# changeLow = "1.0"
+[[thresholds]]
+name = "Accuracy percentage"
+file = "benchmarking_data/results/running_loss.json"
+key = "accuracy"
+iterate_over = "epoch_%"
+check_threshold = "last" # last, first or all
+changeHigh = -0.1
+changeMedium = -0.5
+changeLow = -1.0
+
+[[thresholds]]
+name = "Mean average Loss"
+file = "benchmarking_data/results/running_loss.json"
+key = "average_loss"
+iterate_over = "epoch_%"
+changeHigh = -0.1
+changeMedium = -0.5
+changeLow = -1.0
