@@ -1,0 +1,65 @@
+#!./venv/bin/python
+
+import toml
+from pathlib import Path
+import json
+import os
+
+cwd = Path.cwd()
+
+# Load the thresholds
+with open(".circleci/benchmark-thresholds.toml") as f:
+    thresholds = toml.load(f)["thresholds"]
+
+# Load the results
+old_results_dir = cwd / "old_benchmark"
+new_results_dir = cwd / "new_benchmark"
+
+results = {
+    "high": [],
+    "medium": [],
+    "low": [],
+}
+
+for threshold in thresholds:
+    old = old_results_dir / threshold["file"]
+    new = new_results_dir / threshold["file"]
+
+    if not old.exists():
+        print(f"File {os.path.relpath(old)} not found in old results")
+        continue
+
+    if not new.exists():
+        print(f"File {os.path.relpath(new)} not found in new results")
+        continue
+
+    old_result = json.loads(open(old).read())
+    new_result = json.loads(open(new).read())
+
+    if old.name in threshold["file"] and new.name in threshold["file"]:
+        old_result_value = old_result[threshold["key"]]
+        new_result_value = new_result[threshold["key"]]
+        delta = new_result_value - old_result_value
+
+        if delta < threshold["changeHigh"]:
+            print(
+                f"Threshold {threshold['name']} failed: {delta} > {threshold['changeHigh']}"
+            )
+            results["high"].append(threshold["name"])
+        elif delta < threshold["changeMedium"]:
+            print(
+                f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
+            )
+            results["medium"].append(threshold["name"])
+        else:
+            print(
+                f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
+            )
+            results["low"].append(threshold["name"])
+    else:
+        print("No match")
+
+print(f"Results: {json.dumps(results, indent=4)}")
+
+with open("check_results.json", "w") as f:
+    f.write(json.dumps(results, indent=4))
