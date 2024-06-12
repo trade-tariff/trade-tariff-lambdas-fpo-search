@@ -10,6 +10,12 @@ MODEL_KEY=$(.circleci/bin/getmodel)
 VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
+function check_validation() {
+  if aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" 2>&1 | grep -q 'passed'; then
+    echo "Model has already passed validation"
+    exit 0
+  fi
+}
 
 function notify_slack() {
   local status=$1
@@ -55,6 +61,7 @@ function handle_result() {
   fi
 }
 
+check_validation
 .circleci/bin/fetchbenchmarks
 .circleci/bin/checkbenchmarks
 handle_result
