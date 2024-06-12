@@ -61,5 +61,5 @@ for threshold in thresholds:
 
 print(f"Results: {json.dumps(results, indent=4)}")
 
-with open("check_results.json", "w") as f:
+with open("check_result.json", "w") as f:
     f.write(json.dumps(results, indent=4))

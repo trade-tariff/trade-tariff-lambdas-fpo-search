@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+MODEL_KEY=$(.circleci/bin/getmodel)
+VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+
+
+function notify_slack() {
+  local status=$1
+  local message=$2
+  local color=${3:-good}
+  local channel=${4:-#benchmarks}
+
+  echo "Notifying slack: $status, $message, $color, $channel"
+  # curl -X POST --data-urlencode "payload={\"channel\": \"$channel\", \"username\": \"Benchmarks\", \"attachments\": [{\"color\": \"$color\", \"title\": \"$status\", \"text\": \"$message\"}]}" "$SLACK_WEBHOOK"
+}
+
+function mark_model() {
+  result=$1
+  echo -n "" | aws s3 cp - "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$result"
+}
+
+function mark_model_failed() {
+  mark_model "failed"
+}
+
+function mark_model_passed() {
+  mark_model "passed"
+}
+
+function handle_result() {
+  any_highs=$(cat check_result.json | jq '.high | any')
+  any_mediums=$(cat check_result.json | jq '.medium | any')
+
+  if [[ "$any_highs" == "true" ]]; then
+    echo "High threshold breaches detected"
+    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.key): \(.value)") | join("\n")')" danger
+    mark_model_failed
+    exit 1
+  elif [[ "$any_mediums" == "true" ]]; then
+    echo "Medium threshold breaches detected"
+    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.key): \(.value)") | join("\n")')" warning
+    mark_model_failed
+    exit 0
+  else
+    echo "No threshold breaches detected"
+    notify_slack "No threshold breaches detected" "All benchmarks are within thresholds" good
+    exit 0
+  fi
+}
+
+.circleci/bin/fetchbenchmarks
+.circleci/bin/checkbenchmarks
+handle_result
