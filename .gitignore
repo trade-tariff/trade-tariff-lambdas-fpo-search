@@ -185,3 +185,5 @@ old_benchmark
 new_benchmark
 benchmark_results.zip
 check_result.json
+passed
+failed

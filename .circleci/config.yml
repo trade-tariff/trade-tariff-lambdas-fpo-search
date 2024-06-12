@@ -186,6 +186,16 @@ jobs:
           command: .circleci/bin/buildmodel
           no_output_timeout: 1h
 
+  validate-model:
+    executor: python
+    steps:
+      - checkout
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install toml
+      - run: .circleci/bin/validatemodel
+
   clear-model-instances:
     executor: base
     steps:
@@ -218,12 +228,19 @@ workflows:
           requires:
             - build-ami-development
 
+      - validate-model:
+          name: validate-model-development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-model-development
+          <<: *filter-not-main
+
       - fetch-model:
           name: fetch-model-development
           environment: development
           context: trade-tariff-fpo-models-development
           requires:
-            - build-model-development
+            - validate-model-development
 
       - build:
           name: build-development
