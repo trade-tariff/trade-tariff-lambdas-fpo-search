@@ -190,6 +190,7 @@ jobs:
     executor: python
     steps:
       - checkout
+      - aws-cli/install
       - run: |
           python -m venv venv
           source venv/bin/activate
