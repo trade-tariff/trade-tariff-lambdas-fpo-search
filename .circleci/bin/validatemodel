@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-VERSION_PREFIX=$(.circleci/bin/getversions 1)
+VERSION_PREFIX=$(.circleci/bin/getmodel | sed 's/\/model.zip//')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
 function check_validation() {
