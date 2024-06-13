@@ -27,6 +27,7 @@ function notify_slack() {
   local color=${3:-good}
   local channel=${4:-#deployments}
   local emoji=${5:-":robot_face:"}
+  local username=${6:-"Model Validation Bot"}
 
   payload=$(
     jq -n \
@@ -34,9 +35,11 @@ function notify_slack() {
       --arg text "$status" \
       --arg color "$color" \
       --arg message "$message" \
+      --arg username "$username" \
       --arg emoji "$emoji" \
       '{
         channel: $channel,
+        username: $username,
         text: $text,
         icon_emoji: $emoji,
         attachments: [
