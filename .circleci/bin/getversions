@@ -9,7 +9,6 @@ set -o noclobber
 NUMBER_OF_VERSIONS=${1:-2}
 
 function get_sorted_versions() {
-  # Uses JMESPath to query the S3 bucket for the latest model.zip files
   aws s3api list-objects-v2 \
     --bucket "trade-tariff-models-382373577178" \
     --query "reverse(sort_by(Contents[?ends_with(Key, 'model.zip')], &LastModified)) | @[*].Key" \
