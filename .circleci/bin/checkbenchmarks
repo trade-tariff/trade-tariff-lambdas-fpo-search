@@ -15,7 +15,18 @@ with open(".circleci/benchmark-thresholds.toml") as f:
 old_results_dir = cwd / "old_benchmark"
 new_results_dir = cwd / "new_benchmark"
 
+old_version = old_results_dir / "version.txt"
+new_version = new_results_dir / "version.txt"
+
+with open(old_version) as f:
+    old_version = f.read().strip()
+
+with open(new_version) as f:
+    new_version = f.read().strip()
+
 results = {
+    "old_model": old_version,
+    "new_model": new_version,
     "high": [],
     "medium": [],
     "low": [],

@@ -20,6 +20,9 @@ function fetch_benchmarks() {
 
   unzip -o old_benchmark/benchmark_results.zip -d old_benchmark
   unzip -o new_benchmark/benchmark_results.zip -d new_benchmark
+
+  echo $OLD_VERSION > old_benchmark/version.txt
+  echo $NEW_VERSION > new_benchmark/version.txt
 }
 
 fetch_benchmarks
