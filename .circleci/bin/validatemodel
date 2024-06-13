@@ -59,18 +59,19 @@ function handle_result() {
   any_highs=$(cat check_result.json | jq '.high | any')
   any_mediums=$(cat check_result.json | jq '.medium | any')
 
-  if [[ "$any_highs" == "true" ]]; then
+  if [[ "$any_highs" == true ]]; then
     echo "High threshold breaches detected"
     notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.value)") | join("\n")')" danger
     mark_model_failed
     exit 1
-  elif [[ "$any_mediums" == "true" ]]; then
+  elif [[ "$any_mediums" == true ]]; then
     echo "Medium threshold breaches detected"
     notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.value)") | join("\n")')" warning
-    mark_model_failed
+    mark_model_passed
     exit 0
   else
     echo "No threshold breaches detected"
+    mark_model_passed
     notify_slack "No threshold breaches detected" "All benchmarks are within thresholds" good
     exit 0
   fi

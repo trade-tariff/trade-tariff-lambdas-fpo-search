@@ -4,7 +4,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o noclobber
 
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 VERSIONS=$(.circleci/bin/getversions 2)
