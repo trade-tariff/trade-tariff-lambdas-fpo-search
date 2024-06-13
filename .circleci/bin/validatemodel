@@ -11,12 +11,12 @@ MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
 function check_validation() {
   if aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" 2>&1 | grep -q 'passed'; then
-    echo "Model has already passed validation"
+    echo "Model ${VERSION_PREFIX} has already passed validation"
     exit 0
   fi
 
   if aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/failed" 2>&1 | grep -q 'failed'; then
-    echo "Model has already failed validation"
+    echo "Model ${VERSION_PREFIX} has already failed validation"
     exit 1
   fi
 }
@@ -25,19 +25,31 @@ function notify_slack() {
   local status=$1
   local message=$2
   local color=${3:-good}
-  local channel=${4:-#benchmarks}
+  local channel=${4:-#deployments}
+  local emoji=${5:-":robot_face:"}
 
   payload=$(
     jq -n \
-      --arg status "$status" \
-      --arg message "$message" \
-      --arg color "$color" \
       --arg channel "$channel" \
-      '{status: $status, message: $message, color: $color, channel: $channel}'
+      --arg text "$status" \
+      --arg color "$color" \
+      --arg message "$message" \
+      --arg emoji "$emoji" \
+      '{
+        channel: $channel,
+        text: $text,
+        icon_emoji: $emoji,
+        attachments: [
+          {
+            color: $color,
+            text: $message
+          }
+        ]
+      }'
   )
   echo "$payload"
 
-  # curl -X POST --data-urlencode "payload=$payload" "$SLACK_WEBHOOK_URL"
+  curl -X POST --data-urlencode "payload=$payload" "$SLACK_WEBHOOK_URL"
 }
 
 function mark_model() {
