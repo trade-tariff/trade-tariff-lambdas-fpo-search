@@ -23,8 +23,17 @@ function notify_slack() {
   local color=${3:-good}
   local channel=${4:-#benchmarks}
 
-  echo "Notifying slack: $status, $message, $color, $channel"
-  # curl -X POST --data-urlencode "payload={\"channel\": \"$channel\", \"username\": \"Benchmarks\", \"attachments\": [{\"color\": \"$color\", \"title\": \"$status\", \"text\": \"$message\"}]}" "$SLACK_WEBHOOK"
+  payload=$(
+    jq -n \
+      --arg status "$status" \
+      --arg message "$message" \
+      --arg color "$color" \
+      --arg channel "$channel" \
+      '{status: $status, message: $message, color: $color, channel: $channel}'
+  )
+  echo "$payload"
+
+  # curl -X POST --data-urlencode "payload=$payload" "$SLACK_WEBHOOK_URL"
 }
 
 function mark_model() {
@@ -41,17 +50,18 @@ function mark_model_passed() {
 }
 
 function handle_result() {
+  aws s3 cp check_result.json "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
   any_highs=$(cat check_result.json | jq '.high | any')
   any_mediums=$(cat check_result.json | jq '.medium | any')
 
   if [[ "$any_highs" == "true" ]]; then
     echo "High threshold breaches detected"
-    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.key): \(.value)") | join("\n")')" danger
+    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.value)") | join("\n")')" danger
     mark_model_failed
     exit 1
   elif [[ "$any_mediums" == "true" ]]; then
     echo "Medium threshold breaches detected"
-    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.key): \(.value)") | join("\n")')" warning
+    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.value)") | join("\n")')" warning
     mark_model_failed
     exit 0
   else
