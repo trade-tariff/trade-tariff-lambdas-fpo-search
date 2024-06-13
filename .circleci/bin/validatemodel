@@ -6,8 +6,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-MODEL_KEY=$(.circleci/bin/getmodel)
-VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
+VERSION_PREFIX=$(.circleci/bin/getversions 1)
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
 function check_validation() {
