@@ -49,8 +49,12 @@ for threshold in thresholds:
 
     if old.name in threshold["file"] and new.name in threshold["file"]:
         if "interested_in" in threshold.keys():
-            old_result_value = old_result[threshold["interested_in"]][threshold["key"]]
-            new_result_value = new_result[threshold["interested_in"]][threshold["key"]]
+            old_result_value = list(old_result.items())[threshold["interested_in"]][
+                threshold["key"]
+            ]
+            new_result_value = list(new_result.items())[threshold["interested_in"]][
+                threshold["key"]
+            ]
         else:
             old_result_value = old_result[threshold["key"]]
             new_result_value = new_result[threshold["key"]]
