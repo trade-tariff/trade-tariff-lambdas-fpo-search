@@ -51,15 +51,20 @@ class FlatClassifierModelTrainer:
         )
 
         batches = len(train_loader)
+        size = len(train_dataset)
 
-        current_loss = None
+        report: Dict[str, Dict[str, float]] = {
+            f"epoch_{epoch + 1}": {"accuracy": 0.0, "average_loss": 0.0}
+            for epoch in range(self._max_epochs)
+        }
 
         for epoch in range(self._max_epochs):
             model.train()
+            running_loss = 0.0
             total = 0
             correct = 0
 
-            for i, (inputs, loader_labels) in enumerate(train_loader):
+            for _, (inputs, loader_labels) in enumerate(train_loader):
                 optimizer.zero_grad()
 
                 inputs = inputs.to(self._device)
@@ -70,7 +75,7 @@ class FlatClassifierModelTrainer:
                 loss = criterion(outputs, loader_labels)
                 loss.backward()
                 optimizer.step()
-                current_loss = loss.item()
+                running_loss += loss.item()
 
                 _, predicted = torch.max(outputs.data, 1)
 
@@ -81,12 +86,16 @@ class FlatClassifierModelTrainer:
                 del inputs
                 del loader_labels
 
-                logger.info(
-                    f"Epoch {epoch+1}/{self._max_epochs}, Batch {i + 1}/{batches}, Acc: {100 * correct / total}%"
-                )
+
+            running_loss /= batches
+            correct /= size
+            report[f"epoch_{epoch + 1}"]["accuracy"] = 100 * correct
+            report[f"epoch_{epoch + 1}"]["average_loss"] = running_loss
+            logger.info(
+                f"{epoch + 1} \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {running_loss:>8f} \n"
+            )
 
         with open("running_losses.json", "w") as f:
-            last_loss = {"loss": current_loss}
-            f.write(json.dumps(last_loss, indent=2))
+            f.write(json.dumps(report, indent=2))
 
         return (model.to("cpu").state_dict(), input_size, hidden_size, output_size)
