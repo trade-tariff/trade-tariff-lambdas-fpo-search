@@ -181,3 +181,9 @@ node_modules/
 # Benchmarking inputs/outputs
 benchmarking_data
 running_losses.json
+old_benchmark
+new_benchmark
+benchmark_results.zip
+check_result.json
+passed
+failed

@@ -16,6 +16,19 @@ if [ "$MODEL_KEY" = "" ]; then
   exit 1
 fi
 
+validate_model() {
+  echo "Validating $MODEL_KEY"
+
+  aws s3 cp --quiet "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" . || {
+    echo "Model $MODEL_KEY has not passed validation"
+    aws s3 cp --quiet "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/failed" . && {
+      echo "Model $MODEL_KEY is marked as failed"
+      exit 1
+    }
+    exit 1
+  }
+}
+
 fetch_model() {
   echo "Fetching $ENVIRONMENT model"
   aws s3 cp "s3://$MODEL_BUCKET_NAME/$MODEL_KEY" .
@@ -41,6 +54,7 @@ store_version() {
   echo "$VERSION_PREFIX" > MODEL_VERSION
 }
 
+validate_model
 fetch_model
 mark_environment
 store_version

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+VERSION_PREFIX=$(.circleci/bin/getmodel | sed 's/\/model.zip//')
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+
+function check_validation() {
+  if aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" 2>&1 | grep -q 'passed'; then
+    echo "Model ${VERSION_PREFIX} has already passed validation"
+    exit 0
+  fi
+
+  if aws s3 ls "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/failed" 2>&1 | grep -q 'failed'; then
+    echo "Model ${VERSION_PREFIX} has already failed validation"
+    exit 1
+  fi
+}
+
+function notify_slack() {
+  local status=$1
+  local message=$2
+  local color=${3:-good}
+  local channel=${4:-#deployments}
+  local emoji=${5:-":robot_face:"}
+  local username=${6:-"Model Validation Bot"}
+
+  payload=$(
+    jq -n \
+      --arg channel "$channel" \
+      --arg text "$status" \
+      --arg color "$color" \
+      --arg message "$message" \
+      --arg username "$username" \
+      --arg emoji "$emoji" \
+      '{
+        channel: $channel,
+        username: $username,
+        text: $text,
+        icon_emoji: $emoji,
+        attachments: [
+          {
+            color: $color,
+            text: $message
+          }
+        ]
+      }'
+  )
+  echo "$payload"
+
+  curl -X POST --data-urlencode "payload=$payload" "$SLACK_WEBHOOK_URL"
+}
+
+function mark_model() {
+  result=$1
+  echo -n "" | aws s3 cp - "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/$result"
+}
+
+function mark_model_failed() {
+  mark_model "failed"
+}
+
+function mark_model_passed() {
+  mark_model "passed"
+}
+
+function handle_result() {
+  aws s3 cp check_result.json "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
+  any_highs=$(cat check_result.json | jq '.high | any')
+  any_mediums=$(cat check_result.json | jq '.medium | any')
+
+  if [[ "$any_highs" == true ]]; then
+    echo "High threshold breaches detected"
+    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.value)") | join("\n")')" danger
+    mark_model_failed
+    exit 1
+  elif [[ "$any_mediums" == true ]]; then
+    echo "Medium threshold breaches detected"
+    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.value)") | join("\n")')" warning
+    mark_model_passed
+    exit 0
+  else
+    echo "No threshold breaches detected"
+    mark_model_passed
+    notify_slack "No threshold breaches detected" "All benchmarks are within thresholds" good
+    exit 0
+  fi
+}
+
+check_validation
+.circleci/bin/fetchbenchmarks
+.circleci/bin/checkbenchmarks
+handle_result

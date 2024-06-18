@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+MODEL_BUCKET_NAME=trade-tariff-models-382373577178
+VERSIONS=$(.circleci/bin/getversions 2)
+NEW_VERSION=$(echo "$VERSIONS" | tail -1)
+OLD_VERSION=$(echo "$VERSIONS" | head -1)
+
+function fetch_benchmarks() {
+  mkdir -p old_benchmark
+  mkdir -p new_benchmark
+
+  aws s3 cp s3://"$MODEL_BUCKET_NAME"/"$OLD_VERSION"/benchmark_results.zip old_benchmark/
+  aws s3 cp s3://"$MODEL_BUCKET_NAME"/"$NEW_VERSION"/benchmark_results.zip new_benchmark/
+
+  unzip -o old_benchmark/benchmark_results.zip -d old_benchmark
+  unzip -o new_benchmark/benchmark_results.zip -d new_benchmark
+
+  echo $OLD_VERSION > old_benchmark/version.txt
+  echo $NEW_VERSION > new_benchmark/version.txt
+}
+
+fetch_benchmarks

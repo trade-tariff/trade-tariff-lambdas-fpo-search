@@ -186,6 +186,17 @@ jobs:
           command: .circleci/bin/buildmodel
           no_output_timeout: 1h
 
+  validate-model:
+    executor: python
+    steps:
+      - checkout
+      - aws-cli/install
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install toml
+      - run: .circleci/bin/validatemodel
+
   clear-model-instances:
     executor: base
     steps:
@@ -211,19 +222,29 @@ workflows:
       - build-ami:
           name: build-ami-development
           context: trade-tariff-terraform-aws-development
+          <<: *filter-not-main
 
       - build-model:
           name: build-model-development
           context: trade-tariff-fpo-models-development
           requires:
             - build-ami-development
+          <<: *filter-not-main
+
+      - validate-model:
+          name: validate-model-development
+          context: trade-tariff-fpo-models-development
+          requires:
+            - build-model-development
+          <<: *filter-not-main
 
       - fetch-model:
           name: fetch-model-development
           environment: development
           context: trade-tariff-fpo-models-development
           requires:
-            - build-model-development
+            - validate-model-development
+          <<: *filter-not-main
 
       - build:
           name: build-development
@@ -266,7 +287,7 @@ workflows:
             - deploy-development
           <<: *filter-not-main
 
-  deploy-to-staging:
+  deploy-to-staging-and-production:
     jobs:
       - fetch-model:
           name: fetch-model-staging
@@ -314,17 +335,14 @@ workflows:
             - deploy-staging
           <<: *filter-main
 
-  deploy-to-production:
-    jobs:
-      - promote-to-production?:
-          type: approval
-          <<: *filter-main
-
       - tariff/create-production-release:
+          name: create-production-release
           context: trade-tariff-releases
           image-name: tariff-fpo-search-production
           requires:
-            - promote-to-production?
+            - e2etest-staging
+            - smoketest-staging
+            - perftest-staging
           <<: *filter-main
 
       - fetch-model:
@@ -339,22 +357,6 @@ workflows:
           context: trade-tariff-lambda-deployments-production
           requires:
             - fetch-model-production
-          <<: *filter-release
-
-      - perftest:
-          name: perftest-production
-          context: trade-tariff-fpo-smoketests-production
-          endpoint: https://search.trade-tariff.service.gov.uk
-          requires:
-            - deploy-production
-          <<: *filter-release
-
-      - smoketest:
-          name: smoketest-production
-          context: trade-tariff-fpo-smoketests-production
-          endpoint: https://search.trade-tariff.service.gov.uk
-          requires:
-            - deploy-production
           <<: *filter-release
 
   nightly-clear-model-instances:
