@@ -108,7 +108,7 @@ class TrainScriptArgsParser:
             "--transformer",
             type=str,
             help="the transformer to use for generating the embeddings",
-            default="all-MiniLM-L6-v2",
+            default="all-mpnet-base-v2",
         )
         parser.add_argument(
             "--transformer-cache-directory",
