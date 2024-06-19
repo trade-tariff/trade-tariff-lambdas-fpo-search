@@ -159,12 +159,9 @@ copy_model_from_ec2_instance ()
   s3_prefix="$VERSION-$SHA"
 
   execute_command "$1" "cd $PROJECT && zip model.zip target/model.pt target/subheadings.pkl"
-  execute_command "$1" "cd $PROJECT && zip embeddings.zip target/training_data/*"
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/embeddings.zip .
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/search-config.toml .
   aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
-  aws s3 cp embeddings.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/embeddings.zip"
   aws s3 cp search-config.toml s3://"$MODEL_BUCKET_NAME/$s3_prefix/search-config.toml"
 }
 
