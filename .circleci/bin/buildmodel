@@ -43,19 +43,37 @@ fetch_security_group_by_name ()
 launch_ec2_instance ()
 {
   name="fpo-search-training-$SHA"
+  retries=5
+  delay=10
 
-  aws ec2 run-instances \
-    --image-id "$LATEST_AMI" \
-    --subnet-id "$SUBNET_ID" \
-    --security-group-ids "$SECURITY_GROUP_IDS" \
-    --instance-type p3.2xlarge \
-    --key-name "$KEY_PAIR_NAME" \
-    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
-    --associate-public-ip-address \
-    --region 'us-east-1' \
-    --output text \
-    --query 'Instances[0].InstanceId' \
-    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]"
+  for ((i=0; i<retries; i++)); do
+    set +o errexit
+    INSTANCE_ID=$(aws ec2 run-instances \
+      --image-id "$LATEST_AMI" \
+      --subnet-id "$SUBNET_ID" \
+      --security-group-ids "$SECURITY_GROUP_IDS" \
+      --instance-type p3.8xlarge \
+      --key-name "$KEY_PAIR_NAME" \
+      --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
+      --associate-public-ip-address \
+      --region 'us-east-1' \
+      --output text \
+      --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
+      --query 'Instances[0].InstanceId' 2>&1)
+    set -o errexit
+
+    if [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
+      echo "$INSTANCE_ID"  # Return the instance ID if successful
+      return 0
+    fi
+
+    echo "Insufficient capacity. Retrying in $delay seconds..."
+    sleep "$delay"
+    delay=$((delay * 2))  # Exponential backoff
+  done
+
+  echo "Failed to launch instance after $retries retries."
+  exit 1
 }
 
 wait_for_instance_to_be_available ()
@@ -141,12 +159,9 @@ copy_model_from_ec2_instance ()
   s3_prefix="$VERSION-$SHA"
 
   execute_command "$1" "cd $PROJECT && zip model.zip target/model.pt target/subheadings.pkl"
-  execute_command "$1" "cd $PROJECT && zip embeddings.zip target/training_data/*"
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
-  scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/embeddings.zip .
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/search-config.toml .
   aws s3 cp model.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/model.zip"
-  aws s3 cp embeddings.zip s3://"$MODEL_BUCKET_NAME/$s3_prefix/embeddings.zip"
   aws s3 cp search-config.toml s3://"$MODEL_BUCKET_NAME/$s3_prefix/search-config.toml"
 }
 

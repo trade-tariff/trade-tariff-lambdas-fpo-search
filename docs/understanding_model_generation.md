@@ -41,7 +41,6 @@ aws s3 ls --human-readable --recursive s3://trade-tariff-models-382373577178/
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/development # indicates we've deployed this model to development
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/staging # indicates we've deployed this model to staging
 2024-05-16 21:30:46    0 Bytes  0.0.2-aff1242/production # indicates we've deployed this model to production
-2024-05-16 21:29:56    4.0 GiB  0.0.2-aff1242/embeddings.zip # contains the embeddings (needed to generate the model)
 2024-05-16 21:29:52  181.5 MiB  0.0.2-aff1242/model.zip # contains the model and suhbeadings file (needed for inference)
 2024-05-16 21:30:24  569 Bytes  0.0.2-aff1242/search-config.toml # includes the model inputs for instantiation of this model
 2024-05-16 21:30:24  1.5 KB     0.0.2-aff1242/benchmark_results.xml # a junit formatted results file including the accuracy results for this model

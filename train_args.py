@@ -81,12 +81,6 @@ class TrainScriptArgsParser:
             default=100,
         )
         parser.add_argument(
-            "--embedding-cache-checkpoint",
-            type=int,
-            help="how often to update the cached embeddings.",
-            default=50000,
-        )
-        parser.add_argument(
             "--vague-terms-data-file",
             type=str,
             help="the path to the vague terms data file",
@@ -111,16 +105,10 @@ class TrainScriptArgsParser:
             default="raw_source_data/tradesets_descriptions",
         )
         parser.add_argument(
-            "--embeddings-cache-enabled",
-            type=bool,
-            help="whether to cache embeddings or not",
-            default=True,
-        )
-        parser.add_argument(
             "--transformer",
             type=str,
             help="the transformer to use for generating the embeddings",
-            default="all-MiniLM-L6-v2",
+            default="all-mpnet-base-v2",
         )
         parser.add_argument(
             "--transformer-cache-directory",
@@ -189,9 +177,6 @@ class TrainScriptArgsParser:
         logger.info(f"  max_epochs: {self.max_epochs()}")
         logger.info(f"  model_batch_size: {self.model_batch_size()}")
         logger.info(f"  embedding_batch_size: {self.embedding_batch_size()}")
-        logger.info(
-            f"  embedding_cache_checkpoint: {self.embedding_cache_checkpoint()}"
-        )
         logger.info(f"  vague_terms_data_file: {self.vague_terms_data_file()}")
         logger.info(f"  limit: {self.limit()}")
         logger.info(f"  digits: {self.digits()}")
@@ -200,8 +185,6 @@ class TrainScriptArgsParser:
         )
         logger.info(f"  cn_data_file: {self.cn_data_file()}")
         logger.info(f"  tradesets_data_dir: {self.tradesets_data_dir()}")
-        logger.info(f"  embeddings_cache_enabled: {self.embeddings_cache_enabled()}")
-        logger.info(f"  cache_dir: {self.cache_dir()}")
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
         logger.info(f"  transformer: {self.transformer()}")
@@ -244,22 +227,12 @@ class TrainScriptArgsParser:
     def pwd(self):
         return Path(__file__).resolve().parent
 
-    def cache_dir(self):
-        if self.embeddings_cache_enabled():
-            return self.data_dir()
-        else:
-            return None
-
     def transformer_model_directory(self):
         return (
             self.transformer_cache_directory()
             + "sentence-transformers_"
             + self.transformer()
         )
-
-    @config_from_file
-    def embeddings_cache_enabled(self):
-        return self.parsed_args.embeddings_cache_enabled
 
     @config_from_file
     def device(self):
@@ -280,10 +253,6 @@ class TrainScriptArgsParser:
     @config_from_file
     def embedding_batch_size(self):
         return self.parsed_args.embedding_batch_size
-
-    @config_from_file
-    def embedding_cache_checkpoint(self):
-        return self.parsed_args.embedding_cache_checkpoint
 
     @config_from_file
     def vague_terms_data_file(self):
