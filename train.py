@@ -13,6 +13,7 @@ from data_sources.basic_csv import BasicCSVDataSource
 from training.cleaning_pipeline import (
     CleaningPipeline,
     LanguageCleaning,
+    NegationCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
@@ -90,8 +91,11 @@ tradestats_filters = basic_filters + [
     ),
 ]
 
+self_texts_filters = basic_filters + [NegationCleaning.build()]
+
 basic_pipeline = CleaningPipeline(basic_filters)
 tradestats_pipeline = CleaningPipeline(tradestats_filters)
+self_texts_pipeline = CleaningPipeline(self_texts_filters)
 
 data_sources: list[DataSource] = []
 
@@ -114,7 +118,7 @@ data_sources.append(
         args.cn_data_file(),
         code_col=1,
         description_col=3,
-        cleaning_pipeline=basic_pipeline,
+        cleaning_pipeline=self_texts_pipeline,
         authoritative=True,
         creates_codes=True,
     )
