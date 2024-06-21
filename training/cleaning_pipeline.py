@@ -209,9 +209,9 @@ class NegationCleaning(Cleaner):
             rf"(\(({'|'.join(negation_terms)}).*\))"
         )
         self._full_negation_regex = re.compile(
-            rf"(,|-)?\s*(?<excluded-term>{'|'.join(negation_terms)})\s+((?!-).)*"
+            rf"(,|-)?\s*({'|'.join(negation_terms)})\s+((?!-).)*"
         )
-        self._no_breaking_space = "\u00A0"
+        self._non_breaking_space = "\u00A0"
 
     @classmethod
     def build(cls) -> "NegationCleaning":
@@ -229,8 +229,12 @@ class NegationCleaning(Cleaner):
 
     @debug
     def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
-        description = description.replace(self._no_breaking_space, " ") # Remove NBSP
-        description = re.sub(self._bracket_negation_regex, "", description or "") # Remove bracketed negations
-        description = re.sub(self._full_negation_regex, "", description or "").strip() # Remove non-bracketed negations
+        description = description.lower() or ""
+        # Remove non-breaking spaces
+        description = description.replace(self._non_breaking_space, " ")
+        # Remove bracketed negations (e.g. "description (excluding this part)" -> "description"
+        description = re.sub(self._bracket_negation_regex, "", description or "")
+        # Remove non-bracketed negations (e.g. "description excluding this part" -> "description")
+        description = re.sub(self._full_negation_regex, "", description or "").strip()
 
         return (subheading, description)
