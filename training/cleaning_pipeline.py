@@ -196,3 +196,41 @@ class LanguageCleaning(Cleaner):
             "partial_keeps": self._partial_keeps,
             "exact_keeps": self._exact_keeps,
         }
+
+
+class NegationCleaning(Cleaner):
+    def __init__(
+        self, negation_terms: List[str], non_negation_terms: List[str]
+    ) -> None:
+        super().__init__()
+        self._negation_terms = negation_terms
+        self._non_negation_terms = non_negation_terms
+        self._bracket_negation_regex = re.compile(
+            rf"(\(({'|'.join(negation_terms)}).*\))"
+        )
+        self._full_negation_regex = re.compile(
+            rf"(,|-)?\s*(?<excluded-term>{'|'.join(negation_terms)})\s+((?!-).)*"
+        )
+        self._no_breaking_space = "\u00A0"
+
+    @classmethod
+    def build(cls) -> "NegationCleaning":
+        return cls(
+            [
+                "neither",
+                "other than",
+                "excluding",
+                "not",
+                "except",
+                "excl.",
+            ],
+            ["with or without"],
+        )
+
+    @debug
+    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+        description = description.replace(self._no_breaking_space, " ") # Remove NBSP
+        description = re.sub(self._bracket_negation_regex, "", description or "") # Remove bracketed negations
+        description = re.sub(self._full_negation_regex, "", description or "").strip() # Remove non-bracketed negations
+
+        return (subheading, description)
