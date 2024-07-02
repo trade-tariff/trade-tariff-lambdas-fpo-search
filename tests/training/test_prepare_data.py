@@ -6,7 +6,6 @@ from training.prepare_data import TrainingDataLoader
 
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 training_data_loader = TrainingDataLoader(logger=logger)
 
