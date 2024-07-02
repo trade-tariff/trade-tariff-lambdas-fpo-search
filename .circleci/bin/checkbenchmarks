@@ -49,33 +49,51 @@ for threshold in thresholds:
 
     if old.name in threshold["file"] and new.name in threshold["file"]:
         if "interested_in" in threshold.keys():
-            old_result_value = list(old_result.items())[threshold["interested_in"]][
-                threshold["key"]
-            ]
-            new_result_value = list(new_result.items())[threshold["interested_in"]][
-                threshold["key"]
-            ]
+            old_values = list(old_result.items())[threshold["interested_in"]][1]
+            new_values = list(new_result.items())[threshold["interested_in"]][1]
+
+            old_result_value = old_values[threshold["key"]]
+            new_result_value = new_values[threshold["key"]]
         else:
             old_result_value = old_result[threshold["key"]]
             new_result_value = new_result[threshold["key"]]
 
         delta = new_result_value - old_result_value
+        direction = threshold["direction"]
 
-        if delta < threshold["changeHigh"]:
-            print(
-                f"Threshold {threshold['name']} failed: {delta} > {threshold['changeHigh']}"
-            )
-            results["high"].append(threshold["name"])
-        elif delta < threshold["changeMedium"]:
-            print(
-                f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
-            )
-            results["medium"].append(threshold["name"])
+        if direction == "increase_is_good":
+            if delta < threshold["changeHigh"]:
+                print(
+                    f"Threshold {threshold['name']} failed: {delta} > {threshold['changeHigh']}"
+                )
+                results["high"].append(threshold["name"])
+            elif delta < threshold["changeMedium"]:
+                print(
+                    f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
+                )
+                results["medium"].append(threshold["name"])
+            else:
+                print(
+                    f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
+                )
+                results["low"].append(threshold["name"])
         else:
-            print(
-                f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
-            )
-            results["low"].append(threshold["name"])
+            if delta > threshold["changeHigh"]:
+                print(
+                    f"Threshold {threshold['name']} failed: {delta} > {threshold['changeHigh']}"
+                )
+                results["high"].append(threshold["name"])
+            elif delta > threshold["changeMedium"]:
+                print(
+                    f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
+                )
+                results["medium"].append(threshold["name"])
+            else:
+                print(
+                    f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
+                )
+                results["low"].append(threshold["name"])
+
     else:
         print("No match")
 
