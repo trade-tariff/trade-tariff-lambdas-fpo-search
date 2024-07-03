@@ -229,13 +229,11 @@ class NegationCleaning(Cleaner):
 
     @debug
     def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
-        description = description or ""
-        description = description.lower()
         # Remove non-breaking spaces
-        description = description.replace(self._non_breaking_space, " ")
-        # # Remove bracketed negations (e.g. "description (excluding this part)" -> "description"
+        description = (description or "").lower().replace(self._non_breaking_space, " ")
+        # Remove bracketed negations (e.g. "description (excluding this part)" -> "description")
         description = re.sub(self._bracket_negation_regex, "", description)
-        # # Remove non-bracketed negations (e.g. "description excluding this part" -> "description")
+        # Remove non-bracketed negations (e.g. "description excluding this part" -> "description")
         description = re.sub(self._full_negation_regex, "", description).strip()
 
         return (subheading, description)
