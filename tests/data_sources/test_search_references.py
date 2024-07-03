@@ -6,7 +6,6 @@ from data_sources.search_references import SearchReferencesDataSource
 
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 
 class Test_search_references(unittest.TestCase):

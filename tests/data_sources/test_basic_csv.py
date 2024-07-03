@@ -5,7 +5,6 @@ from data_sources.basic_csv import BasicCSVDataSource
 
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 
 class Test_basic_csv_data_source(unittest.TestCase):
