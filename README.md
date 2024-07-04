@@ -177,32 +177,6 @@ python infer.py --limit 10 --digits 8 'smelly socks'
 [61159500 = 225.24, 61159699 = 181.72, 61159900 = 119.44, 61159400 = 71.33]
 ```
 
-#### Running as an API
-
-Start the FastAPI service:
-
-Either using:
-
-`python api.py`
-
-or
-
-`uvicorn api:app --port 5000`
-
-You can then access the service locally at http://localhost:5000/code-search?q=smelly+socks&limit=10&digits=8
-
-#### Building an inference API Docker image
-
-You can build the API as a Docker image:
-
-`docker build -f Dockerfile.inference -t fpo-inference-api .`
-
-And then run it:
-
-`docker run -p 5000:5000 fpo-inference-api`
-
-You can then access the service locally at http://localhost:5000/code-search?q=smelly+socks&limit=10&digits=8
-
 ## Licence
 
 FPO Parcel Item Categorisation API is licenced under the [MIT licence](LICENCE.txt)

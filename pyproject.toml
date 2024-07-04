@@ -15,10 +15,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "aws-lambda-powertools",
-    "fastapi",
     "pre-commit",
     "ruff",
-    "uvicorn",
 ]
 
 [tool.setuptools]
