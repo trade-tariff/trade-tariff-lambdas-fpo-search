@@ -172,6 +172,20 @@ terminate_ec2_instance ()
   aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
 }
 
+on_exit ()
+{
+  local old_status=$?
+
+  if [[ "$INSTANCE_ID" != '' ]]; then
+    echo "Terminating EC2 instance..."
+    terminate_ec2_instance "$INSTANCE_ID"
+  fi
+
+  exit $old_status
+}
+
+trap on_exit EXIT # Ensure that the EC2 instance is terminated after any failure
+
 if needsmodel; then
   echo "Model needs to be trained"
 else
