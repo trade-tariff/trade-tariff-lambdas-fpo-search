@@ -40,6 +40,8 @@ fetch_security_group_by_name ()
   aws ec2 describe-security-groups --filters "Name=group-name,Values=$1" --region "$region" --query 'SecurityGroups[0].GroupId' --output text
 }
 
+INSTANCE_ID=''
+
 launch_ec2_instance ()
 {
   name="fpo-search-training-$SHA"
@@ -170,6 +172,20 @@ terminate_ec2_instance ()
   aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
 }
 
+on_exit ()
+{
+  local old_status=$?
+
+  if [[ "$INSTANCE_ID" != '' ]]; then
+    echo "Terminating EC2 instance..."
+    terminate_ec2_instance "$INSTANCE_ID"
+  fi
+
+  exit $old_status
+}
+
+trap on_exit EXIT # Ensure that the EC2 instance is terminated after any failure
+
 if needsmodel; then
   echo "Model needs to be trained"
 else
@@ -187,7 +203,9 @@ PROJECT=trade-tariff-lambdas-fpo-search
 SHA=$(git rev-parse --short HEAD)
 VERSION=$(cat search-config.toml | grep version | awk '{print $3}' | sed 's/"//g')
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-INSTANCE_ID=$(launch_ec2_instance)
+
+launch_ec2_instance
+
 PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
 
 echo "Launching EC2 instance with configuration..."

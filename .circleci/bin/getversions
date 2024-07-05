@@ -7,14 +7,21 @@ set -o pipefail
 set -o noclobber
 
 NUMBER_OF_VERSIONS=${1:-2}
+TARGETED_VERSION=${2:-}
 
 function get_sorted_versions() {
-  aws s3api list-objects-v2 \
+  sorted_versions=$(aws s3api list-objects-v2 \
     --bucket "trade-tariff-models-382373577178" \
     --query "reverse(sort_by(Contents[?ends_with(Key, 'model.zip')], &LastModified)) | @[*].Key" \
     --output text \
     | sed 's/\t/\n/g' \
-    | sed 's{/model.zip{{'
+    | sed 's{/model.zip{{')
+
+  if [[ -n "$TARGETED_VERSION" ]]; then
+    echo "$sorted_versions" | awk "/$TARGETED_VERSION/{version=1}version"
+  else
+    echo "$sorted_versions"
+  fi
 }
 
 function get_latest_versions() {
