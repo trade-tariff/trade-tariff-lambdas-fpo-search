@@ -5,17 +5,21 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-versionchanged ()
-{
-  git diff "$(git merge-base main HEAD)"..HEAD -- search-config.toml \
-    | grep -e +version -e -version
-}
-
 needsmodel ()
 {
-  if [[ -z "$(versionchanged)" ]]; then
+  versions_unsorted=$(git --no-pager diff main search-config.toml | grep version | sed 's/^[+|-]//g')
+  versions_sorted=$(git --no-pager diff main search-config.toml | grep version | sed 's/^[+|-]//g' | sort)
+
+  # No change to versions
+  if [[ -z "$versions_unsorted" ]]; then
     return 1
-  else
-    return 0
   fi
+
+  # Version has been rolled back
+  if [[ "$versions_unsorted" != "$versions_sorted" ]]; then
+    return 1
+  fi
+
+  # Version has been updated
+  return 0
 }
