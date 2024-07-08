@@ -30,6 +30,7 @@ results = {
     "high": [],
     "medium": [],
     "low": [],
+    "thresholds": [],
 }
 
 for threshold in thresholds:
@@ -60,6 +61,15 @@ for threshold in thresholds:
 
         delta = new_result_value - old_result_value
         direction = threshold["direction"]
+        results["thresholds"].append(
+            {
+                "name": threshold["name"],
+                "old": old_result_value,
+                "new": new_result_value,
+                "delta": delta,
+                "direction": direction,
+            }
+        )
 
         if direction == "increase_is_good":
             if delta < threshold["changeHigh"]:
