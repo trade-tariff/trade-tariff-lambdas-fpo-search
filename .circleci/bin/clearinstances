@@ -9,7 +9,7 @@ fetch_ec2_instances_for_termination ()
 {
   aws ec2 describe-instances \
           --region "us-east-1" \
-          --query 'Reservations[*].Instances[?Tags[?Key==`Name` && starts_with(Value, `fpo-search-training-`)] && State.Name==`running`].InstanceId' \
+          --query 'Reservations[*].Instances[?State.Name==`running`].InstanceId' \
           --output text |
           tr '\n' ' '
 }
