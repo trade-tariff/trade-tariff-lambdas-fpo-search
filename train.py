@@ -84,14 +84,14 @@ tradestats_filters = basic_filters + [
     ),
     LanguageCleaning(
         detected_languages=args.detected_languages(),
-        preferred_languages=args.preferred_languages(),
+        preferred_languages=args.preferred_languages(), #IS this set to Eng and None?
         partial_skips=language_skips,
         partial_keeps=language_keeps,
         exact_keeps=language_keeps_exact,
     ),
 ]
 
-self_texts_filters = basic_filters + [NegationCleaning.build()]
+self_texts_filters = basic_filters + [NegationCleaning.build()] ##NOTE: DON'T REMOVE SHORT TEXTS=4 FROM HERE AS REMOVES ONE OF THE CODES (ONE FOR MATÉ)
 
 basic_pipeline = CleaningPipeline(basic_filters)
 tradestats_pipeline = CleaningPipeline(tradestats_filters)
@@ -107,11 +107,23 @@ data_sources.append(
         code_col=1,
         description_col=0,
         authoritative=True,
+        multiplier = 5,
         creates_codes=False,
     )
 )
 
-data_sources.append(SearchReferencesDataSource())
+data_sources.append(
+    BasicCSVDataSource(
+        args.Brands_data_file(),
+        code_col=1,
+        description_col=0,
+        authoritative=True,
+        multiplier = 3,
+        creates_codes=False,
+    )
+)
+
+data_sources.append(SearchReferencesDataSource()) ##Can we add this twice?
 
 data_sources.append(
     BasicCSVDataSource(
@@ -119,6 +131,7 @@ data_sources.append(
         code_col=1,
         description_col=3,
         cleaning_pipeline=self_texts_pipeline,
+        multiplier = 2,
         authoritative=True,
         creates_codes=True,
     )
@@ -128,6 +141,7 @@ data_sources += [
     BasicCSVDataSource(
         filename,
         cleaning_pipeline=tradestats_pipeline,
+        multiplier = 2,
         encoding="latin_1",
     )
     for filename in Path(args.tradesets_data_dir()).glob("*.csv")
