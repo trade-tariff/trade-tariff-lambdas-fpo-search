@@ -1,15 +1,16 @@
 import toml
-from data_sources.vague_terms import VagueTermsCSVDataSource
-from train_args import TrainScriptArgsParser
 import logging
+import pickle
+import torch
+
 from pathlib import Path
 
-import pickle
+from data_sources.commodities import CommoditiesDataSource
+from train_args import TrainScriptArgsParser
+from training.prepare_data import TrainingDataLoader
+from training.train_model import FlatClassifierModelTrainer
+from training.create_embeddings import EmbeddingsProcessor
 
-import torch
-from data_sources.search_references import SearchReferencesDataSource
-from data_sources.data_source import DataSource
-from data_sources.basic_csv import BasicCSVDataSource
 from training.cleaning_pipeline import (
     CleaningPipeline,
     LanguageCleaning,
@@ -21,9 +22,10 @@ from training.cleaning_pipeline import (
     StripExcessWhitespace,
 )
 
-from training.prepare_data import TrainingDataLoader
-from training.train_model import FlatClassifierModelTrainer
-from training.create_embeddings import EmbeddingsProcessor
+from data_sources.vague_terms import VagueTermsCSVDataSource
+from data_sources.search_references import SearchReferencesDataSource
+from data_sources.data_source import DataSource
+from data_sources.basic_csv import BasicCSVDataSource
 
 args = TrainScriptArgsParser()
 args.print()
@@ -112,6 +114,7 @@ data_sources.append(
 )
 
 data_sources.append(SearchReferencesDataSource())
+data_sources.append(CommoditiesDataSource(cleaning_pipeline=self_texts_pipeline))
 
 data_sources.append(
     BasicCSVDataSource(
