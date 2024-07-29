@@ -115,7 +115,17 @@ data_sources.append(
 
 data_sources.append(SearchReferencesDataSource())
 data_sources.append(CommoditiesDataSource(cleaning_pipeline=self_texts_pipeline))
-
+data_sources.append(
+    BasicCSVDataSource(
+            args.brands_data_file(),
+            code_col=0,
+            description_col=1,
+            cleaning_pipeline=basic_pipeline,
+            multiplier=5,
+            authoritative=True,
+            creates_codes=False,
+    )
+)
 data_sources.append(
     BasicCSVDataSource(
         args.cn_data_file(),
