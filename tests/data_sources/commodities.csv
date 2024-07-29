@@ -1,0 +1,3 @@
+SID,Commodity code,Product line suffix,Description,Start date,End date,Indentation,End line,Class,ItemIDPlusPLS,Hierarchy
+27623,0100000000,80,LIVE ANIMALS,1971-12-31 00:00:00 UTC,,0,false,Chapter,0100000000_80,
+27624,0101000000,80,"Live horses, asses, mules and hinnies",1972-01-01 00:00:00 UTC,,0,false,Heading,0101000000_80,0100000000_80

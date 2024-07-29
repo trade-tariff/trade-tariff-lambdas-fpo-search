@@ -12,6 +12,7 @@ from training.cleaning_pipeline import CleaningPipeline
 
 logger = logging.getLogger(__name__)
 
+
 def generate_chunk_wrapper(serialized_args: bytes) -> Dict[str, Set[str]]:
     """Wrapper function to deserialize arguments and do any processing."""
     # Deserialize the arguments
@@ -28,7 +29,8 @@ def generate_chunk_wrapper(serialized_args: bytes) -> Dict[str, Set[str]]:
         cleaning_pipeline = None
 
     # Process the chunk
-    codes = {}
+    codes: dict[str, set[str]] = {}
+
     for row in chunk:
         subheading = row[code_col].replace(" ", "")[:digits]
         description = row[description_col].strip().lower()
@@ -45,6 +47,7 @@ def generate_chunk_wrapper(serialized_args: bytes) -> Dict[str, Set[str]]:
             codes[subheading].add(description)
         else:
             codes[subheading] = {description}
+
     return codes
 
 
@@ -82,12 +85,22 @@ class BasicCSVDataSource(DataSource):
         all_results = self._do_work(chunks, digits)
         codes = self._merge_results(all_results)
         total_descriptions = sum(len(descriptions) for descriptions in codes.values())
-        unique_descriptions = len({description for descriptions in codes.values() for description in descriptions})
-        logger.info(f"Loaded {len(codes)} unique subheadings with {unique_descriptions} unique descriptions and {total_descriptions} total descriptions from {os.path.relpath(self._filename)}")
+        unique_descriptions = len(
+            {
+                description
+                for descriptions in codes.values()
+                for description in descriptions
+            }
+        )
+        logger.info(
+            f"Loaded {len(codes)} unique subheadings with {unique_descriptions} unique descriptions and {total_descriptions} total descriptions from {os.path.relpath(self._filename)}"
+        )
 
         return codes
 
-    def _do_work(self, chunks: List[List[List[str]]], digits: int) -> List[dict[str, set[str]]]:
+    def _do_work(
+        self, chunks: List[List[List[str]]], digits: int
+    ) -> List[dict[str, set[str]]]:
         all_results = []
         with ProcessPoolExecutor(self._max_workers()) as executor:
             # Serialize only the necessary components using dill
