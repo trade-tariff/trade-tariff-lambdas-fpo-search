@@ -119,7 +119,7 @@ data_sources.append(
     BasicCSVDataSource(
             args.brands_data_file(),
             code_col=0,
-            description_col=1,
+            description_col=2,
             cleaning_pipeline=basic_pipeline,
             multiplier=5,
             authoritative=True,
