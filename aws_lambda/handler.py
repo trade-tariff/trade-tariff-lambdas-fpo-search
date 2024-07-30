@@ -16,8 +16,6 @@ with open("MODEL_VERSION", "r") as f:
 
 def log_handler(func):
     def wrapper(self, event, _context):
-        user_agent = event.get("headers", {}).get("User-Agent", "")
-        request_id = event.get("requestContext", {}).get("requestId", "")
         start = time.perf_counter()
         result = func(self, event, _context)
         lapsed = (time.perf_counter() - start) * 1000
@@ -30,10 +28,7 @@ def log_handler(func):
                 "http_method": event.get("httpMethod"),
                 "path": event.get("path"),
                 "status_code": result["statusCode"],
-                "body": result["body"],
                 "time_ms": lapsed,
-                "user_agent": user_agent,
-                "request_id": request_id,
             },
         )
         return result
@@ -57,7 +52,11 @@ class LambdaHandler:
             api_key_id = (
                 event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
             )
-            self._logger.append_keys(api_key_id=api_key_id)
+            request_id = event.get("requestContext", {}).get("requestId", "")
+            user_agent = event.get("headers", {}).get("User-Agent", "")
+            self._logger.append_keys(
+                api_key_id=api_key_id, request_id=request_id, user_agent=user_agent
+            )
 
         http_method = event.get("httpMethod", "GET")
         path = event.get("path", "default")
