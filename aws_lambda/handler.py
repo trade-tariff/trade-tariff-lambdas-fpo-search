@@ -16,11 +16,6 @@ with open("MODEL_VERSION", "r") as f:
 
 def log_handler(func):
     def wrapper(self, event, _context):
-        api_key_id = (
-            event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
-        )
-        user_agent = event.get("headers", {}).get("User-Agent", "")
-        request_id = event.get("requestContext", {}).get("requestId", "")
         start = time.perf_counter()
         result = func(self, event, _context)
         lapsed = (time.perf_counter() - start) * 1000
@@ -32,12 +27,8 @@ def log_handler(func):
             extra={
                 "http_method": event.get("httpMethod"),
                 "path": event.get("path"),
-                "api_key_id": api_key_id,
                 "status_code": result["statusCode"],
-                "body": result["body"],
                 "time_ms": lapsed,
-                "user_agent": user_agent,
-                "request_id": request_id,
             },
         )
         return result
@@ -49,12 +40,24 @@ class LambdaHandler:
     def __init__(
         self,
         classifier: Classifier,
-        logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger("handler"),
+        logger: aws_lambda_powertools.Logger | logging.Logger = logging.getLogger(
+            "handler"
+        ),
     ) -> None:
         self._classifier = classifier
         self._logger = logger
 
     def handle(self, event, _context):
+        if isinstance(self._logger, aws_lambda_powertools.Logger):
+            api_key_id = (
+                event.get("requestContext", {}).get("identity", {}).get("apiKeyId", "")
+            )
+            request_id = event.get("requestContext", {}).get("requestId", "")
+            user_agent = event.get("headers", {}).get("User-Agent", "")
+            self._logger.append_keys(
+                api_key_id=api_key_id, request_id=request_id, user_agent=user_agent
+            )
+
         http_method = event.get("httpMethod", "GET")
         path = event.get("path", "default")
 
@@ -122,9 +125,19 @@ class LambdaHandler:
         results = [
             {"code": result.code, "score": result.score * 1000} for result in results
         ]
-        results = {"results": results}
 
-        return {"statusCode": 200, "body": json.dumps(results)}
+        self._logger.info(
+            "Inference result",
+            extra={
+                "request_description": description,
+                "request_digits": int(digits),
+                "request_limit": int(limit),
+                "result_count": len(results),
+                "results": results,
+            },
+        )
+
+        return {"statusCode": 200, "body": json.dumps({"results": results})}
 
     def _validate(
         self, description: str, digits: Union[str, int], limit: Union[str, int]
