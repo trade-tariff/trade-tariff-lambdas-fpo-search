@@ -116,9 +116,9 @@ class FlatClassifier(Classifier):
     def load_sentence_transformer(self) -> torch.nn.Sequential:
         model_file = Path(args.transformer_cache_directory()) / f"{args.transformer()}_transformer_model.pt"
 
-        self._logger.info(f"Checking if cached model file exists: {str(model_file)}")
+        self._logger.info(f"Checking if cached model file exists: {str(model_file)} ... {model_file.is_file()}")
 
-        if model_file.exists():
+        if model_file.is_file():
             self._logger.info(f"💾⇨ Loading sentence transformer cached model from {str(model_file)}")
             t = time.perf_counter()
 
