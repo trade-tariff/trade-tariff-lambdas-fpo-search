@@ -24,10 +24,8 @@ logger.info("🚀⇨ Subheadings loaded in %.2fms", (time.perf_counter() - start
 start = time.perf_counter()
 logger.info("🚀⇨ Loading static classifier")
 
-classifier = FlatClassifier(subheadings, "cpu")
-logger.info(
-    "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
-)
+classifier = FlatClassifier(subheadings, device="cpu", logger=logger)
+logger.info("🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000)
 lambda_handler = LambdaHandler(classifier, logger=logger)
 
 
