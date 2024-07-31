@@ -7,9 +7,6 @@ RUN pip install --no-cache-dir --upgrade torch --index-url https://download.pyto
 RUN pip install --no-cache-dir --upgrade -r requirements_lambda.txt
 
 # Download the transformer model and then delete the hf cache version
-RUN <<EOF
-    python download_transformer.py
-    rm -rf ~/.cache/torch/sentence_transformers
-EOF
+RUN python download_transformer.py && rm -rf ~/.cache/torch/sentence_transformers
 
 CMD ["handler.handle"]
