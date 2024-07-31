@@ -12,11 +12,7 @@ def config_from_file(func):
     def wrapped(self, *args, **kwargs):
         config_key = func.__name__
 
-        if (
-            hasattr(self, "parsed_config")
-            and self.parsed_config
-            and config_key in self.parsed_config
-        ):
+        if hasattr(self, "parsed_config") and self.parsed_config and config_key in self.parsed_config:
             return self.parsed_config[config_key]
 
         return func(self, *args, **kwargs)
@@ -26,9 +22,7 @@ def config_from_file(func):
 
 class TrainScriptArgsParser:
     def __init__(self):
-        parser = argparse.ArgumentParser(
-            description="Train an FPO classification model."
-        )
+        parser = argparse.ArgumentParser(description="Train an FPO classification model.")
         parser.add_argument(
             "--config",
             type=str,
@@ -180,20 +174,13 @@ class TrainScriptArgsParser:
         logger.info(f"  vague_terms_data_file: {self.vague_terms_data_file()}")
         logger.info(f"  limit: {self.limit()}")
         logger.info(f"  digits: {self.digits()}")
-        logger.info(
-            f"  extra_references_data_file: {self.extra_references_data_file()}"
-        )
+        logger.info(f"  extra_references_data_file: {self.extra_references_data_file()}")
         logger.info(f"  cn_data_file: {self.cn_data_file()}")
         logger.info(f"  tradesets_data_dir: {self.tradesets_data_dir()}")
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
         logger.info(f"  transformer: {self.transformer()}")
-        logger.info(
-            f"  transformer_cache_directory: {self.transformer_cache_directory()}"
-        )
-        logger.info(
-            f"  transformer_model_directory: {self.transformer_model_directory()}"
-        )
+        logger.info(f"  transformer_cache_directory: {self.transformer_cache_directory()}")
         logger.info(f"  partial_english_terms: {self.partial_english_terms()}")
         logger.info(f"  partial_non_english_terms: {self.partial_non_english_terms()}")
         logger.info(f"  exact_english_terms: {self.exact_english_terms()}")
@@ -226,13 +213,6 @@ class TrainScriptArgsParser:
 
     def pwd(self):
         return Path(__file__).resolve().parent
-
-    def transformer_model_directory(self):
-        return (
-            self.transformer_cache_directory()
-            + "sentence-transformers_"
-            + self.transformer()
-        )
 
     @config_from_file
     def device(self):

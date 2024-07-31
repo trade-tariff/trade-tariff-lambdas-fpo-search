@@ -1,7 +1,7 @@
 from logging import Logger
 import logging
-import os
 from pathlib import Path
+import time
 
 import torch
 from sentence_transformers import SentenceTransformer
@@ -29,9 +29,7 @@ class ClassificationResult:
 
 
 class Classifier:
-    def classify(
-        self, search_text: str, limit: int = 5, digits: int = 6
-    ) -> list[ClassificationResult]:
+    def classify(self, search_text: str, limit: int = 5, digits: int = 6) -> list[ClassificationResult]:
         raise NotImplementedError()
 
 
@@ -43,21 +41,17 @@ class FlatClassifier(Classifier):
     ) -> None:
         super().__init__()
 
-        logger.info(
-            f"💾⇨ Sentence Transformer cache directory: {args.transformer_model_directory()}"
-        )
+        logger.info(f"💾⇨ Sentence Transformer cache directory: {args.transformer_cache_directory()}")
 
         self._subheadings = subheadings
-        self._device = torch.device(device)
+        self._device = device
         self._logger = logger
 
         # Load the model from disk
         self._model = self.load_model().to(self._device)
         self._sentence_transformer_model = self.load_sentence_transformer()
 
-    def classify(
-        self, search_text: str, limit: int = 5, digits: int = 6
-    ) -> list[ClassificationResult]:
+    def classify(self, search_text: str, limit: int = 5, digits: int = 6) -> list[ClassificationResult]:
         # Fetch the embedding for the search text
         new_texts = [search_text]
         new_embeddings = self._sentence_transformer_model.encode(
@@ -81,9 +75,7 @@ class FlatClassifier(Classifier):
             else:
                 predictions_to_digits[code] = score
 
-        top_results = sorted(
-            predictions_to_digits.items(), key=lambda x: x[1], reverse=True
-        )[:limit]
+        top_results = sorted(predictions_to_digits.items(), key=lambda x: x[1], reverse=True)[:limit]
 
         result = []
 
@@ -114,7 +106,9 @@ class FlatClassifier(Classifier):
         )
 
         try:
+            t = time.perf_counter()
             model.load_state_dict(torch.load(model_file, map_location=self._device))
+            logger.info(f"💾⇨ Classification model loaded in {time.perf_counter() - t} seconds")
         except Exception as e:
             logger.error(f"Failed to load the model: {e}")
             raise e
@@ -125,20 +119,23 @@ class FlatClassifier(Classifier):
 
         return model
 
-    def load_sentence_transformer(self) -> SentenceTransformer:
-        if Path(args.transformer_model_directory()).exists():
-            logger.info(
-                f"💾⇨ Loading Sentence Transformer model from {args.transformer_model_directory()}"
-            )
+    def load_sentence_transformer(self) -> torch.nn.Sequential:
+        model_file = Path(args.transformer_cache_directory()) / f"{args.transformer()}_transformer_model.pt"
 
-            exists = os.path.isdir(args.transformer_model_directory())
-            logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
-            return SentenceTransformer(
-                args.transformer_model_directory(), device=self._device
-            )
+        if model_file.exists():
+            logger.info(f"💾⇨ Loading sentence transformer cached model from {str(model_file)}")
+            t = time.perf_counter()
+
+            model = torch.load(model_file, map_location=self._device)
+            logger.info(f"💾⇨ Sentence transformer cached model loaded in {time.perf_counter() - t} seconds")
+
+            return model
         else:
-            logger.info(
-                f"💾⇨ Downloading Sentence Transformer model {args.transformer()}"
-            )
+            logger.info(f"💾⇨ Downloading sentence transformer model {args.transformer()}")
+
             # Otherwise download it from the HuggingFace model hub
-            return SentenceTransformer(args.transformer(), device=self._device)
+            t = time.perf_counter()
+            model = SentenceTransformer(args.transformer(), device=self._device)
+            logger.info(f"🛜⇨ Sentence transformer (down)loaded in {time.perf_counter() - t} seconds")
+
+            return model
