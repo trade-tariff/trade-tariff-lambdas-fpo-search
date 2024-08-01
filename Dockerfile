@@ -1,5 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.12
 
+ENV TRANSFORMERS_CACHE=${LAMBDA_TASK_ROOT}/.sentence_transformer_cache/huggingface
+
 COPY . ${LAMBDA_TASK_ROOT}
 
 RUN pip install --upgrade pip
