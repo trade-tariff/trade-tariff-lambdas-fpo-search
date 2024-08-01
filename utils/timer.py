@@ -23,4 +23,4 @@ class CodeTimer:
     def __exit__(self, *args):
         execution_time_ms = (perf_counter() - self._start_time) * 1000
         msg = f"⏱️  {self._description} took {round(execution_time_ms, 2)}ms"
-        self._logger.info(msg=msg, extra={"description" "exec_time_ms": execution_time_ms})
+        self._logger.info(msg=msg, extra={"description": self._description, "exec_time_ms": execution_time_ms})
