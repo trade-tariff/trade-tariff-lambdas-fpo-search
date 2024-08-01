@@ -1,13 +1,13 @@
 from logging import Logger
+from aws_lambda_powertools import Logger as AwsLogger
 import logging
-from pathlib import Path
-import time
 
 import torch
 from sentence_transformers import SentenceTransformer
 from model.model import SimpleNN
 
 from train_args import TrainScriptArgsParser
+from utils.timer import CodeTimerFactory
 
 
 args = TrainScriptArgsParser()
@@ -32,12 +32,15 @@ class Classifier:
 
 
 class FlatClassifier(Classifier):
-    def __init__(self, subheadings: list[str], device: str, logger: Logger = logging.getLogger("inference")) -> None:
+    def __init__(
+        self, subheadings: list[str], device: str, logger: Logger | AwsLogger = logging.getLogger("inference")
+    ) -> None:
         super().__init__()
 
         self._subheadings = subheadings
         self._device = device
         self._logger = logger
+        self._timer_factory = CodeTimerFactory(logger=logger)
 
         # Load the model from disk
         self._model = self.load_model().to(self._device)
@@ -100,9 +103,8 @@ class FlatClassifier(Classifier):
         )
 
         try:
-            t = time.perf_counter()
-            model.load_state_dict(torch.load(model_file, map_location=self._device))
-            self._logger.info(f"💾⇨ Classification model loaded in {time.perf_counter() - t} seconds")
+            with self._timer_factory.time_code("Load classification model"):
+                model.load_state_dict(torch.load(model_file, map_location=self._device))
         except Exception as e:
             self._logger.error(f"Failed to load the model: {e}")
             raise e
@@ -114,24 +116,12 @@ class FlatClassifier(Classifier):
         return model
 
     def load_sentence_transformer(self) -> torch.nn.Sequential:
-        model_file = Path(args.transformer_cache_directory()) / f"{args.transformer()}_transformer_model.pt"
+        self._logger.info(f"💾⇨ Loading sentence transformer model {args.transformer()}")
 
-        self._logger.info(f"Checking if cached model file exists: {str(model_file)} ... {model_file.is_file()}")
+        # Otherwise download it from the HuggingFace model hub
+        with self._timer_factory.time_code("Loading sentence transformer model"):
+            model = SentenceTransformer(
+                args.transformer(), device=self._device, cache_folder=args.transformer_cache_directory()
+            )
 
-        if model_file.is_file():
-            self._logger.info(f"💾⇨ Loading sentence transformer cached model from {str(model_file)}")
-            t = time.perf_counter()
-
-            model = torch.load(model_file, map_location=self._device)
-            self._logger.info(f"💾⇨ Sentence transformer cached model loaded in {time.perf_counter() - t} seconds")
-
-            return model
-        else:
-            self._logger.info(f"💾⇨ Downloading sentence transformer model {args.transformer()}")
-
-            # Otherwise download it from the HuggingFace model hub
-            t = time.perf_counter()
-            model = SentenceTransformer(args.transformer(), device=self._device)
-            self._logger.info(f"🛜⇨ Sentence transformer (down)loaded in {time.perf_counter() - t} seconds")
-
-            return model
+        return model

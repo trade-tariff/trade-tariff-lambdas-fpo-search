@@ -1,6 +1,5 @@
 from pathlib import Path
 import pickle
-import time
 import os
 import sentry_sdk
 
@@ -9,23 +8,23 @@ from aws_lambda.handler import LambdaHandler
 from aws_lambda_powertools import Logger
 
 from inference.infer import FlatClassifier
+from utils.timer import CodeTimerFactory
 
 logger = Logger(service="fpo-commodity-code-tool")
 
-start = time.perf_counter()
-cwd = Path(__file__).resolve().parent
-target_dir = cwd / "target"
-subheadings_file = target_dir / "subheadings.pkl"
-with open(subheadings_file, "rb") as fp:
-    subheadings = pickle.load(fp)
-logger.info("🚀⇨ Subheadings loaded in %.2fms", (time.perf_counter() - start) * 1000)
+code_timer_factory = CodeTimerFactory(logger=logger)
 
+with code_timer_factory.time_code("Load subheadings"):
+    cwd = Path(__file__).resolve().parent
+    target_dir = cwd / "target"
+    subheadings_file = target_dir / "subheadings.pkl"
+    with open(subheadings_file, "rb") as fp:
+        subheadings = pickle.load(fp)
 
-start = time.perf_counter()
-logger.info("🚀⇨ Loading static classifier")
+with code_timer_factory.time_code("Loading static classifier"):
+    logger.info("🚀⇨ Loading static classifier")
+    classifier = FlatClassifier(subheadings, device="cpu", logger=logger)
 
-classifier = FlatClassifier(subheadings, device="cpu", logger=logger)
-logger.info("🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000)
 lambda_handler = LambdaHandler(classifier, logger=logger)
 
 
@@ -47,12 +46,13 @@ def strip_sensitive_headers(event, _hint):
     return event
 
 
-sentry_sdk.init(
-    os.getenv("SENTRY_DSN", ""),
-    integrations=[AwsLambdaIntegration(timeout_warning=True)],
-    environment=os.getenv("SENTRY_ENVIRONMENT", ""),
-    before_send=strip_sensitive_headers,
-)
+with code_timer_factory.time_code("Initialising Sentry"):
+    sentry_sdk.init(
+        os.getenv("SENTRY_DSN", ""),
+        integrations=[AwsLambdaIntegration(timeout_warning=True)],
+        environment=os.getenv("SENTRY_ENVIRONMENT", ""),
+        before_send=strip_sensitive_headers,
+    )
 
 
 @logger.inject_lambda_context
