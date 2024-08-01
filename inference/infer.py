@@ -46,8 +46,6 @@ class FlatClassifier(Classifier):
         self._model = self.load_model().to(self._device)
         self._sentence_transformer_model = self.load_sentence_transformer()
 
-        logger.info(f"💾⇨ Sentence Transformer cache directory: {args.transformer_cache_directory()}")
-
     def classify(self, search_text: str, limit: int = 5, digits: int = 6) -> list[ClassificationResult]:
         # Fetch the embedding for the search text
         new_texts = [search_text]
@@ -104,7 +102,7 @@ class FlatClassifier(Classifier):
 
         try:
             with self._timer_factory.time_code("Load classification model"):
-                model.load_state_dict(torch.load(model_file, map_location=self._device))
+                model.load_state_dict(torch.load(model_file, map_location=self._device, weights_only=True))
         except Exception as e:
             self._logger.error(f"Failed to load the model: {e}")
             raise e
@@ -120,8 +118,6 @@ class FlatClassifier(Classifier):
 
         # Otherwise download it from the HuggingFace model hub
         with self._timer_factory.time_code("Loading sentence transformer model"):
-            model = SentenceTransformer(
-                args.transformer(), device=self._device, cache_folder=args.transformer_cache_directory()
-            )
+            model = SentenceTransformer(args.transformer(), device=self._device)
 
         return model
