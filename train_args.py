@@ -108,7 +108,7 @@ class TrainScriptArgsParser:
             "--transformer-cache-directory",
             type=str,
             help="the cache directory for the transformer",
-            default="/tmp/sentence_transformers/",
+            default=self.pwd() / ".sentence_transformer_cache",
         )
         parser.add_argument(
             "--exact-english-terms",
