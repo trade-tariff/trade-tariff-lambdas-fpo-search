@@ -1,7 +1,10 @@
 import re
 import requests
+import logging
 
 from data_sources.data_source import DataSource
+
+logger = logging.getLogger(__name__)
 
 
 class SearchReferencesDataSource(DataSource):
@@ -48,14 +51,14 @@ class SearchReferencesDataSource(DataSource):
         commodities = {}
         for entry in json_entries:
             if entry["attributes"]["referenced_class"] in ["Commodity", "Subheading"]:
-                commodities[
-                    entry["attributes"]["negated_title"].strip().lower()
-                ] = entry["attributes"]["goods_nomenclature_item_id"]
+                commodities[entry["attributes"]["negated_title"].strip().lower()] = (
+                    entry["attributes"]["goods_nomenclature_item_id"]
+                )
 
         self._commodities = commodities
         return commodities
 
-    def get_codes(self, digits: int) -> dict[str, list[str]]:
+    def get_codes(self, digits: int) -> dict[str, set[str]]:
         commodities = self.commodities()
 
         documents = {}
@@ -72,6 +75,19 @@ class SearchReferencesDataSource(DataSource):
             else:
                 documents[subheading] = {description}
 
+        total_descriptions = sum(
+            len(descriptions) for descriptions in documents.values()
+        )
+        unique_descriptions = len(
+            {
+                description
+                for descriptions in documents.values()
+                for description in descriptions
+            }
+        )
+        logger.info(
+            f"Loaded {len(documents)} subheadings with {unique_descriptions} unique descs and {total_descriptions} total descs"
+        )
         return documents
 
     def _get(self):

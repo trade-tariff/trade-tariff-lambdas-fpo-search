@@ -99,6 +99,12 @@ class TrainScriptArgsParser:
             default="reference_data/CN2024_SelfText_EN_DE_FR.csv",
         )
         parser.add_argument(
+            "--brands-data-file",
+            type=str,
+            help="the path to the CN data file",
+            default="reference_data/brands.csv",
+        )
+        parser.add_argument(
             "--tradesets-data-dir",
             type=str,
             help="the path to the tradesets data directory",
@@ -184,6 +190,7 @@ class TrainScriptArgsParser:
             f"  extra_references_data_file: {self.extra_references_data_file()}"
         )
         logger.info(f"  cn_data_file: {self.cn_data_file()}")
+        logger.info(f"  brands_data_file: {self.brands_data_file()}")
         logger.info(f"  tradesets_data_dir: {self.tradesets_data_dir()}")
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
@@ -273,6 +280,10 @@ class TrainScriptArgsParser:
     @config_from_file
     def cn_data_file(self):
         return self.parsed_args.cn_data_file
+
+    @config_from_file
+    def brands_data_file(self):
+        return self.parsed_args.brands_data_file
 
     @config_from_file
     def tradesets_data_dir(self):

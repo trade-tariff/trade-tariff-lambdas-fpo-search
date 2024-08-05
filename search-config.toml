@@ -1,5 +1,5 @@
 name = "fpo-search-model-generator"
-version = "1.4.0"
+version = "1.5.0"
 learning_rate = 0.0011
 max_epochs = 4
 model_batch_size = 1000
@@ -10,6 +10,7 @@ cn_data_file = "reference_data/CN2024_SelfText_EN_DE_FR.csv"
 exact_english_terms = "reference_data/exact_english_terms.txt"
 partial_english_terms = "reference_data/partial_english_terms.txt"
 partial_non_english_terms = "reference_data/partial_non_english_terms.txt"
+brands_file = "reference_data/brands.csv"
 tradesets_data_dir = "raw_source_data/tradesets_descriptions"
 device = "cuda"
 transformer = "all-mpnet-base-v2"

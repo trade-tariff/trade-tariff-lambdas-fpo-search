@@ -64,7 +64,7 @@ with open(language_keeps_exact_file, "r") as f:
 basic_filters = [
     StripExcessWhitespace(),
     RemoveEmptyDescription(),
-    RemoveShortDescription(min_length=4),
+    RemoveShortDescription(min_length=1),
     RemoveSubheadingsNotMatchingRegexes(
         regexes=[
             "^\\d{" + str(args.digits()) + "}$",
@@ -110,12 +110,23 @@ data_sources.append(
         description_col=0,
         authoritative=True,
         creates_codes=False,
+        multiplier=5,
     )
 )
 
-data_sources.append(SearchReferencesDataSource())
+data_sources.append(SearchReferencesDataSource(multiplier=10))
 data_sources.append(CommoditiesDataSource(cleaning_pipeline=self_texts_pipeline))
-
+data_sources.append(
+    BasicCSVDataSource(
+        args.brands_data_file(),
+        code_col=0,
+        description_col=1,
+        cleaning_pipeline=basic_pipeline,
+        multiplier=3,
+        authoritative=True,
+        creates_codes=False,
+    )
+)
 data_sources.append(
     BasicCSVDataSource(
         args.cn_data_file(),
@@ -124,6 +135,7 @@ data_sources.append(
         cleaning_pipeline=self_texts_pipeline,
         authoritative=True,
         creates_codes=True,
+        multiplier=2,
     )
 )
 

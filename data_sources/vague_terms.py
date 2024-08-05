@@ -23,7 +23,7 @@ class VagueTermsCSVDataSource(DataSource):
         self._filename = filename
         self._encoding = encoding
 
-    def get_codes(self, digits: int) -> dict[str, list[str]]:
+    def get_codes(self, digits: int) -> dict[str, set[str]]:
         with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # skip the first line (header)
