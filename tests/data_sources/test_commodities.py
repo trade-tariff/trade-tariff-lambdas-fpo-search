@@ -37,8 +37,12 @@ class Test_CommoditiesDataSource(unittest.TestCase):
         self.assertEqual(
             data_source.get_codes(8),
             {
-                "01000000": {"LIVE ANIMALS"},
-                "01010000": {"Live horses, asses, mules and hinnies"},
+                "01012100": {
+                    "LIVE ANIMALS Live horses, asses, mules and hinnies Horses Pure-bred breeding animals"
+                },
+                "01012910": {
+                    "LIVE ANIMALS Live horses, asses, mules and hinnies Horses Other For slaughter"
+                },
             },
         )
 

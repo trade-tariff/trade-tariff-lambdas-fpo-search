@@ -83,9 +83,11 @@ class CommoditiesDataSource(DataSource):
                 for h_item_id_plus_plus in hierarchy.split(" "):
                     if h_item_id_plus_plus in hierarchical_descriptions:
                         acc += hierarchical_descriptions[h_item_id_plus_plus]
+                        acc += " "
 
                 acc += description
                 description = acc
+                description.strip()
 
             if self._cleaning_pipeline:
                 result = self._cleaning_pipeline.filter(subheading, description)
