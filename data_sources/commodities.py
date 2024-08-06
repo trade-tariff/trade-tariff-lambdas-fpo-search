@@ -87,7 +87,6 @@ class CommoditiesDataSource(DataSource):
 
                 acc += description
                 description = acc
-                description.strip()
 
             if self._cleaning_pipeline:
                 result = self._cleaning_pipeline.filter(subheading, description)
