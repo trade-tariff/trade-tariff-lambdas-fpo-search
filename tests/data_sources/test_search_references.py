@@ -49,3 +49,8 @@ class Test_search_references(unittest.TestCase):
                 self.assertEqual(json_content, {"fresh fish": "12345"})
         finally:
             os.remove("test_search_references.json")
+
+    def test_build_from_json(self):
+        data_source = SearchReferencesDataSource.build_from_json()
+
+        self.assertEqual(data_source.get_commodity_code("ricotta"), "0406105090")
