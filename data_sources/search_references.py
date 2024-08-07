@@ -1,6 +1,7 @@
 import re
 import requests
 import logging
+import json
 
 from data_sources.data_source import DataSource
 
@@ -11,6 +12,7 @@ class SearchReferencesDataSource(DataSource):
     SEARCH_REFS_API_URL = (
         "https://staging.trade-tariff.service.gov.uk/api/v2/search_references"
     )
+    DEFAULT_PATH = "reference_data/search_references.json"
 
     def __init__(
         self,
@@ -89,6 +91,17 @@ class SearchReferencesDataSource(DataSource):
             f"Loaded {len(documents)} subheadings with {unique_descriptions} unique descs and {total_descriptions} total descs"
         )
         return documents
+
+    def write_as_json(self, path: str|None = None):
+        path = path or self.DEFAULT_PATH
+
+        with open(path, "w") as f:
+            f.write(
+                json.dumps(
+                    self.commodities(),
+                    indent=4,
+                )
+            )
 
     def _get(self):
         response = requests.get(self.url)
