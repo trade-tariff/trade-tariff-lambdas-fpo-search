@@ -26,7 +26,7 @@ handler = LambdaHandler(classifier)
 
 class Test_handler_handle(unittest.TestCase):
     def test_it_should_handle_a_valid_post_request(self):
-        event = self._create_post_event("test", "6", "5")
+        event = self._create_post_event("foo", "6", "5")
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
@@ -39,8 +39,44 @@ class Test_handler_handle(unittest.TestCase):
             "Expected a request id",
         )
 
+    def test_it_should_handle_search_references(self):
+        event = self._create_post_event("ricotta", "6", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(
+            {"results": [{"code": "040610", "score": 1000.0}]},
+            result_body,
+            "Expected 1 result",
+        )
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
+    def test_it_should_handle_vague_terms(self):
+        event = self._create_post_event("Bits", "6", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(
+            {"results": [{"code": "vvvvvv", "score": 0.00}]},
+            result_body,
+            "Expected 1 result",
+        )
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
     def test_it_should_handle_a_valid_post_request_with_ints(self):
-        event = self._create_post_event_ints("test", 6, 5)
+        event = self._create_post_event_ints("foo", 6, 5)
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
@@ -54,7 +90,7 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_handle_a_valid_post_request_default_args(self):
-        event = self._create_post_event_default("test")
+        event = self._create_post_event_default("foo")
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
@@ -73,7 +109,7 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_respect_the_limit(self):
-        event = self._create_post_event("test", "6", "2")
+        event = self._create_post_event("foo", "6", "2")
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
@@ -87,14 +123,14 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_handle_invalid_digits(self):
-        event = self._create_post_event("test", "invalid")
+        event = self._create_post_event("foo", "invalid")
 
         result = handler.handle(event, {})
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
     def test_it_should_handle_too_many_digits(self):
-        event = self._create_post_event("test", "10")
+        event = self._create_post_event("foo", "10")
 
         result = handler.handle(event, {})
 
@@ -106,7 +142,7 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_handle_invalid_limit(self):
-        event = self._create_post_event("test", "6", "invalid")
+        event = self._create_post_event("foo", "6", "invalid")
 
         result = handler.handle(event, {})
 
@@ -118,7 +154,7 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_handle_too_high_limit(self):
-        event = self._create_post_event("test", "6", "11")
+        event = self._create_post_event("foo", "6", "11")
 
         result = handler.handle(event, {})
 
@@ -130,7 +166,7 @@ class Test_handler_handle(unittest.TestCase):
         )
 
     def test_it_should_handle_invalid_json(self):
-        event = self._create_post_event_default("test")
+        event = self._create_post_event_default("foo")
         event["body"] = "invalid json"
 
         result = handler.handle(event, {})

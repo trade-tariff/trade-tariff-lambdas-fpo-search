@@ -3,7 +3,12 @@ from typing import Union
 
 import aws_lambda_powertools
 
-from inference.infer import Classifier
+from inference.infer import Classifier, ClassificationResult
+from inference.infer import vague_term_code
+from data_sources.search_references import SearchReferencesDataSource
+from data_sources.vague_terms import VagueTermsCSVDataSource
+from train_args import TrainScriptArgsParser
+
 import logging
 import time
 
@@ -12,6 +17,8 @@ with open("REVISION", "r") as f:
 
 with open("MODEL_VERSION", "r") as f:
     MODEL_VERSION = f.read().strip()
+
+args = TrainScriptArgsParser()
 
 
 def log_handler(func):
@@ -46,6 +53,8 @@ class LambdaHandler:
     ) -> None:
         self._classifier = classifier
         self._logger = logger
+        self._search_references = SearchReferencesDataSource.build_from_json()
+        self._vague_terms = VagueTermsCSVDataSource(args.vague_terms_data_file())
 
     def handle(self, event, _context):
         if isinstance(self._logger, aws_lambda_powertools.Logger):
@@ -121,7 +130,13 @@ class LambdaHandler:
                 "body": json.dumps({"message": f"Invalid value for {valid[1]}"}),
             }
 
-        results = self._classifier.classify(description, int(limit), int(digits))
+        early_result = self._early_result(description, digits)
+
+        if early_result:
+            results = early_result
+        else:
+            results = self._classifier.classify(description, int(limit), int(digits))
+
         results = [
             {"code": result.code, "score": result.score * 1000} for result in results
         ]
@@ -138,6 +153,28 @@ class LambdaHandler:
         )
 
         return {"statusCode": 200, "body": json.dumps({"results": results})}
+
+    def _early_result(
+        self, description: str, digits: Union[str, int]
+    ) -> list[ClassificationResult]:
+        result = []
+        code = None
+        score = 0.0
+
+        if self._vague_terms.includes_description(description):
+            code = vague_term_code
+
+        search_reference_code = self._search_references.get_commodity_code(description)
+
+        if search_reference_code:
+            code = search_reference_code
+            score = 1.0
+
+        if code:
+            code = code[: int(digits)]
+            result.append(ClassificationResult(code, score))
+
+        return result
 
     def _validate(
         self, description: str, digits: Union[str, int], limit: Union[str, int]

@@ -1,4 +1,3 @@
-import re
 import requests
 import logging
 import json
@@ -20,6 +19,7 @@ class SearchReferencesDataSource(DataSource):
         authoritative: bool = True,
         creates_codes: bool = False,
         multiplier: int = 1,
+        json_codes: dict[str, str] | None = None,
     ):
         super().__init__(
             description=f"Search references data source from {str(url)}",
@@ -29,7 +29,10 @@ class SearchReferencesDataSource(DataSource):
         )
 
         self.url = url
-        self._commodities = None
+        if json_codes is not None:
+            self._commodities = json_codes
+        else:
+            self._commodities = None
 
     def get_commodity_code(self, description):
         commodity_code = None
@@ -68,10 +71,6 @@ class SearchReferencesDataSource(DataSource):
         for description, code in commodities.items():
             subheading = code.strip()[:digits]
 
-            # Throw out any bad codes
-            if not re.search("^\\d{" + str(digits) + "}$", subheading):
-                continue
-
             if subheading in documents:
                 documents[subheading].add(description)
             else:
@@ -92,7 +91,7 @@ class SearchReferencesDataSource(DataSource):
         )
         return documents
 
-    def write_as_json(self, path: str|None = None):
+    def write_as_json(self, path: str | None = None):
         path = path or self.DEFAULT_PATH
 
         with open(path, "w") as f:
@@ -102,6 +101,15 @@ class SearchReferencesDataSource(DataSource):
                     indent=4,
                 )
             )
+
+    @classmethod
+    def build_from_json(cls, path: str | None = None) -> "SearchReferencesDataSource":
+        path = path or cls.DEFAULT_PATH
+
+        with open(path) as f:
+            json_content = json.load(f)
+
+            return cls(json_codes=json_content)
 
     def _get(self):
         response = requests.get(self.url)
