@@ -52,9 +52,6 @@ format:
 check:
 	$(VENV)/bin/ruff check .
 
-run-api: install
-	${PYTHON} api.py
-
 freeze: $(VENV)/bin/activate
 	$(PIP) freeze --exclude hmrc_fpo_categorisation_api > requirements.txt
 
