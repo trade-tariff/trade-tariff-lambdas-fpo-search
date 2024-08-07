@@ -1,6 +1,7 @@
 import unittest
 import logging
-from unittest import mock
+import json
+import os
 
 from data_sources.search_references import SearchReferencesDataSource
 
@@ -25,26 +26,31 @@ class Test_search_references(unittest.TestCase):
         ]
     }
 
-    def mock_response(self):
-        mock_resp = mock.Mock()
-        mock_resp.raise_for_status.side_effect = None
-        return mock_resp
-
-    @mock.patch("requests.get", side_effect=mock_response)
-    def test_get_commodity_code(self, _mock_get):
+    def test_get_commodity_code(self):
         self.data_source._get = lambda: self.response
         self.assertEqual(self.data_source.get_commodity_code("fresh fish"), "12345")
 
-    @mock.patch("requests.get", side_effect=mock_response)
-    def test_includes_description_when_exists_is_true(self, _mock_get):
+    def test_includes_description_when_exists_is_true(self):
         self.data_source._get = lambda: self.response
         self.assertTrue(self.data_source.includes_description("FRESH FISH"))
 
-    @mock.patch("requests.get", side_effect=mock_response)
-    def test_includes_description_when_non_existant_is_false(self, _mock_get):
+    def test_includes_description_when_non_existant_is_false(self):
         self.data_source._get = lambda: self.response
         self.assertFalse(self.data_source.includes_description("FOO BAR"))
 
+    def test_write_as_json(self):
+        self.data_source._get = lambda: self.response
+        self.data_source.write_as_json(path="test_search_references.json")
 
-if __name__ == "__main__":
-    unittest.main()
+        try:
+            with open("test_search_references.json") as f:
+                content = f.read()
+                json_content = json.loads(content)
+                self.assertEqual(json_content, {"fresh fish": "12345"})
+        finally:
+            os.remove("test_search_references.json")
+
+    def test_build_from_json(self):
+        data_source = SearchReferencesDataSource.build_from_json()
+
+        self.assertEqual(data_source.get_commodity_code("ricotta"), "0406105090")

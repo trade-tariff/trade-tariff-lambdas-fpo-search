@@ -65,7 +65,7 @@ jobs:
             - MODEL_VERSION
 
   build:
-    executor: base
+    executor: python
     parameters:
       environment:
         type: string
@@ -79,7 +79,12 @@ jobs:
           at: .
       - run:
           name: "Build and Push to ECR"
-          command: ./.circleci/bin/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
+          command: |
+            python -m venv venv
+            source venv/bin/activate
+            pip install requests==2.32.0
+            .circleci/bin/download_search_references
+            .circleci/bin/ecr "/<< parameters.environment >>/FPO_SEARCH_ECR_URL"
 
   check:
     executor: python

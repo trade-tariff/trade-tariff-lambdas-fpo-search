@@ -22,22 +22,33 @@ class VagueTermsCSVDataSource(DataSource):
         )
         self._filename = filename
         self._encoding = encoding
+        self._codes: dict[str, set[str]] | None = None
 
     def get_codes(self, digits: int) -> dict[str, set[str]]:
         with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
             csv_reader = csv.reader(csv_file)
-            next(csv_reader)  # skip the first line (header)
+            next(csv_reader)
             code_data = list(csv_reader)
 
-        documents = {}
+        codes = {}
 
         for line in code_data:
-            subheading = vague_term_code
             description = line[0].strip().lower()
 
-            if subheading in documents:
-                documents[subheading].add(description)
+            if vague_term_code in codes:
+                codes[vague_term_code].add(description)
             else:
-                documents[subheading] = {description}
+                codes[vague_term_code] = {description}
 
-        return documents
+        self._codes = codes
+
+        return codes
+
+    def includes_description(self, description) -> bool:
+        if self._codes is None:
+            self.get_codes(0)
+
+        if self._codes:
+            return description.strip().lower() in self._codes[vague_term_code]
+        else:
+            return False
