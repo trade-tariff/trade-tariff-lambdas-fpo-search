@@ -18,6 +18,33 @@ if [[ "$STATUS_CODE" -ne 200 ]] ; then
   exit 1
 fi
 
+function has_correct_code() {
+  description=$1
+  expected_code=$2
+
+  curl --silent -X POST $URL/fpo-code-search \
+    -H 'Content-Type: application/json' \
+    -H "X-Api-Key: $API_KEY" \
+    -d "{\"description\":\"$description\"}" | \
+    jq ".results | .[] | select(.code == \"$expected_code\") | any"
+}
+
+# Ensure it handles search references
+HAS_CORRECT_CODE=$(has_correct_code "ricotta" "040610")
+
+if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
+  echo "ERROR: Expected search reference code not found" >&2
+  exit 1
+fi
+
+# Ensure it handles vague terms
+HAS_CORRECT_CODE=$(has_correct_code "bits" "vvvvvv")
+
+if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
+  echo "ERROR: Expected vague term code not found" >&2
+  exit 1
+fi
+
 # Ensure it responds to a healthcheck
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/healthcheck")
 
@@ -27,9 +54,11 @@ if [[ "$STATUS_CODE" -ne 200 ]] ; then
 fi
 
 # Ensure it responds with a 403 if credentials are missing
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search?q=grilled+cheese&digits=6")
+STATUS_CODE=$(curl -X POST -d '{"description":"grilled cheese"}' -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search")
 
 if [[ "$STATUS_CODE" -ne 403 ]] ; then
   echo "ERROR: Status code of $STATUS_CODE" >&2
   exit 1
 fi
+
+echo "All tests passed"
