@@ -161,16 +161,6 @@ class LambdaHandler:
 
         cleaned = pipeline.filter("", description)
 
-        self._logger.info(
-            "Cleaning pipeline",
-            extra={
-                "request_description": description,
-                "cleaned_description": cleaned,
-                "digits": digits,
-                "limit": limit,
-            },
-        )
-
         if cleaned is None:
             return {
                 "statusCode": 400,
