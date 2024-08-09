@@ -28,3 +28,4 @@ model.zip
 embeddings.zip
 .vscode
 .DS_Store
+.circleci

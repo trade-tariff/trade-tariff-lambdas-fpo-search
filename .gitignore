@@ -177,6 +177,7 @@ lambda/
 *.pt
 
 node_modules/
+.sentence_transformer_cache
 
 # Benchmarking inputs/outputs
 benchmarking_data

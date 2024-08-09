@@ -1,15 +1,15 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
+
+ENV SENTENCE_TRANSFORMERS_HOME=${LAMBDA_TASK_ROOT}/.sentence_transformer_cache/transformers
+ENV HF_HOME=${LAMBDA_TASK_ROOT}/.sentence_transformer_cache/huggingface
 
 COPY . ${LAMBDA_TASK_ROOT}
-
-ENV SENTENCE_TRANSFORMERS_HOME=${LAMBDA_TASK_ROOT}/tmp/sentence_transformers/
-ENV SENTENCE_TRANSFORMER_PRETRAINED_MODEL=all-mpnet-base-v2
-ENV HF_HOME=${LAMBDA_TASK_ROOT}/tmp/transformers_cache/
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir --upgrade torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir --upgrade -r requirements_lambda.txt
 
-RUN python download_transformer.py
+# Run an inference which should create most of the pyc files and cache the sentence transformer
+RUN python infer.py 'plastic toothbrush'
 
 CMD ["handler.handle"]
