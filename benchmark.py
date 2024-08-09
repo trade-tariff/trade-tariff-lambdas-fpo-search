@@ -14,6 +14,7 @@ from prettytable import PrettyTable
 from prettytable.colortable import ColorTable, Themes
 from training.cleaning_pipeline import (
     CleaningPipeline,
+    DescriptionLower,
     LanguageCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
@@ -124,6 +125,7 @@ with open(language_keeps_exact_file, "r") as f:
 filters = [
     StripExcessWhitespace(),
     RemoveEmptyDescription(),
+    DescriptionLower(),
     RemoveShortDescription(min_length=4),
     RemoveSubheadingsNotMatchingRegexes(regexes=["^\d{" + str(args.digits) + "}$"]),
     RemoveDescriptionsMatchingRegexes(

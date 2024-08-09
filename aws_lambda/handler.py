@@ -8,6 +8,14 @@ from inference.infer import vague_term_code
 from data_sources.search_references import SearchReferencesDataSource
 from data_sources.vague_terms import VagueTermsCSVDataSource
 from train_args import TrainScriptArgsParser
+from training.cleaning_pipeline import (
+    CleaningPipeline,
+    DescriptionLower,
+    RemoveDescriptionsMatchingRegexes,
+    RemoveEmptyDescription,
+    RemoveShortDescription,
+    StripExcessWhitespace,
+)
 
 import logging
 import time
@@ -19,6 +27,27 @@ with open("MODEL_VERSION", "r") as f:
     MODEL_VERSION = f.read().strip()
 
 args = TrainScriptArgsParser()
+
+filters = [
+    StripExcessWhitespace(),
+    RemoveEmptyDescription(),
+    DescriptionLower(),
+    RemoveShortDescription(min_length=1),
+    RemoveDescriptionsMatchingRegexes(
+        regexes=[
+            r"^\\d+$",  # Skip rows where description contains only numbers
+            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+            r"^\d+-\d+$",  # skip numbers with hyphens in between
+            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+        ]
+    ),
+]
+
+pipeline = CleaningPipeline(filters)
 
 
 def log_handler(func):
@@ -130,12 +159,38 @@ class LambdaHandler:
                 "body": json.dumps({"message": f"Invalid value for {valid[1]}"}),
             }
 
-        early_result = self._early_result(description, digits)
+        cleaned = pipeline.filter("", description)
+
+        self._logger.info(
+            "Cleaning pipeline",
+            extra={
+                "request_description": description,
+                "cleaned_description": cleaned,
+                "digits": digits,
+                "limit": limit,
+            },
+        )
+
+        if cleaned is None:
+            return {
+                "statusCode": 400,
+                "body": json.dumps(
+                    {
+                        "message": f"Invalid description {description} cleaned as {cleaned}"
+                    }
+                ),
+            }
+
+        cleaned_description = cleaned[1]
+
+        early_result = self._early_result(cleaned_description, digits)
 
         if early_result:
             results = early_result
         else:
-            results = self._classifier.classify(description, int(limit), int(digits))
+            results = self._classifier.classify(
+                cleaned_description, int(limit), int(digits)
+            )
 
         results = [
             {"code": result.code, "score": result.score * 1000} for result in results
@@ -145,6 +200,7 @@ class LambdaHandler:
             "Inference result",
             extra={
                 "request_description": description,
+                "cleaned_description": cleaned_description,
                 "request_digits": int(digits),
                 "request_limit": int(limit),
                 "result_count": len(results),
