@@ -237,3 +237,8 @@ class NegationCleaning(Cleaner):
         description = re.sub(self._full_negation_regex, "", description).strip()
 
         return (subheading, description)
+
+class DescriptionLower(Cleaner):
+    @debug
+    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+        return (subheading, description.lower())
