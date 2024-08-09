@@ -28,3 +28,13 @@ model.zip
 embeddings.zip
 .vscode
 .DS_Store
+old_benchmark
+new_benchmark
+benchmarking_data
+node_modules
+benchmark_results.zip
+tests
+.circleci
+.packer
+docs
+README.md
