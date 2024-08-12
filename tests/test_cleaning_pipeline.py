@@ -51,5 +51,5 @@ class Test_NegationCleaning(unittest.TestCase):
 
     def test_negation_cleaning(self):
         for example, expected in Test_NegationCleaning.EXAMPLES:
-            _, actual = filter.filter("subheading", example) or ("", "")
+            _, actual, meta = filter.filter("subheading", example) or (None, None, {})
             self.assertEqual(actual, expected)

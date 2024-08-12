@@ -80,11 +80,14 @@ class Test_handler_handle(unittest.TestCase):
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])
-        print(result_body)
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
         self.assertEqual(
-            {"message": "Invalid description Danke"},
+            {
+                "message": [
+                    "Detected language Language.GERMAN not in preferred languages"
+                ]
+            },
             result_body,
             "Expected 1 result",
         )

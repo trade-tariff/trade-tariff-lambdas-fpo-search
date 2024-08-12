@@ -68,7 +68,7 @@ filters = [
     ),
 ]
 
-pipeline = CleaningPipeline(filters)
+pipeline = CleaningPipeline(filters, return_meta=True)
 
 
 def log_handler(func):
@@ -180,19 +180,30 @@ class LambdaHandler:
                 "body": json.dumps({"message": f"Invalid value for {valid[1]}"}),
             }
 
-        cleaned = pipeline.filter("", description)
+        (_subheading, cleaned_description, meta) = pipeline.filter("", description)
 
-        if cleaned is None:
+        if cleaned_description is None:
+            reason = filter(
+                lambda r: r is not None, [v.get("reason") for _k, v in meta.items()]
+            )
+            reason = list(reason)
+
+            self._logger.info(
+                "Skipping classification due to cleaning",
+                extra={
+                    "request_description": description,
+                    "request_digits": int(digits),
+                    "request_limit": int(limit),
+                    "cleaned_description": cleaned_description,
+                    "cleaned_reason": reason,
+                    "meta": meta,
+                },
+            )
+
             return {
                 "statusCode": 400,
-                "body": json.dumps(
-                    {
-                        "message": f"Invalid description {description}"
-                    }
-                ),
+                "body": json.dumps({"message": reason}),
             }
-
-        cleaned_description = cleaned[1]
 
         early_result = self._early_result(cleaned_description, digits)
 
@@ -211,11 +222,12 @@ class LambdaHandler:
             "Inference result",
             extra={
                 "request_description": description,
-                "cleaned_description": cleaned_description,
                 "request_digits": int(digits),
                 "request_limit": int(limit),
                 "result_count": len(results),
                 "results": results,
+                "cleaned_description": cleaned_description,
+                "meta": meta,
             },
         )
 

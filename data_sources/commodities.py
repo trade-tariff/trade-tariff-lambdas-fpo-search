@@ -114,7 +114,10 @@ class CommoditiesDataSource(DataSource):
         description: str,
     ) -> Optional[Tuple[str, str]]:
         if self._cleaning_pipeline:
-            return self._cleaning_pipeline.filter(subheading, description)
+            subheading, description, _meta = self._cleaning_pipeline.filter(
+                subheading, description
+            )
+
         return subheading, description
 
     def _add_to_commodities(
