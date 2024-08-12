@@ -13,6 +13,7 @@ from training.create_embeddings import EmbeddingsProcessor
 
 from training.cleaning_pipeline import (
     CleaningPipeline,
+    DescriptionLower,
     LanguageCleaning,
     NegationCleaning,
     RemoveDescriptionsMatchingRegexes,
@@ -64,6 +65,7 @@ with open(language_keeps_exact_file, "r") as f:
 basic_filters = [
     StripExcessWhitespace(),
     RemoveEmptyDescription(),
+    DescriptionLower(),
     RemoveShortDescription(min_length=1),
     RemoveSubheadingsNotMatchingRegexes(
         regexes=[
