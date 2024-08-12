@@ -11,6 +11,7 @@ from train_args import TrainScriptArgsParser
 from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
+    LanguageCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
@@ -27,6 +28,19 @@ with open("MODEL_VERSION", "r") as f:
     MODEL_VERSION = f.read().strip()
 
 args = TrainScriptArgsParser()
+args.load_config_file()
+language_skips_file = args.pwd() / args.partial_non_english_terms()
+language_keeps_file = args.pwd() / args.partial_english_terms()
+language_keeps_exact_file = args.pwd() / args.exact_english_terms()
+
+with open(language_skips_file, "r") as f:
+    language_skips = f.read().splitlines()
+
+with open(language_keeps_file, "r") as f:
+    language_keeps = f.read().splitlines()
+
+with open(language_keeps_exact_file, "r") as f:
+    language_keeps_exact = f.read().splitlines()
 
 filters = [
     StripExcessWhitespace(),
@@ -45,9 +59,16 @@ filters = [
             r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
         ]
     ),
+    LanguageCleaning(
+        detected_languages=args.detected_languages(),
+        preferred_languages=args.preferred_languages(),
+        partial_skips=language_skips,
+        partial_keeps=language_keeps,
+        exact_keeps=language_keeps_exact,
+    ),
 ]
 
-pipeline = CleaningPipeline(filters)
+pipeline = CleaningPipeline(filters, return_meta=True)
 
 
 def log_handler(func):
@@ -159,19 +180,30 @@ class LambdaHandler:
                 "body": json.dumps({"message": f"Invalid value for {valid[1]}"}),
             }
 
-        cleaned = pipeline.filter("", description)
+        (_subheading, cleaned_description, meta) = pipeline.filter("", description)
 
-        if cleaned is None:
+        if cleaned_description is None:
+            reason = filter(
+                lambda r: r is not None, [v.get("reason") for _k, v in meta.items()]
+            )
+            reason = list(reason)
+
+            self._logger.info(
+                "Skipping classification due to cleaning",
+                extra={
+                    "request_description": description,
+                    "request_digits": int(digits),
+                    "request_limit": int(limit),
+                    "cleaned_description": cleaned_description,
+                    "cleaned_reason": reason,
+                    "meta": meta,
+                },
+            )
+
             return {
                 "statusCode": 400,
-                "body": json.dumps(
-                    {
-                        "message": f"Invalid description {description} cleaned as {cleaned}"
-                    }
-                ),
+                "body": json.dumps({"message": reason}),
             }
-
-        cleaned_description = cleaned[1]
 
         early_result = self._early_result(cleaned_description, digits)
 
@@ -190,11 +222,12 @@ class LambdaHandler:
             "Inference result",
             extra={
                 "request_description": description,
-                "cleaned_description": cleaned_description,
                 "request_digits": int(digits),
                 "request_limit": int(limit),
                 "result_count": len(results),
                 "results": results,
+                "cleaned_description": cleaned_description,
+                "meta": meta,
             },
         )
 

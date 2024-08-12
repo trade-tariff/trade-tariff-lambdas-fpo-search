@@ -36,12 +36,10 @@ def generate_chunk_wrapper(serialized_args: bytes) -> Dict[str, Set[str]]:
         description = row[description_col].strip().lower()
 
         if cleaning_pipeline:
-            result = cleaning_pipeline.filter(subheading, description)
+            subheading, description, _meta = cleaning_pipeline.filter(subheading, description)
 
-            if result is None:
+            if subheading is None or description is None:
                 continue
-
-            subheading, description = result
 
         if subheading in codes:
             codes[subheading].add(description)

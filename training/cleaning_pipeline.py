@@ -11,37 +11,45 @@ logger = logging.getLogger("cleaning_pipeline")
 
 def debug(func):
     def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
+        subheading, description, meta = func(*args, **kwargs)
 
-        if result is None:
+        if subheading is None or description is None:
             logger.debug(
                 f"Skipping {func.__name__} with args {args} and kwargs {kwargs}"
             )
 
-        return result
+        return subheading, description, meta
 
     return wrapper
 
 
 class Cleaner:
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         raise NotImplementedError()
 
 
 class CleaningPipeline:
-    def __init__(self, filters: list[Cleaner]) -> None:
-        self._filters = filters
+    def __init__(self, cleaners: list[Cleaner], return_meta: bool = False) -> None:
+        self._filters = cleaners
+        self._return_meta = return_meta
 
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
-        data = (subheading, description)
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        all_meta = {}
 
         for filter in self._filters:
-            data = filter.filter(subheading, description)
+            subheading, description, meta = filter.filter(subheading, description)
 
-            if data is None:
-                return None
+            if self._return_meta:
+                all_meta[filter.__class__.__name__] = meta
 
-        return data
+            if subheading is None or description is None:
+                return (None, None, all_meta)
+
+        return subheading, description, all_meta
 
     def to_serialized_data(self) -> list:
         return [
@@ -68,17 +76,21 @@ class CleaningPipeline:
 
 class StripExcessWhitespace(Cleaner):
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
-        return (subheading.strip(), " ".join(description.split()))
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        return (subheading.strip(), " ".join(description.split()), {})
 
 
 class RemoveEmptyDescription(Cleaner):
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         if not description.strip():
-            return None
+            return (None, None, {"reason": "Empty description"})
 
-        return (subheading, description)
+        return (subheading, description, {})
 
 
 class RemoveShortDescription(Cleaner):
@@ -87,11 +99,13 @@ class RemoveShortDescription(Cleaner):
         self._min_length = min_length or 4
 
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         if len(description) <= self._min_length:
-            return None
+            return (None, None, {"reason": "Short description"})
 
-        return (subheading, description)
+        return (subheading, description, {})
 
 
 class RemoveSubheadingsNotMatchingRegexes(Cleaner):
@@ -100,11 +114,17 @@ class RemoveSubheadingsNotMatchingRegexes(Cleaner):
         self._regexes = regexes
 
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         if any(re.search(regex, subheading) for regex in self._regexes):
-            return subheading, description
+            return subheading, description, {}
 
-        return None
+        return (
+            None,
+            None,
+            {"reason": f"Subheading does not match regexes {self._regexes}"},
+        )
 
 
 class RemoveDescriptionsMatchingRegexes(Cleaner):
@@ -113,11 +133,17 @@ class RemoveDescriptionsMatchingRegexes(Cleaner):
         self._regexes = regexes
 
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         if any(re.search(regex, description) for regex in self._regexes):
-            return None
+            return (
+                None,
+                None,
+                {"reason": f"Description matches regexes {self._regexes}"},
+            )
 
-        return (subheading, description)
+        return (subheading, description, {})
 
 
 class LanguageCleaning(Cleaner):
@@ -147,7 +173,9 @@ class LanguageCleaning(Cleaner):
         )
 
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         """
         This method filters out known non-English descriptions based on the following criteria:
         1. If the description is in the list of exact keeps, keep it
@@ -160,23 +188,31 @@ class LanguageCleaning(Cleaner):
         language = self._detector.detect_language_of(description)
 
         if description in self._exact_keeps:
-            return (subheading, description)
+            return (subheading, description, {})
 
         for partial_keep in self._partial_keeps:
             if partial_keep in description:
-                return (subheading, description)
+                return (subheading, description, {})
 
         for partial_skip in self._partial_skips:
             if partial_skip in description:
-                return None
+                return (
+                    None,
+                    None,
+                    {"reason": f"Description contains partial skip {partial_skip}"},
+                )
 
         if language is None:
-            return (subheading, description)
+            return (subheading, description, {})
 
         if language not in self._preferred_languages:
-            return None
+            return (
+                None,
+                None,
+                {"reason": f"Detected language {language} not in preferred languages"},
+            )
 
-        return (subheading, description)
+        return (subheading, description, {})
 
     @classmethod
     def from_serialized_data(cls, data: dict) -> "LanguageCleaning":
@@ -228,7 +264,9 @@ class NegationCleaning(Cleaner):
         )
 
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
         # Remove non-breaking spaces
         description = (description or "").lower().replace(self._non_breaking_space, " ")
         # Remove bracketed negations (e.g. "description (excluding this part)" -> "description")
@@ -236,9 +274,12 @@ class NegationCleaning(Cleaner):
         # Remove non-bracketed negations (e.g. "description excluding this part" -> "description")
         description = re.sub(self._full_negation_regex, "", description).strip()
 
-        return (subheading, description)
+        return (subheading, description, {})
+
 
 class DescriptionLower(Cleaner):
     @debug
-    def filter(self, subheading: str, description: str) -> tuple[str, str] | None:
-        return (subheading, description.lower())
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        return (subheading, description.lower(), {})

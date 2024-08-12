@@ -75,6 +75,28 @@ class Test_handler_handle(unittest.TestCase):
             "Expected a request id",
         )
 
+    def test_it_should_clean_bad_languages(self):
+        event = self._create_post_event("Danke", "6", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            {
+                "message": [
+                    "Detected language Language.GERMAN not in preferred languages"
+                ]
+            },
+            result_body,
+            "Expected 1 result",
+        )
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
     def test_it_should_handle_a_valid_post_request_with_ints(self):
         event = self._create_post_event_ints("foo", 6, 5)
 
