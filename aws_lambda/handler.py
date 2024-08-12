@@ -11,6 +11,7 @@ from train_args import TrainScriptArgsParser
 from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
+    LanguageCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
@@ -27,6 +28,19 @@ with open("MODEL_VERSION", "r") as f:
     MODEL_VERSION = f.read().strip()
 
 args = TrainScriptArgsParser()
+args.load_config_file()
+language_skips_file = args.pwd() / args.partial_non_english_terms()
+language_keeps_file = args.pwd() / args.partial_english_terms()
+language_keeps_exact_file = args.pwd() / args.exact_english_terms()
+
+with open(language_skips_file, "r") as f:
+    language_skips = f.read().splitlines()
+
+with open(language_keeps_file, "r") as f:
+    language_keeps = f.read().splitlines()
+
+with open(language_keeps_exact_file, "r") as f:
+    language_keeps_exact = f.read().splitlines()
 
 filters = [
     StripExcessWhitespace(),
@@ -44,6 +58,13 @@ filters = [
             r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
             r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
         ]
+    ),
+    LanguageCleaning(
+        detected_languages=args.detected_languages(),
+        preferred_languages=args.preferred_languages(),
+        partial_skips=language_skips,
+        partial_keeps=language_keeps,
+        exact_keeps=language_keeps_exact,
     ),
 ]
 
@@ -166,7 +187,7 @@ class LambdaHandler:
                 "statusCode": 400,
                 "body": json.dumps(
                     {
-                        "message": f"Invalid description {description} cleaned as {cleaned}"
+                        "message": f"Invalid description {description}"
                     }
                 ),
             }
