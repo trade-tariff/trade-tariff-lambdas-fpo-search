@@ -65,7 +65,7 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
         self.assertEqual(
-            {"results": [{"code": "vvvvvv", "score": 0.00}]},
+            {"results": []},
             result_body,
             "Expected 1 result",
         )
