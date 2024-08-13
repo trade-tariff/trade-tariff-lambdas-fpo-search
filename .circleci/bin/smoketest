@@ -29,6 +29,16 @@ function has_correct_code() {
     jq ".results | .[] | select(.code == \"$expected_code\") | any"
 }
 
+function has_no_results() {
+  description=$1
+
+  curl --silent -X POST $URL/fpo-code-search \
+    -H 'Content-Type: application/json' \
+    -H "X-Api-Key: $API_KEY" \
+    -d "{\"description\":\"$description\"}" | \
+    jq ".results | length == 0"
+}
+
 # Ensure it handles search references
 HAS_CORRECT_CODE=$(has_correct_code "ricotta" "040610")
 
@@ -38,10 +48,10 @@ if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
 fi
 
 # Ensure it handles vague terms
-HAS_CORRECT_CODE=$(has_correct_code "bits" "vvvvvv")
+HAS_NO_RESULTS=$(has_no_results "bits")
 
-if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
-  echo "ERROR: Expected vague term code not found" >&2
+if [[ "$HAS_NO_RESULTS" != "true" ]] ; then
+  echo "ERROR: Expected no results for vague term" >&2
   exit 1
 fi
 

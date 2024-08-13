@@ -4,7 +4,6 @@ from typing import Union
 import aws_lambda_powertools
 
 from inference.infer import Classifier, ClassificationResult
-from inference.infer import vague_term_code
 from data_sources.search_references import SearchReferencesDataSource
 from data_sources.vague_terms import VagueTermsCSVDataSource
 from train_args import TrainScriptArgsParser
@@ -207,7 +206,9 @@ class LambdaHandler:
 
         early_result = self._early_result(cleaned_description, digits)
 
-        if early_result:
+        if early_result is None:
+            results = []
+        elif early_result:
             results = early_result
         else:
             results = self._classifier.classify(
@@ -235,13 +236,13 @@ class LambdaHandler:
 
     def _early_result(
         self, description: str, digits: Union[str, int]
-    ) -> list[ClassificationResult]:
+    ) -> list[ClassificationResult] | None:
         result = []
         code = None
         score = 0.0
 
         if self._vague_terms.includes_description(description):
-            code = vague_term_code
+            return None
 
         search_reference_code = self._search_references.get_commodity_code(description)
 
