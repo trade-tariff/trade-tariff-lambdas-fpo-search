@@ -65,7 +65,7 @@ class TrainScriptArgsParser:
             "--model-batch-size",
             type=int,
             help="the size of the batches to use when training the model. You should increase this if your GPU has tonnes of RAM!",
-            default=1000,
+            default=1024,
         )
         parser.add_argument(
             "--device",
@@ -168,7 +168,7 @@ class TrainScriptArgsParser:
             "--model-dropout-layer-2-percentage",
             type=float,
             help="the percentage of dropout to use in the second dropout layer",
-            default=0.5,
+            default=0.3,
         )
 
         self.parsed_args, _unknown = parser.parse_known_args()
