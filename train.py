@@ -66,7 +66,6 @@ basic_filters = [
     StripExcessWhitespace(),
     RemoveEmptyDescription(),
     DescriptionLower(),
-    RemoveShortDescription(min_length=1),
     RemoveSubheadingsNotMatchingRegexes(
         regexes=[
             "^\\d{" + str(args.digits()) + "}$",
@@ -93,6 +92,7 @@ tradestats_filters = basic_filters + [
         partial_keeps=language_keeps,
         exact_keeps=language_keeps_exact,
     ),
+    RemoveShortDescription(min_length=4),
 ]
 
 self_texts_filters = basic_filters + [NegationCleaning.build()]
