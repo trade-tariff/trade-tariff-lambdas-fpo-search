@@ -188,6 +188,80 @@ embeddings_processor = EmbeddingsProcessor(
 
 unique_embeddings = embeddings_processor.create_embeddings(text_values)
 
+##Create labels_section and subheadings_section:
+section_main=[]
+for index, subheading in enumerate(subheadings):
+    if subheading[:2]=='01' or subheading[:2]=='02' or subheading[:2]=='03' or subheading[:2]=='04' or subheading[:2]=='05':
+        section_main.append((0, subheadings.index(subheading)))
+    if subheading[:2]=='06' or subheading[:2]=='07' or subheading[:2]=='08' or subheading[:2]=='09' or subheading[:2]=='10' or subheading[:2]=='11' or subheading[:2]=='12' or subheading[:2]=='13' or subheading[:2]=='14':
+        section_main.append((1, subheadings.index(subheading)))
+    if subheading[:2]=='15':
+        section_main.append((2, subheadings.index(subheading)))
+    if subheading[:2]=='16' or subheading[:2]=='17' or subheading[:2]=='18' or subheading[:2]=='19' or subheading[:2]=='20' or subheading[:2]=='21' or subheading[:2]=='22' or subheading[:2]=='23' or subheading[:2]=='24':
+        section_main.append((3, subheadings.index(subheading)))
+    if subheading[:2]=='25' or subheading[:2]=='26' or subheading[:2]=='27':
+        section_main.append((4, subheadings.index(subheading)))
+    if subheading[:2]=='28' or subheading[:2]=='29' or subheading[:2]=='30' or subheading[:2]=='31' or subheading[:2]=='32' or subheading[:2]=='33' or subheading[:2]=='34' or subheading[:2]=='35' or subheading[:2]=='36' or subheading[:2]=='37' or subheading[:2]=='38':
+        section_main.append((5, subheadings.index(subheading)))
+    if subheading[:2]=='39' or subheading[:2]=='40':
+        section_main.append((6, subheadings.index(subheading)))
+    if subheading[:2]=='41' or subheading[:2]=='42' or subheading[:2]=='43':
+        section_main.append((7, subheadings.index(subheading)))
+    if subheading[:2]=='44' or subheading[:2]=='45' or subheading[:2]=='46':
+        section_main.append((8, subheadings.index(subheading)))
+    if subheading[:2]=='47' or subheading[:2]=='48' or subheading[:2]=='49':
+        section_main.append((9, subheadings.index(subheading)))
+    if subheading[:2]=='50' or subheading[:2]=='51' or subheading[:2]=='52' or subheading[:2]=='53' or subheading[:2]=='54' or subheading[:2]=='55' or subheading[:2]=='56' or subheading[:2]=='57' or subheading[:2]=='58' or subheading[:2]=='59' or subheading[:2]=='60' or subheading[:2]=='61' or subheading[:2]=='62' or subheading[:2]=='63':
+        section_main.append((10, subheadings.index(subheading)))
+    if subheading[:2]=='64' or subheading[:2]=='65' or subheading[:2]=='66' or subheading[:2]=='67':
+        section_main.append((11, subheadings.index(subheading)))
+    if subheading[:2]=='68' or subheading[:2]=='69' or subheading[:2]=='70':
+        section_main.append((12, subheadings.index(subheading)))
+    if subheading[:2]=='71':
+        section_main.append((13, subheadings.index(subheading)))
+    if subheading[:2]=='72' or subheading[:2]=='73' or subheading[:2]=='74' or subheading[:2]=='75' or subheading[:2]=='76' or subheading[:2]=='77' or subheading[:2]=='78' or subheading[:2]=='79' or subheading[:2]=='80' or subheading[:2]=='81' or subheading[:2]=='82' or subheading[:2]=='83':
+        section_main.append((14, subheadings.index(subheading)))
+    if subheading[:2]=='84' or subheading[:2]=='85':
+        section_main.append((15, subheadings.index(subheading)))
+    if subheading[:2]=='86' or subheading[:2]=='87' or subheading[:2]=='88' or subheading[:2]=='89':
+        section_main.append((16, subheadings.index(subheading)))
+    if subheading[:2]=='90' or subheading[:2]=='91' or subheading[:2]=='92':
+        section_main.append((17, subheadings.index(subheading)))
+    if subheading[:2]=='93':
+        section_main.append((18, subheadings.index(subheading)))
+    if subheading[:2]=='94' or subheading[:2]=='95' or subheading[:2]=='96':
+        section_main.append((19, subheadings.index(subheading)))
+    if subheading[:2]=='97' or subheading[:2]=='98' or subheading[:2]=='99':
+        section_main.append((20, subheadings.index(subheading)))
+    if subheading[:8]=='CodeVagu':
+        section_main.append((21, subheadings.index(subheading))) ##HANDLE THE VAGUE CATEGORY (CALL IT SECTION 21..)
+
+sections, section_to_label =zip(*section_main) #unzip back into separate lists
+
+index_to_value = {index: value for index, value in enumerate(sections)}
+
+###Create the new 'labels' - based on sections now instead of the commodity code
+labels_section = []
+for k in labels:
+    if k in index_to_value:
+        labels_section.append(index_to_value[k])
+        
+subheadings_section=['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21']
+
+##Free up memory
+del section_main, sections, section_to_label, index_to_value
+
+print("💾⇦ Saving subheadings_section")
+with open(subheadings_section_file, "wb") as fp:
+    pickle.dump(subheadings_section, fp)
+
+print(len(subheadings_section))
+
+print("💾⇦ Saving labels_section")
+with open(labels_section_file, "wb") as fp:
+    pickle.dump(labels_section, fp)
+        
+
 # Now build and train the network
 trainer = FlatClassifierModelTrainer(args)
 
