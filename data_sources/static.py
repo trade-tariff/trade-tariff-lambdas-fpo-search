@@ -33,8 +33,8 @@ class StaticDataSource(DataSource):
         for description, subheading in self._data:
             subheading = subheading.replace(" ", "")[:digits]
             description = description.strip().lower()
-            description = (re.sub(pattern, '', description)).rstrip(',').rstrip('.') ##remove certain phrases, if they match the above phrases_to_remove list
-            #description = description.rstrip(',').rstrip('.') #remove trailing commas #remove trailing full stops (add to line above for speed)
+            description = (re.sub(pattern, '', description)) ##remove certain phrases, if they match the above phrases_to_remove list
+            description = description.rstrip(',').rstrip('.') #remove trailing commas #remove trailing full stops (add to line above for speed)
 
             # Throw out any bad codes
             if not re.search("^\\d{" + str(digits) + "}$", subheading):
