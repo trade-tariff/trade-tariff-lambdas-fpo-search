@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+
+[ "$DEBUG" = "" ] || set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+USAGE=$(cat <<EOF
+Usage: $0 OPTIONS
+
+Fetches the regions that support the given instance type.
+
+Options:
+
+  Searches for a region that supports the instance type.
+
+  The output is a pipe-delimited list of regions, availability zones, subnet ids, security group ids and a key pair name that can be used to SSH into the instances.
+
+    --instance-type <instance-type> - The instance type to search for
+    --try-region-count <search-region-count> - The number of regions to search. Default is 5.
+    --create-security-group - Create a security group that allows SSH traffic from anywhere
+    --create-key-pair - Copy the fpo-training key to a region-specific key pair that can be used to SSH into instances
+
+    -h, --help - Show this help message
+
+Example:
+
+  $0 --instance-type t2.micro
+EOF
+)
+INSTANCE_TYPE=""
+TRY_REGION_COUNT=5
+CREATE_SECURITY_GROUP="false"
+CREATE_KEY_PAIR="false"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --instance-type)
+      INSTANCE_TYPE="$2"
+      shift 2
+      ;;
+    --try-region-count)
+      TRY_REGION_COUNT="$2"
+      shift 2
+      ;;
+    --create-security-group)
+      CREATE_SECURITY_GROUP="true"
+      shift 1
+      ;;
+    --create-key-pair)
+      CREATE_KEY_PAIR="true"
+      shift 1
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$INSTANCE_TYPE" = "" ]; then
+  echo "Instance type is required"
+  echo "$USAGE"
+  exit 1
+fi
+
+fetch_regions() {
+  aws ec2 describe-regions \
+    --query 'Regions[].RegionName' \
+    --output text \
+    | tr '\t' '\n' \
+    | head -n "$TRY_REGION_COUNT" \
+    | sed 's/\n/\t/'
+}
+
+fetch_regions_that_support_instance_type() {
+  for region in $(fetch_regions); do
+    if fetch_instance_type_location "$region"; then
+      az=$(fetch_availability_zones "$region")
+      subnet_ids=$(fetch_subnet_ids_in_default_vpc "$region" "$az")
+      security_group_id=$(find_or_create_security_group "$region")
+      key_pair_name=$(find_or_import_key_pair "$region")
+
+      echo "$region|$az|$subnet_ids|$security_group_id|$key_pair_name|$INSTANCE_TYPE"
+    fi
+  done
+}
+
+fetch_instance_type_location() {
+  region=$1
+  aws ec2 describe-instance-type-offerings \
+    --location-type region \
+    --filters Name=instance-type,Values="$INSTANCE_TYPE" \
+    --region "$region" \
+    --query 'InstanceTypeOfferings[].Location' \
+    --output text \
+    | grep -q "$region"
+}
+
+fetch_availability_zones() {
+  region=$1
+  aws ec2 describe-instance-type-offerings \
+    --location-type availability-zone \
+    --filters Name=instance-type,Values="$INSTANCE_TYPE" \
+    --region "$region" \
+    --query 'InstanceTypeOfferings[].Location' \
+    --output text \
+    | tr '\t' '\n' | head -1 | sed 's/\n//'
+}
+
+fetch_subnet_ids_in_default_vpc() {
+  region=$1
+  az=$2
+
+  aws ec2 describe-subnets \
+    --region "$region" \
+    --query "Subnets[?AvailabilityZone=='$az'].SubnetId" \
+    --output text \
+    | tr '\t' '\n' | head -1 | sed 's/\n//'
+}
+
+fetch_security_groups() {
+  name="$1"
+  region=$2
+  default_vpc_id=$3
+
+  # Fetch security groups
+  group_id=$(aws ec2 describe-security-groups \
+    --region "$region" \
+    --filters "Name=vpc-id,Values=$default_vpc_id" "Name=group-name,Values=$name" \
+    --query 'SecurityGroups[].GroupId' \
+    --output text)
+
+  if [ "$group_id" = "" ]; then
+    echo "none"
+  else
+    echo "$group_id"
+  fi
+}
+
+fetch_default_vpc_id() {
+  region=$1
+  aws ec2 describe-vpcs \
+    --region "$region" \
+    --filters "Name=isDefault,Values=true" \
+    --query 'Vpcs[].VpcId' \
+    --output text
+}
+
+fetch_key_pair_by_name() {
+  region=$1
+  name="$2"
+  key_pair_name=$(aws ec2 describe-key-pairs \
+    --region "$region" \
+    --key-names "$name" \
+    --query 'KeyPairs[].KeyName' \
+    --output text 2>/dev/null)
+
+  if [ "$key_pair_name" = "" ]; then
+    echo "none"
+  else
+    echo "$key_pair_name"
+  fi
+}
+
+find_or_create_security_group() {
+  region=$1
+  name="Allow SSH ALL Traffic"
+  default_vpc_id=$(fetch_default_vpc_id "$region")
+  security_group_id=$(fetch_security_groups "$name" "$region" "$default_vpc_id")
+
+  if [ "$CREATE_SECURITY_GROUP" == "false" ]; then
+    echo "$security_group_id"
+    return
+  fi
+
+  if [ "$security_group_id" == "none" ]; then
+    security_group_id=$(aws ec2 create-security-group \
+      --region "$region" \
+      --group-name "$name" \
+      --description "$name" \
+      --vpc-id "$default_vpc_id" \
+      --query 'GroupId' \
+      --output text)
+
+    aws ec2 authorize-security-group-ingress \
+      --region "$region" \
+      --group-id "$security_group_id" \
+      --protocol tcp \
+      --port 22 \
+      --cidr "0.0.0.0/0" \
+      --output text > /dev/null
+
+    echo "$security_group_id"
+  else
+    echo "$security_group_id"
+  fi
+}
+
+store_ec2_private_key () {
+  name=$1
+  source_key_region='eu-west-2'
+  pem_file=~/.ssh/"$name".pem
+  pem_pub_file=~/.ssh/"$name".pem.pub
+
+  if [ ! -f "$pem_file" ]; then
+    aws secretsmanager get-secret-value \
+      --secret-id "$name" \
+      --source_key_region "$source_key_region" \
+      --query 'SecretString' \
+      --output text > "$pem_file"
+
+    chmod 600 "$pem_file"
+  fi
+
+  if [ ! -f "$pem_pub_file" ]; then
+    ssh-keygen -y -f "$pem_file" > "$pem_pub_file"
+    chmod 644 "$pem_pub_file"
+
+    cat "$pem_pub_file" | base64 > "$pem_pub_file".base64
+  fi
+
+}
+
+find_or_import_key_pair() {
+  region=$1
+  name="fpo-training"
+  key_pair_name=$(fetch_key_pair_by_name "$region" "$name")
+
+  if [ "$CREATE_KEY_PAIR" == "false" ]; then
+    echo "$key_pair_name"
+    return
+  fi
+
+  if [ "$key_pair_name" == "none" ]; then
+    store_ec2_private_key "$name"
+
+    aws ec2 import-key-pair \
+      --region "$region" \
+      --key-name "$name" \
+      --public-key-material file://~/.ssh/"$name".pem.pub.base64 > /dev/null
+
+    echo "$name"
+  else
+    echo "$key_pair_name"
+  fi
+}
+
+fetch_regions_that_support_instance_type
