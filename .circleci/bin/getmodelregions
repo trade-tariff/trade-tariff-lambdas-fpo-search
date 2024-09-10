@@ -78,19 +78,6 @@ fetch_regions() {
     | sed 's/\n/\t/'
 }
 
-fetch_regions_that_support_instance_type() {
-  for region in $(fetch_regions); do
-    if fetch_instance_type_location "$region"; then
-      az=$(fetch_availability_zones "$region")
-      subnet_ids=$(fetch_subnet_ids_in_default_vpc "$region" "$az")
-      security_group_id=$(find_or_create_security_group "$region")
-      key_pair_name=$(find_or_import_key_pair "$region")
-
-      echo "$region|$az|$subnet_ids|$security_group_id|$key_pair_name|$INSTANCE_TYPE"
-    fi
-  done
-}
-
 fetch_instance_type_location() {
   region=$1
   aws ec2 describe-instance-type-offerings \
@@ -153,8 +140,10 @@ fetch_default_vpc_id() {
 }
 
 fetch_key_pair_by_name() {
-  region=$1
-  name="$2"
+  local region=$1
+  local name="$2"
+  local key_pair_name
+
   key_pair_name=$(aws ec2 describe-key-pairs \
     --region "$region" \
     --key-names "$name" \
@@ -169,17 +158,17 @@ fetch_key_pair_by_name() {
 }
 
 find_or_create_security_group() {
-  region=$1
-  name="Allow SSH ALL Traffic"
+  local region=$1
+  local name="Allow SSH ALL Traffic"
+  local default_vpc_id
+  local security_group_id
+
   default_vpc_id=$(fetch_default_vpc_id "$region")
   security_group_id=$(fetch_security_groups "$name" "$region" "$default_vpc_id")
 
   if [ "$CREATE_SECURITY_GROUP" == "false" ]; then
     echo "$security_group_id"
-    return
-  fi
-
-  if [ "$security_group_id" == "none" ]; then
+  elif [ "$security_group_id" == "none" ]; then
     security_group_id=$(aws ec2 create-security-group \
       --region "$region" \
       --group-name "$name" \
@@ -203,10 +192,10 @@ find_or_create_security_group() {
 }
 
 store_ec2_private_key () {
-  name=$1
-  source_key_region='eu-west-2'
-  pem_file=~/.ssh/"$name".pem
-  pem_pub_file=~/.ssh/"$name".pem.pub
+  local name=$1
+  local source_key_region='eu-west-2'
+  local pem_file=~/.ssh/"$name".pem
+  local pem_pub_file=~/.ssh/"$name".pem.pub
 
   if [ ! -f "$pem_file" ]; then
     aws secretsmanager get-secret-value \
@@ -228,16 +217,15 @@ store_ec2_private_key () {
 }
 
 find_or_import_key_pair() {
-  region=$1
-  name="fpo-training"
+  local region=$1
+  local name="fpo-training"
+  local key_pair_name
+
   key_pair_name=$(fetch_key_pair_by_name "$region" "$name")
 
   if [ "$CREATE_KEY_PAIR" == "false" ]; then
     echo "$key_pair_name"
-    return
-  fi
-
-  if [ "$key_pair_name" == "none" ]; then
+  elif [ "$key_pair_name" == "none" ]; then
     store_ec2_private_key "$name"
 
     aws ec2 import-key-pair \
@@ -251,4 +239,22 @@ find_or_import_key_pair() {
   fi
 }
 
-fetch_regions_that_support_instance_type
+main() {
+  for region in $(fetch_regions); do
+    if fetch_instance_type_location """$region"; then
+      local az
+      local subnet_ids
+      local security_group_id
+      local key_pair_name
+
+      az=$(fetch_availability_zones "$region")
+      subnet_ids=$(fetch_subnet_ids_in_default_vpc "$region" "$az")
+      security_group_id=$(find_or_create_security_group "$region")
+      key_pair_name=$(find_or_import_key_pair "$region")
+
+      echo "$region|$az|$subnet_ids|$security_group_id|$key_pair_name|$INSTANCE_TYPE"
+    fi
+  done
+}
+
+main
