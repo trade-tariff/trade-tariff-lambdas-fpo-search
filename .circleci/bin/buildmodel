@@ -15,7 +15,7 @@ fetch_account_id ()
 fetch_latest_ami_image_id_by_name ()
 {
   image_name_query=$1
-  region='us-east-1'
+  region=${2:-'us-east-1'}
   owner=$(fetch_account_id)
 
   aws ec2 describe-images \
@@ -26,39 +26,45 @@ fetch_latest_ami_image_id_by_name ()
     --output text
 }
 
-fetch_subnet_by_cidr ()
-{
-  region='us-east-1'
-
-  aws ec2 describe-subnets --filters "Name=cidrBlock,Values=$1" --region "$region" --query 'Subnets[0].SubnetId' --output text
-}
-
-fetch_security_group_by_name ()
-{
-  region='us-east-1'
-
-  aws ec2 describe-security-groups --filters "Name=group-name,Values=$1" --region "$region" --query 'SecurityGroups[0].GroupId' --output text
-}
-
 INSTANCE_ID=''
 
 launch_ec2_instance ()
 {
   name="fpo-search-training-$SHA"
-  retries=5
-  delay=10
+  retries=2
+  delay=5
+  region=$1
+  az=$2
+  subnet_id=$3
+  security_group_ids=$4
+  key_pair_name=$5
+  instance_type=$6
+  source_ami_region="us-east-1"
+  .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"
+  ami_id=$(fetch_latest_ami_image_id_by_name "FPO Training*" "$region")
+
+  echo "Launching EC2 instance in $region with configuration..."
+  echo
+  echo "🌍 Region: $region"
+  echo "📀 AMI: $ami_id"
+  echo "🤖 Instance Type: $instance_type"
+  echo "☎️📞Subnet ID: $subnet_id"
+  echo "🔓 Security Group IDs: $security_group_ids"
+  echo "🔓 Key Pair Name: $key_pair_name"
+  echo "🚀 Instance Name: $name"
+  echo
 
   for ((i=0; i<retries; i++)); do
     set +o errexit
     INSTANCE_ID=$(aws ec2 run-instances \
-      --image-id "$LATEST_AMI" \
-      --subnet-id "$SUBNET_ID" \
-      --security-group-ids "$SECURITY_GROUP_IDS" \
-      --instance-type p3.8xlarge \
-      --key-name "$KEY_PAIR_NAME" \
+      --image-id "$ami_id" \
+      --subnet-id "$subnet_id" \
+      --security-group-ids "$security_group_ids" \
+      --instance-type $instance_type \
+      --key-name "$key_pair_name" \
       --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
       --associate-public-ip-address \
-      --region 'us-east-1' \
+      --region "$region" \
       --output text \
       --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
       --query 'Instances[0].InstanceId' 2>&1)
@@ -71,25 +77,54 @@ launch_ec2_instance ()
 
     echo "Insufficient capacity. Retrying in $delay seconds..."
     sleep "$delay"
-    delay=$((delay * 2))  # Exponential backoff
+    delay=$((delay * 2))
   done
 
-  echo "Failed to launch instance after $retries retries."
-  exit 1
+  echo "Failed to launch instance after $retries retries in $region"
+}
+
+DESTINATION_REGION=''
+
+try_launch_ec2_instance ()
+{
+  candidate_regions=$(.circleci/bin/getmodelregions \
+    --instance-type "$INSTANCE_TYPE" \
+    --create-security-group \
+    --create-key-pair)
+
+  echo
+  echo -e "Candidate regions:\n\n$candidate_regions\n"
+
+  if [[ "$candidate_regions" == '' ]]; then
+    echo "No regions available to launch instance of this instance type $INSTANCE_TYPE."
+    exit 1
+  fi
+
+  for region in $candidate_regions; do
+    IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<< "$region"
+
+    launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"
+
+    if [[ "$INSTANCE_ID" != '' ]] || [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
+      DESTINATION_REGION="$region"
+      break
+    fi
+  done
+
+  if [[ "$INSTANCE_ID" == '' ]] || [[ "$INSTANCE_ID" == *"InsufficientInstanceCapacity"* ]]; then
+    echo "Failed to launch instance in any region."
+    exit 1
+  fi
 }
 
 wait_for_instance_to_be_available ()
 {
-  region='us-east-1'
-
-  aws ec2 wait instance-status-ok --instance-ids "$1" --region "$region"
+  aws ec2 wait instance-status-ok --instance-ids "$1" --region "$DESTINATION_REGION"
 }
 
 fetch_ec2_instance_public_ip ()
 {
-  region='us-east-1'
-
-  aws ec2 describe-instances --region "$region" --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
+  aws ec2 describe-instances --region "$DESTINATION_REGION" --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
 }
 
 store_ec2_private_key ()
@@ -169,7 +204,7 @@ copy_model_from_ec2_instance ()
 
 terminate_ec2_instance ()
 {
-  aws ec2 terminate-instances --instance-ids "$1" --region 'us-east-1'
+  aws ec2 terminate-instances --instance-ids "$1" --region $DESTINATION_REGION
 }
 
 on_exit ()
@@ -193,9 +228,8 @@ else
   exit 0
 fi
 
+INSTANCE_TYPE=p3.8xlarge
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "FPO Training*")
-SUBNET_ID=$(fetch_subnet_by_cidr "10.0.104.0/24")
-SECURITY_GROUP_IDS=$(fetch_security_group_by_name "allow-ssh")
 KEY_PAIR_NAME=fpo-training
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 ACCOUNT_ID=$(fetch_account_id)
@@ -204,16 +238,15 @@ SHA=$(git rev-parse --short HEAD)
 VERSION=$(cat search-config.toml | grep version | awk '{print $3}' | sed 's/"//g')
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-launch_ec2_instance
+try_launch_ec2_instance
 
 PUBLIC_IP=$(fetch_ec2_instance_public_ip "$INSTANCE_ID")
 
 echo "Launching EC2 instance with configuration..."
 echo
 echo "📀 AMI: $LATEST_AMI"
-echo "☎️📞Subnet ID: $SUBNET_ID"
+echo "🤖 Instance Type: $INSTANCE_TYPE"
 echo "☎️📞Public IP: $PUBLIC_IP"
-echo "🔓 Security Group IDs: $SECURITY_GROUP_IDS"
 echo "🔓 Key Pair Name: $KEY_PAIR_NAME"
 echo "💿 Model Bucket Name: $MODEL_BUCKET_NAME"
 echo "💻 Account ID: $ACCOUNT_ID"

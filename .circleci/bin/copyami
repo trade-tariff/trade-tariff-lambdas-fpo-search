@@ -16,8 +16,6 @@ SOURCE_REGION=${2:-us-east-1}
 DESTINATION_REGION=$3
 OWNER=$(aws sts get-caller-identity --query Account --output text)
 
-echo "Copying AMI $SOURCE_AMI_ID from $SOURCE_REGION to $DESTINATION_REGION"
-
 fetch_source_ami_name() {
   aws ec2 describe-images \
     --region "$SOURCE_REGION" \
@@ -68,8 +66,10 @@ main() {
   SOURCE_AMI_NAME=$(fetch_source_ami_name)
   DESTINATION_AMI_ID=$(fetch_destination_ami_name_by_name "$SOURCE_AMI_NAME")
 
+
+
   if [ "$DESTINATION_AMI_ID" == None ]; then
-    echo "Copying AMI $SOURCE_AMI_NAME to $DESTINATION_REGION"
+    echo "Copying AMI $SOURCE_AMI_ID from $SOURCE_REGION to $DESTINATION_REGION"
     copy_ami "$SOURCE_AMI_NAME"
     wait_for_copy "$SOURCE_AMI_NAME"
     exit 0
