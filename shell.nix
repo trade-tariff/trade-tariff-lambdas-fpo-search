@@ -10,6 +10,7 @@ in pkgs.mkShell {
       ps.sentry-sdk
       ps.toml
       ps.typing-extensions
+      ps.pandas
     ]))
     pkgs.nodejs_21
   ];

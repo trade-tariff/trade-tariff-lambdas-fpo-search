@@ -105,6 +105,18 @@ class TrainScriptArgsParser:
             default="reference_data/brands.csv",
         )
         parser.add_argument(
+            "--incorrect-description-pairs-file",
+            type=str,
+            help="the path to the incorrect description pairs file",
+            default="reference_data/incorrect_code_desc_pairs.csv",
+        )
+        parser.add_argument(
+            "--phrases-to-remove-file",
+            type=str,
+            help="the path to the phrases to remove file",
+            default="reference_data/phrases_to_remove.txt",
+        )
+        parser.add_argument(
             "--tradesets-data-dir",
             type=str,
             help="the path to the tradesets data directory",
@@ -191,6 +203,9 @@ class TrainScriptArgsParser:
         )
         logger.info(f"  cn_data_file: {self.cn_data_file()}")
         logger.info(f"  brands_data_file: {self.brands_data_file()}")
+        logger.info(
+            f"  incorrect_description_pairs_file: {self.incorrect_description_pairs_file()}"
+        )
         logger.info(f"  tradesets_data_dir: {self.tradesets_data_dir()}")
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
@@ -284,6 +299,14 @@ class TrainScriptArgsParser:
     @config_from_file
     def brands_data_file(self):
         return self.parsed_args.brands_data_file
+
+    @config_from_file
+    def incorrect_description_pairs_file(self):
+        return self.parsed_args.incorrect_description_pairs_file
+
+    @config_from_file
+    def phrases_to_remove_file(self):
+        return self.parsed_args.phrases_to_remove_file
 
     @config_from_file
     def tradesets_data_dir(self):

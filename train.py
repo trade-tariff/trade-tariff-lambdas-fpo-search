@@ -14,13 +14,16 @@ from training.create_embeddings import EmbeddingsProcessor
 from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
+    IncorrectPairsRemover,
     LanguageCleaning,
     NegationCleaning,
+    PhraseRemover,
+    PluralCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
     RemoveSubheadingsNotMatchingRegexes,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 
 from data_sources.vague_terms import VagueTermsCSVDataSource
@@ -63,9 +66,9 @@ with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
 basic_filters = [
-    StripExcessWhitespace(),
-    RemoveEmptyDescription(),
     DescriptionLower(),
+    StripExcessCharacters(),
+    RemoveEmptyDescription(),
     RemoveShortDescription(min_length=1),
     RemoveSubheadingsNotMatchingRegexes(
         regexes=[
@@ -73,7 +76,17 @@ basic_filters = [
         ]
     ),
 ]
-tradestats_filters = basic_filters + [
+tradestats_filters = [
+    DescriptionLower(),
+    PhraseRemover.build(args.phrases_to_remove_file()),
+    StripExcessCharacters(),
+    RemoveEmptyDescription(),
+    RemoveShortDescription(min_length=1),
+    RemoveSubheadingsNotMatchingRegexes(
+        regexes=[
+            "^\\d{" + str(args.digits()) + "}$",
+        ]
+    ),
     RemoveDescriptionsMatchingRegexes(
         regexes=[
             r"^\\d+$",  # Skip rows where description contains only numbers
@@ -93,6 +106,8 @@ tradestats_filters = basic_filters + [
         partial_keeps=language_keeps,
         exact_keeps=language_keeps_exact,
     ),
+    IncorrectPairsRemover.build(args.incorrect_description_pairs_file()),
+    PluralCleaning(),
 ]
 
 self_texts_filters = basic_filters + [NegationCleaning.build()]
