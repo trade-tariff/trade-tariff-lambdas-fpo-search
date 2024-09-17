@@ -4,7 +4,7 @@ from data_sources.data_source import DataSource
 
 
 class TrainingData(typing.NamedTuple):
-    text_values: list[str]
+    unique_text_values: list[str]
     subheadings: list[str]
     texts: list[int]
     labels: list[int]
@@ -22,14 +22,14 @@ class TrainingDataLoader:
         data_sources: list[DataSource],
         digits: int = 8,
     ) -> TrainingData:
-        unique_texts: list[str] = []
+        unique_text_values: list[str] = []
         unique_text_map: typing.Dict[str, int] = {}
 
         subheadings: list[str] = []
         subheadings_map: typing.Dict[str, int] = {}
 
         labels = list[int]()
-        texts = list[int]()
+        text_indexes = list[int]()
 
         authoritative_texts = {}
 
@@ -108,12 +108,12 @@ class TrainingDataLoader:
                     if description in unique_text_map:
                         unique_text_idx = unique_text_map[description]
                     else:
-                        unique_text_idx = len(unique_texts)
+                        unique_text_idx = len(unique_text_values)
                         unique_text_map[description] = unique_text_idx
-                        unique_texts.append(description)
+                        unique_text_values.append(description)
 
                     labels.extend([this_subheading_idx] * data_source.multiplier)
-                    texts.extend([unique_text_idx] * data_source.multiplier)
+                    text_indexes.extend([unique_text_idx] * data_source.multiplier)
 
         self._logger.debug(
             f"ℹ️  {invalid_subheading_count} entries with invalid subheadings were skipped"
@@ -122,4 +122,4 @@ class TrainingDataLoader:
             f"ℹ️  {incorrect_code_for_description_count} descriptions were overridden with an authoritative one"
         )
 
-        return TrainingData(unique_texts, subheadings, texts, labels)
+        return TrainingData(unique_text_values, subheadings, text_indexes, labels)
