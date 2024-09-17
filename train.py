@@ -167,11 +167,11 @@ data_sources += [
 
 training_data_loader = TrainingDataLoader()
 
-(text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
+(unique_text_values, subheadings, text_indexes, labels) = training_data_loader.fetch_data(
     data_sources, args.digits()
 )
 
-print(f"Found {len(text_values)} unique descriptions")
+print(f"Found {len(unique_text_values)} unique descriptions")
 
 print("💾⇦ Saving subheadings")
 with open(subheadings_file, "wb") as fp:
@@ -179,17 +179,17 @@ with open(subheadings_file, "wb") as fp:
 
 # Impose the limit if required - this will limit the number of unique descriptions
 if args.limit() is not None:
-    text_values = text_values[: args.limit()]
+    unique_text_values = unique_text_values[: args.limit()]
 
     new_texts: list[int] = []
     new_labels: list[int] = []
 
-    for i, t in enumerate(texts):
-        if t < len(text_values):
+    for i, t in enumerate(text_indexes):
+        if t < len(unique_text_values):
             new_texts.append(t)
             new_labels.append(labels[i])
 
-    texts = new_texts
+    text_indexes = new_texts
     labels = new_labels
 
 # Next create the embeddings
@@ -201,7 +201,7 @@ embeddings_processor = EmbeddingsProcessor(
     batch_size=args.embedding_batch_size(),
 )
 
-unique_embeddings = embeddings_processor.create_embeddings(text_values)
+unique_embeddings = embeddings_processor.create_embeddings(unique_text_values)
 
 # Now build and train the network
 trainer = FlatClassifierModelTrainer(args)
@@ -209,7 +209,7 @@ trainer = FlatClassifierModelTrainer(args)
 # Convert the labels to a Tensor
 labels = torch.tensor(labels, dtype=torch.long)
 
-embeddings = torch.stack([unique_embeddings[idx] for idx in texts])
+embeddings = torch.stack([unique_embeddings[idx] for idx in text_indexes])
 
 state_dict, input_size, hidden_size, output_size = trainer.run(
     embeddings, labels, len(subheadings)
