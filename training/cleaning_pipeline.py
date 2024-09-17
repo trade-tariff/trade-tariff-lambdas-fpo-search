@@ -358,7 +358,13 @@ class LanguageCleaning(Cleaner):
 
 
 class NegationCleaning(Cleaner):
-    """ """
+    """
+    This cleaner is responsible for cleaning up negations in the description.
+
+    For example "tomatoes, other than monster beef tomatoes" becomes "tomatoes"
+
+    This helps prevent false positive matches during inference.
+    """
 
     def __init__(
         self, negation_terms: List[str], non_negation_terms: List[str]
@@ -411,6 +417,12 @@ class DescriptionLower(Cleaner):
 
 
 class PhraseRemover(Cleaner):
+    """
+    Loads a list of phrases from a file and removes them from the description where the cleaner is applied.
+
+
+    Example where the phrase is "some phrase" a description like "description with some phrase" becomes "description with"
+    """
     def __init__(self, phrases: List[str]) -> None:
         self._phrases = phrases
 
