@@ -14,7 +14,7 @@ from training.cleaning_pipeline import (
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 
 import logging
@@ -42,7 +42,7 @@ with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
 filters = [
-    StripExcessWhitespace(),
+    StripExcessCharacters(),
     RemoveEmptyDescription(),
     DescriptionLower(),
     RemoveShortDescription(min_length=1),

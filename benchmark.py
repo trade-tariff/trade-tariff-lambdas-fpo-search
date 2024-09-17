@@ -20,7 +20,7 @@ from training.cleaning_pipeline import (
     RemoveEmptyDescription,
     RemoveShortDescription,
     RemoveSubheadingsNotMatchingRegexes,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 from train_args import TrainScriptArgsParser
 
@@ -123,7 +123,7 @@ with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
 filters = [
-    StripExcessWhitespace(),
+    StripExcessCharacters(),
     RemoveEmptyDescription(),
     DescriptionLower(),
     RemoveShortDescription(min_length=4),

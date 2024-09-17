@@ -9,11 +9,11 @@ from training.cleaning_pipeline import (
     RemoveEmptyDescription,
     RemoveShortDescription,
     RemoveSubheadingsNotMatchingRegexes,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 
 filters = [
-    StripExcessWhitespace(),
+    StripExcessCharacters(),
     RemoveEmptyDescription(),
     RemoveShortDescription(min_length=4),
     RemoveSubheadingsNotMatchingRegexes(regexes=[r"^\d{8}$"]),
