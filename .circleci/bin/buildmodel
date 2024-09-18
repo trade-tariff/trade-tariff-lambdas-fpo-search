@@ -5,6 +5,9 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
+DESTINATION_REGION=''
+INSTANCE_ID=''
+
 source .circleci/bin/needsmodel
 
 fetch_account_id ()
@@ -26,20 +29,23 @@ fetch_latest_ami_image_id_by_name ()
     --output text
 }
 
-INSTANCE_ID=''
-
 launch_ec2_instance ()
 {
-  name="fpo-search-training-$SHA"
-  region=$1
-  az=$2
-  subnet_id=$3
-  security_group_ids=$4
-  key_pair_name=$5
-  instance_type=$6
-  source_ami_region="us-east-1"
-  .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"
+  local name="fpo-search-training-$SHA"
+  local region=$1
+  local az=$2
+  local subnet_id=$3
+  local security_group_ids=$4
+  local key_pair_name=$5
+  local instance_type=$6
+  local source_ami_region="us-east-1"
+  local ami_id
+  local output=''
+  local status
+
   ami_id=$(fetch_latest_ami_image_id_by_name "FPO Training*" "$region")
+
+  .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"
 
   echo "Launching EC2 instance in $region with configuration..."
   echo
@@ -53,7 +59,7 @@ launch_ec2_instance ()
   echo
 
   set +o errexit
-  INSTANCE_ID=$(aws ec2 run-instances \
+  output=$(aws ec2 run-instances \
     --image-id "$ami_id" \
     --subnet-id "$subnet_id" \
     --security-group-ids "$security_group_ids" \
@@ -64,14 +70,32 @@ launch_ec2_instance ()
     --region "$region" \
     --output text \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
-    --query 'Instances[0].InstanceId' 2>&1)
+    --query 'Instances[0].InstanceId') 2>&1
+  status=$?
   set -o errexit
-}
 
-DESTINATION_REGION=''
+  if [[ $status -eq 0 ]]; then
+    echo "$output"
+  else
+    if echo "$output" | grep -q "InsufficientInstanceCapacity"; then
+      echo "Insufficient capacity in $region." >&2
+      return 2
+    else
+      echo "Failed to launch EC2 instance in $region. Error: $output" >&2
+      return 1
+    fi
+  fi
+}
 
 try_launch_ec2_instance ()
 {
+  local candidate_regions
+  local output
+  local status
+  local retries=2
+  local default_delay=5
+  local current_delay=$default_delay
+
   candidate_regions=$(.circleci/bin/getmodelregions \
     --instance-type "$INSTANCE_TYPE" \
     --create-security-group \
@@ -86,29 +110,41 @@ try_launch_ec2_instance ()
     exit 1
   fi
 
-  retries=2
-  delay=5
-
   for region_info in $candidate_regions; do
+    current_delay=$default_delay
+
+    local region az subnet_id security_group_ids key_pair_name instance_type
     IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<< "$region_info"
 
     for ((i=0; i<retries; i++)); do
-      INSTANCE_ID=''
-      launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"
-
-      if [[ "$INSTANCE_ID" != '' ]] && [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
+      if output=$(launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"); then
+        INSTANCE_ID=$output
         DESTINATION_REGION="$region"
-        echo "Successfully launched $instance_type $INSTANCE_ID instance in $region."
         break 2
       else
-        echo "Insufficient capacity in $region. Retrying in $delay seconds..."
-        sleep "$delay"
-        delay=$((delay * 2))
+        status=$?
+
+        case $status in
+          1)
+            echo "Failed to launch instance in $region. Received error: $output. Retrying in $current_delay seconds..."
+            sleep "$current_delay"
+            current_delay=$((current_delay * 2))
+            ;;
+          2)
+            echo "Insufficient capacity in $region. Retrying in $current_delay seconds..."
+            sleep "$current_delay"
+            current_delay=$((current_delay * 2))
+            ;;
+          *)
+            echo "Failed to launch instance in $region. Received error: $output."
+            exit 1
+            ;;
+        esac
       fi
     done
   done
 
-  if [[ "$INSTANCE_ID" == '' ]] || [[ "$INSTANCE_ID" == *"InsufficientInstanceCapacity"* ]]; then
+  if [[ "$INSTANCE_ID" == '' ]]; then
     echo "Failed to launch instance in any region."
     exit 1
   fi
@@ -126,8 +162,8 @@ fetch_ec2_instance_public_ip ()
 
 store_ec2_private_key ()
 {
-  secret_id=$1
-  region='eu-west-2'
+  local secret_id=$1
+  local region='eu-west-2'
 
   rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
 
@@ -152,6 +188,8 @@ validate_connection ()
 
 bring_code_inline ()
 {
+  local branch_name
+
   branch_name=$(git rev-parse --abbrev-ref HEAD)
 
   execute_command "$1" "cd $PROJECT && git fetch origin $branch_name:$branch_name && git checkout $branch_name"
@@ -171,7 +209,7 @@ run_training_script_on_ec2_instance ()
 
 run_benchmarks_on_ec2_instance ()
 {
-  s3_prefix="$VERSION-$SHA"
+  local s3_prefix="$VERSION-$SHA"
 
   # Prepare benchmarking data
   aws s3 cp s3://"$MODEL_BUCKET_NAME/benchmarking_data.zip" .
@@ -190,7 +228,7 @@ run_benchmarks_on_ec2_instance ()
 
 copy_model_from_ec2_instance ()
 {
-  s3_prefix="$VERSION-$SHA"
+  local s3_prefix="$VERSION-$SHA"
 
   execute_command "$1" "cd $PROJECT && zip model.zip target/model.pt target/subheadings.pkl"
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1":~/"$PROJECT"/model.zip .
@@ -216,7 +254,7 @@ on_exit ()
   exit $old_status
 }
 
-trap on_exit EXIT # Ensure that the EC2 instance is terminated after any failure
+trap on_exit EXIT
 
 if needsmodel; then
   echo "Model needs to be trained"
