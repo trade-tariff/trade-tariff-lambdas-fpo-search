@@ -46,18 +46,7 @@ filters = [
     RemoveEmptyDescription(),
     DescriptionLower(),
     RemoveShortDescription(min_length=1),
-    RemoveDescriptionsMatchingRegexes(
-        regexes=[
-            r"^\\d+$",  # Skip rows where description contains only numbers
-            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
-            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
-            r"^\d+-\d+$",  # skip numbers with hyphens in between
-            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
-            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
-            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
-            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
-        ]
-    ),
+    RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
         detected_languages=args.detected_languages(),
         preferred_languages=args.preferred_languages(),
