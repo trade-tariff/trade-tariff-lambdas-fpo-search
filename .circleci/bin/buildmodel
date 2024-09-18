@@ -90,7 +90,8 @@ try_launch_ec2_instance ()
   candidate_regions=$(.circleci/bin/getmodelregions \
     --instance-type "$INSTANCE_TYPE" \
     --create-security-group \
-    --create-key-pair)
+    --create-key-pair \
+    --try-region-count 8)
 
   echo
   echo -e "Candidate regions:\n\n$candidate_regions\n"
