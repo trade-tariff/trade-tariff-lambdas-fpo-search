@@ -14,13 +14,16 @@ from training.create_embeddings import EmbeddingsProcessor
 from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
+    IncorrectPairsRemover,
     LanguageCleaning,
     NegationCleaning,
+    PhraseRemover,
+    PluralCleaning,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
     RemoveSubheadingsNotMatchingRegexes,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 
 from data_sources.vague_terms import VagueTermsCSVDataSource
@@ -63,9 +66,9 @@ with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
 basic_filters = [
-    StripExcessWhitespace(),
-    RemoveEmptyDescription(),
     DescriptionLower(),
+    StripExcessCharacters(),
+    RemoveEmptyDescription(),
     RemoveShortDescription(min_length=1),
     RemoveSubheadingsNotMatchingRegexes(
         regexes=[
@@ -73,19 +76,18 @@ basic_filters = [
         ]
     ),
 ]
-tradestats_filters = basic_filters + [
-    RemoveDescriptionsMatchingRegexes(
+tradestats_filters = [
+    DescriptionLower(),
+    PhraseRemover.build(args.phrases_to_remove_file()),
+    StripExcessCharacters(),
+    RemoveEmptyDescription(),
+    RemoveShortDescription(min_length=1),
+    RemoveSubheadingsNotMatchingRegexes(
         regexes=[
-            r"^\\d+$",  # Skip rows where description contains only numbers
-            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
-            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
-            r"^\d+-\d+$",  # skip numbers with hyphens in between
-            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
-            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
-            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
-            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+            "^\\d{" + str(args.digits()) + "}$",
         ]
     ),
+    RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
         detected_languages=args.detected_languages(),
         preferred_languages=args.preferred_languages(),
@@ -93,6 +95,8 @@ tradestats_filters = basic_filters + [
         partial_keeps=language_keeps,
         exact_keeps=language_keeps_exact,
     ),
+    IncorrectPairsRemover.build(args.incorrect_description_pairs_file()),
+    PluralCleaning(),
 ]
 
 self_texts_filters = basic_filters + [NegationCleaning.build()]
@@ -152,11 +156,11 @@ data_sources += [
 
 training_data_loader = TrainingDataLoader()
 
-(text_values, subheadings, texts, labels) = training_data_loader.fetch_data(
+(unique_text_values, subheadings, text_indexes, labels) = training_data_loader.fetch_data(
     data_sources, args.digits()
 )
 
-print(f"Found {len(text_values)} unique descriptions")
+print(f"Found {len(unique_text_values)} unique descriptions")
 
 print("💾⇦ Saving subheadings")
 with open(subheadings_file, "wb") as fp:
@@ -164,17 +168,17 @@ with open(subheadings_file, "wb") as fp:
 
 # Impose the limit if required - this will limit the number of unique descriptions
 if args.limit() is not None:
-    text_values = text_values[: args.limit()]
+    unique_text_values = unique_text_values[: args.limit()]
 
     new_texts: list[int] = []
     new_labels: list[int] = []
 
-    for i, t in enumerate(texts):
-        if t < len(text_values):
+    for i, t in enumerate(text_indexes):
+        if t < len(unique_text_values):
             new_texts.append(t)
             new_labels.append(labels[i])
 
-    texts = new_texts
+    text_indexes = new_texts
     labels = new_labels
 
 # Next create the embeddings
@@ -186,7 +190,7 @@ embeddings_processor = EmbeddingsProcessor(
     batch_size=args.embedding_batch_size(),
 )
 
-unique_embeddings = embeddings_processor.create_embeddings(text_values)
+unique_embeddings = embeddings_processor.create_embeddings(unique_text_values)
 
 # Now build and train the network
 trainer = FlatClassifierModelTrainer(args)
@@ -194,7 +198,7 @@ trainer = FlatClassifierModelTrainer(args)
 # Convert the labels to a Tensor
 labels = torch.tensor(labels, dtype=torch.long)
 
-embeddings = torch.stack([unique_embeddings[idx] for idx in texts])
+embeddings = torch.stack([unique_embeddings[idx] for idx in text_indexes])
 
 state_dict, input_size, hidden_size, output_size = trainer.run(
     embeddings, labels, len(subheadings)

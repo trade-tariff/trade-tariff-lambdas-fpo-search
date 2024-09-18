@@ -20,7 +20,7 @@ from training.cleaning_pipeline import (
     RemoveEmptyDescription,
     RemoveShortDescription,
     RemoveSubheadingsNotMatchingRegexes,
-    StripExcessWhitespace,
+    StripExcessCharacters,
 )
 from train_args import TrainScriptArgsParser
 
@@ -123,23 +123,12 @@ with open(language_keeps_exact_file, "r") as f:
     language_keeps_exact = f.read().splitlines()
 
 filters = [
-    StripExcessWhitespace(),
+    StripExcessCharacters(),
     RemoveEmptyDescription(),
     DescriptionLower(),
     RemoveShortDescription(min_length=4),
     RemoveSubheadingsNotMatchingRegexes(regexes=["^\d{" + str(args.digits) + "}$"]),
-    RemoveDescriptionsMatchingRegexes(
-        regexes=[
-            r"^\\d+$",  # Skip rows where description contains only numbers
-            r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
-            r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
-            r"^\d+-\d+$",  # skip numbers with hyphens in between
-            r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
-            r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
-            r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
-            r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
-        ]
-    ),
+    RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
         detected_languages=training_args.detected_languages(),
         preferred_languages=training_args.preferred_languages(),

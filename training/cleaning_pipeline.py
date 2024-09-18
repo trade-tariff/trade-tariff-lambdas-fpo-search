@@ -1,9 +1,10 @@
 import re
 import logging
+import csv
 
 from lingua import Language, LanguageDetectorBuilder
 from train_args import TrainScriptArgsParser
-from typing import List
+from typing import Dict, List
 
 training_args = TrainScriptArgsParser()
 logger = logging.getLogger("cleaning_pipeline")
@@ -25,12 +26,28 @@ def debug(func):
 
 class Cleaner:
     def filter(
-        self, subheading: str, description: str
+        self,
+        subheading: str,
+        description: str,
     ) -> tuple[str | None, str | None, dict]:
         raise NotImplementedError()
 
 
 class CleaningPipeline:
+    """
+    This class represents a pipeline of filters that are applied to subheadings and descriptions.
+
+    The pipeline is applied in order, and if any filter returns None for either the subheading or description,
+    the pipeline will return None for both (effectively skipping this code/description pair out of the model).
+
+    The pipeline can also return metadata from each filter if the return_meta flag is set to True.
+    This helps with debugging and understanding why a particular code/description pair was skipped.
+
+    The pipeline is completely configurable and can be built from a list of chosen filters for a specific use case.
+
+    Setting the log_level to DEBUG will log each filter that is applied to each code/description pair.
+    """
+
     def __init__(self, cleaners: list[Cleaner], return_meta: bool = False) -> None:
         self._filters = cleaners
         self._return_meta = return_meta
@@ -74,12 +91,108 @@ class CleaningPipeline:
         return cls(filters)
 
 
-class StripExcessWhitespace(Cleaner):
+class StripExcessCharacters(Cleaner):
+    """
+    This cleaner is responsible for stripping excess characters from the subheading and description.
+
+    It will strip the following characters from the right side of the subheading and description:
+
+    - Newline characters
+    - Tab characters
+    - Carriage return characters
+    - Period characters
+    - Comma characters
+    """
+
     @debug
     def filter(
         self, subheading: str, description: str
     ) -> tuple[str | None, str | None, dict]:
-        return (subheading.strip(), " ".join(description.split()), {})
+        characters_to_rstrip = ["\n", "\t", "\r", ".", ","]
+        subheading = subheading.strip()
+        description = " ".join(description.split())
+
+        for character in characters_to_rstrip:
+            subheading = subheading.rstrip(character)
+            description = description.rstrip(character)
+
+        return (subheading, description, {})
+
+
+class PluralCleaning(Cleaner):
+    """
+    This cleaner is responsible for cleaning up plural forms of words in the description.
+
+    Other than for specific forms like "size s" (which we preserve) it will convert "women s" to "womens", etc.
+    """
+
+    def __init__(self) -> None:
+        self._size_s = re.compile(r"\bsize\s+s\b")
+        self._plural_s = re.compile(r"\b(\w+)\s+s\b")
+
+    @debug
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        description = re.sub(self._size_s, "size_placeholder", description)
+        description = re.sub(self._plural_s, r"\1s", description)
+        description = re.sub(r"size_placeholder", "size s", description)
+
+        return (subheading, description, {})
+
+
+class IncorrectPairsRemover(Cleaner):
+    """
+    This cleaner is responsible for removing incorrect code-description pairs from the data.
+
+    These were identified by the team and are stored in a CSV file with the following columns:
+    - Description
+    - Known Correct Chapter
+    - Skipped Commodity
+
+    If the description matches the description in the CSV file, the code will be skipped when
+    it matches the skipped code or when its not part of the expected chapter
+    """
+
+    DESCRIPTION_COLUMN = 0
+    SHOULD_BE_CHAPTER_COLUMN = 1
+    SHOULDNT_BE_COMMODITY_COLUMN = 2
+
+    def __init__(self, incorrect_code_desc_pairs: Dict[str, Dict[str, str]]) -> None:
+        self._incorrect_code_desc_pairs = incorrect_code_desc_pairs
+
+    @debug
+    def filter(self, subheading: str, description: str):
+        candidate_skips = self._incorrect_code_desc_pairs.get(description.lower())
+
+        if candidate_skips is None:
+            return (subheading, description, {})
+        else:
+            skipped_code = candidate_skips["skipped_code"] or ""
+            kept_chapter = candidate_skips["kept_chapter"] or None
+
+            if subheading == skipped_code:
+                return (None, None, {"reason": "Incorrect code for description"})
+            elif kept_chapter and subheading[:2] != kept_chapter:
+                return (None, None, {"reason": "Incorrect chapter for description"})
+
+        return (subheading, description, {})
+
+    @classmethod
+    def build(cls, filename: str) -> "IncorrectPairsRemover":
+        with open(filename) as f:
+            csv_reader = csv.reader(f)
+            next(csv_reader)
+
+            return cls(
+                {
+                    row[cls.DESCRIPTION_COLUMN].lower(): {
+                        "skipped_code": row[cls.SHOULDNT_BE_COMMODITY_COLUMN],
+                        "kept_chapter": row[cls.SHOULD_BE_CHAPTER_COLUMN],
+                    }
+                    for row in csv_reader
+                }
+            )
 
 
 class RemoveEmptyDescription(Cleaner):
@@ -109,6 +222,12 @@ class RemoveShortDescription(Cleaner):
 
 
 class RemoveSubheadingsNotMatchingRegexes(Cleaner):
+    """
+    This cleaner filters out subheadings that do not match the provided regexes.
+
+    Typically a subheading matches 6/8 digits (e.g. 12345678) and is used as the code.
+    """
+
     def __init__(self, regexes: list[str]) -> None:
         super().__init__()
         self._regexes = regexes
@@ -128,6 +247,10 @@ class RemoveSubheadingsNotMatchingRegexes(Cleaner):
 
 
 class RemoveDescriptionsMatchingRegexes(Cleaner):
+    """
+    This cleaner filters out descriptions that match the provided regexes.
+    """
+
     def __init__(self, regexes: list[str]) -> None:
         super().__init__()
         self._regexes = regexes
@@ -145,8 +268,32 @@ class RemoveDescriptionsMatchingRegexes(Cleaner):
 
         return (subheading, description, {})
 
+    @classmethod
+    def build(cls):
+        return cls(
+            [
+                r"^\\d+$",  # Skip rows where description contains only numbers
+                r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+                r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+                r"^\d+-\d+$",  # skip numbers with hyphens in between
+                r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+                r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+                r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+                r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+            ]
+        )
+
 
 class LanguageCleaning(Cleaner):
+    """
+    This cleaner filters out known non-English descriptions based on the following criteria:
+    1. If the description is in the list of exact keeps, keep it
+    2. If the description contains a partial keep, keep it
+    3. If the description contains a partial skip, skip it
+    4. If the language of the description cannot be detected, keep it
+    5. If the detected language is not in the preferred languages, skip it
+    """
+
     def __init__(
         self,
         detected_languages: list[str],
@@ -176,15 +323,6 @@ class LanguageCleaning(Cleaner):
     def filter(
         self, subheading: str, description: str
     ) -> tuple[str | None, str | None, dict]:
-        """
-        This method filters out known non-English descriptions based on the following criteria:
-        1. If the description is in the list of exact keeps, keep it
-        2. If the description contains a partial keep, keep it
-        3. If the description contains a partial skip, skip it
-        4. If the language of the description cannot be detected, keep it
-        5. If the detected language is not in the preferred languages, skip it
-        """
-
         language = self._detector.detect_language_of(description)
 
         if description in self._exact_keeps:
@@ -235,6 +373,14 @@ class LanguageCleaning(Cleaner):
 
 
 class NegationCleaning(Cleaner):
+    """
+    This cleaner is responsible for cleaning up negations in the description.
+
+    For example "tomatoes, other than monster beef tomatoes" becomes "tomatoes"
+
+    This helps prevent false positive matches during inference.
+    """
+
     def __init__(
         self, negation_terms: List[str], non_negation_terms: List[str]
     ) -> None:
@@ -283,3 +429,33 @@ class DescriptionLower(Cleaner):
         self, subheading: str, description: str
     ) -> tuple[str | None, str | None, dict]:
         return (subheading, description.lower(), {})
+
+
+class PhraseRemover(Cleaner):
+    """
+    Loads a list of phrases from a file and removes them from the description where the cleaner is applied.
+
+
+    Example where the phrase is "some phrase" a description like "description with some phrase" becomes "description with"
+    """
+
+    def __init__(self, phrases: List[str]) -> None:
+        self._phrases = phrases
+
+    @classmethod
+    def build(cls, filename: str) -> "PhraseRemover":
+        with open(filename) as f:
+            return cls(f.read().splitlines())
+
+    @debug
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        for phrase in self._phrases:
+            description = description.replace(phrase, "")
+
+        description = description.strip()
+        if not description:
+            return (None, None, {"reason": "Empty description"})
+
+        return (subheading, description, {})
