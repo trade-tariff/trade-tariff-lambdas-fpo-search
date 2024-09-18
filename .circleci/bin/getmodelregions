@@ -101,20 +101,24 @@ fetch_availability_zones() {
 }
 
 fetch_subnet_ids_in_default_vpc() {
-  region=$1
-  az=$2
+  local region=$1
+  local az=$2
+  local default_vpc_id
+
+  default_vpc_id=$(fetch_default_vpc_id "$region")
 
   aws ec2 describe-subnets \
     --region "$region" \
-    --query "Subnets[?AvailabilityZone=='$az'].SubnetId" \
+    --filters "Name=vpc-id,Values=$default_vpc_id" "Name=availability-zone,Values=$az" \
+    --query "Subnets[].SubnetId" \
     --output text \
     | tr '\t' '\n' | head -1 | sed 's/\n//'
 }
 
 fetch_security_groups() {
-  name="$1"
-  region=$2
-  default_vpc_id=$3
+  local name="$1"
+  local region=$2
+  local default_vpc_id=$3
 
   # Fetch security groups
   group_id=$(aws ec2 describe-security-groups \
@@ -241,7 +245,7 @@ find_or_import_key_pair() {
 
 main() {
   for region in $(fetch_regions); do
-    if fetch_instance_type_location """$region"; then
+    if fetch_instance_type_location "$region"; then
       local az
       local subnet_ids
       local security_group_id

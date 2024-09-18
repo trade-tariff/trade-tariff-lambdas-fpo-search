@@ -54,33 +54,20 @@ launch_ec2_instance ()
   echo "🚀 Instance Name: $name"
   echo
 
-  for ((i=0; i<retries; i++)); do
-    set +o errexit
-    INSTANCE_ID=$(aws ec2 run-instances \
-      --image-id "$ami_id" \
-      --subnet-id "$subnet_id" \
-      --security-group-ids "$security_group_ids" \
-      --instance-type $instance_type \
-      --key-name "$key_pair_name" \
-      --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
-      --associate-public-ip-address \
-      --region "$region" \
-      --output text \
-      --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
-      --query 'Instances[0].InstanceId' 2>&1)
-    set -o errexit
-
-    if [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
-      echo "$INSTANCE_ID"  # Return the instance ID if successful
-      return 0
-    fi
-
-    echo "Insufficient capacity. Retrying in $delay seconds..."
-    sleep "$delay"
-    delay=$((delay * 2))
-  done
-
-  echo "Failed to launch instance after $retries retries in $region"
+  set +o errexit
+  INSTANCE_ID=$(aws ec2 run-instances \
+    --image-id "$ami_id" \
+    --subnet-id "$subnet_id" \
+    --security-group-ids "$security_group_ids" \
+    --instance-type $instance_type \
+    --key-name "$key_pair_name" \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":512,"DeleteOnTermination":true}}]' \
+    --associate-public-ip-address \
+    --region "$region" \
+    --output text \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
+    --query 'Instances[0].InstanceId' 2>&1)
+  set -o errexit
 }
 
 DESTINATION_REGION=''
@@ -90,8 +77,7 @@ try_launch_ec2_instance ()
   candidate_regions=$(.circleci/bin/getmodelregions \
     --instance-type "$INSTANCE_TYPE" \
     --create-security-group \
-    --create-key-pair \
-    --try-region-count 8)
+    --create-key-pair)
 
   echo
   echo -e "Candidate regions:\n\n$candidate_regions\n"
@@ -101,16 +87,26 @@ try_launch_ec2_instance ()
     exit 1
   fi
 
-  for region in $candidate_regions; do
-    INSTANCE_ID=''
-    IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<< "$region"
+  retries=2
+  delay=5
 
-    launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"
+  for region_info in $candidate_regions; do
+    IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<< "$region_info"
 
-    if [[ "$INSTANCE_ID" != '' ]] || [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
-      DESTINATION_REGION="$region"
-      break
-    fi
+    for ((i=0; i<retries; i++)); do
+      INSTANCE_ID=''
+      launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"
+
+      if [[ "$INSTANCE_ID" != '' ]] && [[ "$INSTANCE_ID" != *"InsufficientInstanceCapacity"* ]]; then
+        DESTINATION_REGION="$region"
+        echo "Successfully launched $instance_type $INSTANCE_ID instance in $region."
+        break 2
+      else
+        echo "Insufficient capacity in $region. Retrying in $delay seconds..."
+        sleep "$delay"
+        delay=$((delay * 2))
+      fi
+    done
   done
 
   if [[ "$INSTANCE_ID" == '' ]] || [[ "$INSTANCE_ID" == *"InsufficientInstanceCapacity"* ]]; then
