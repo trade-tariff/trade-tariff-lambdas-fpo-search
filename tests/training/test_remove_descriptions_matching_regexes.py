@@ -52,6 +52,11 @@ class TestRemoveDescriptionsMatchingRegexes(unittest.TestCase):
             ("15043090", "5234,"),
             (None, None),
         ),
+        # keeps descriptions that do not match any regex
+        (
+            ("15043090", "This is a description"),
+            ("15043090", "This is a description"),
+        ),
     ]
 
     def test_filter(self):
