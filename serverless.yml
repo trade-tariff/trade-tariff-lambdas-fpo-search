@@ -100,7 +100,7 @@ resources:
         Statistic: Average
         Period: 300 # 5 minutes
         EvaluationPeriods: 1
-        Threshold: 20000 # 20 seconds for a cold start of a lambda
+        Threshold: 50000 # 50 seconds for a cold start of a lambda
         ComparisonOperator: GreaterThanOrEqualToThreshold
         AlarmActions:
           - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic

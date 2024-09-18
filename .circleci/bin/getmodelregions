@@ -79,7 +79,7 @@ fetch_regions() {
 }
 
 fetch_instance_type_location() {
-  region=$1
+  local region=$1
   aws ec2 describe-instance-type-offerings \
     --location-type region \
     --filters Name=instance-type,Values="$INSTANCE_TYPE" \
@@ -90,7 +90,7 @@ fetch_instance_type_location() {
 }
 
 fetch_availability_zones() {
-  region=$1
+  local region=$1
   aws ec2 describe-instance-type-offerings \
     --location-type availability-zone \
     --filters Name=instance-type,Values="$INSTANCE_TYPE" \
@@ -135,7 +135,7 @@ fetch_security_groups() {
 }
 
 fetch_default_vpc_id() {
-  region=$1
+  local region=$1
   aws ec2 describe-vpcs \
     --region "$region" \
     --filters "Name=isDefault,Values=true" \

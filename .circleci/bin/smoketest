@@ -6,6 +6,8 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
+sleep 50
+
 URL=$1
 API_KEY=$2
 
