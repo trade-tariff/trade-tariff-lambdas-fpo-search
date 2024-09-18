@@ -80,25 +80,28 @@ if [ "$DESTINATION_REGION" = "" ]; then
 fi
 
 main() {
-  SOURCE_AMI_NAME=$(fetch_source_ami_name)
-  DESTINATION_AMI_ID=$(fetch_destination_ami_name_by_name "$SOURCE_AMI_NAME")
+  local source_ami_name
+  local destination_ami_id
   local ami_status
-  ami_status=$(fetch_destination_ami_status_by_name "$SOURCE_AMI_NAME")
 
-  if [ "$DESTINATION_AMI_ID" == None ]; then
+  source_ami_name=$(fetch_source_ami_name)
+  destination_ami_id=$(fetch_destination_ami_name_by_name "$source_ami_name")
+  ami_status=$(fetch_destination_ami_status_by_name "$source_ami_name")
+
+  if [ "$destination_ami_id" == None ]; then
     echo "Copying AMI $SOURCE_AMI_ID from $SOURCE_REGION to $DESTINATION_REGION"
-    copy_ami "$SOURCE_AMI_NAME"
-    wait_for_copy "$SOURCE_AMI_NAME"
+    copy_ami "$source_ami_name"
+    wait_for_copy "$source_ami_name"
     exit 0
   elif [ "$ami_status" == "available" ]; then
-    echo "AMI $SOURCE_AMI_NAME already exists in $DESTINATION_REGION"
+    echo "AMI $source_ami_name already exists in $DESTINATION_REGION"
     exit 0
   elif [ "$ami_status" == "pending" ]; then
-    echo "AMI $SOURCE_AMI_NAME is still being copied to $DESTINATION_REGION"
-    exit 0
-  else
-    echo "AMI $SOURCE_AMI_NAME is in an unknown state in $DESTINATION_REGION"
+    echo "AMI $source_ami_name is still being copied to $DESTINATION_REGION"
     exit 1
+  else
+    echo "AMI $source_ami_name is in an unknown state in $DESTINATION_REGION"
+    exit 2
   fi
 }
 

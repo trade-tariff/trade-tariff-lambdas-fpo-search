@@ -10,15 +10,15 @@ INSTANCE_ID=''
 
 source .circleci/bin/needsmodel
 
-fetch_account_id ()
-{
+fetch_account_id() {
   aws sts get-caller-identity --query Account --output text
 }
 
-fetch_latest_ami_image_id_by_name ()
-{
-  image_name_query=$1
-  region=${2:-'us-east-1'}
+fetch_latest_ami_image_id_by_name() {
+  local image_name_query=$1
+  local region=${2:-'us-east-1'}
+  local owner
+
   owner=$(fetch_account_id)
 
   aws ec2 describe-images \
@@ -29,8 +29,7 @@ fetch_latest_ami_image_id_by_name ()
     --output text
 }
 
-launch_ec2_instance ()
-{
+launch_ec2_instance() {
   local name="fpo-search-training-$SHA"
   local region=$1
   local az=$2
@@ -38,25 +37,9 @@ launch_ec2_instance ()
   local security_group_ids=$4
   local key_pair_name=$5
   local instance_type=$6
-  local source_ami_region="us-east-1"
-  local ami_id
+  local ami_id=$7
   local output=''
   local status
-
-  ami_id=$(fetch_latest_ami_image_id_by_name "FPO Training*" "$region")
-
-  .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"
-
-  echo "Launching EC2 instance in $region with configuration..."
-  echo
-  echo "🌍 Region: $region"
-  echo "📀 AMI: $ami_id"
-  echo "🤖 Instance Type: $instance_type"
-  echo "☎️📞Subnet ID: $subnet_id"
-  echo "🔓 Security Group IDs: $security_group_ids"
-  echo "🔓 Key Pair Name: $key_pair_name"
-  echo "🚀 Instance Name: $name"
-  echo
 
   set +o errexit
   output=$(aws ec2 run-instances \
@@ -70,12 +53,13 @@ launch_ec2_instance ()
     --region "$region" \
     --output text \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
-    --query 'Instances[0].InstanceId') 2>&1
+    --query 'Instances[0].InstanceId' 2>&1)
   status=$?
   set -o errexit
 
   if [[ $status -eq 0 ]]; then
     echo "$output"
+    return 0
   else
     if echo "$output" | grep -q "InsufficientInstanceCapacity"; then
       echo "Insufficient capacity in $region." >&2
@@ -87,14 +71,14 @@ launch_ec2_instance ()
   fi
 }
 
-try_launch_ec2_instance ()
-{
+try_launch_ec2_instance() {
   local candidate_regions
   local output
   local status
   local retries=2
   local default_delay=5
   local current_delay=$default_delay
+  local source_ami_region="us-east-1"
 
   candidate_regions=$(.circleci/bin/getmodelregions \
     --instance-type "$INSTANCE_TYPE" \
@@ -113,32 +97,54 @@ try_launch_ec2_instance ()
   for region_info in $candidate_regions; do
     current_delay=$default_delay
 
-    local region az subnet_id security_group_ids key_pair_name instance_type
-    IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<< "$region_info"
+    local region az subnet_id security_group_ids key_pair_name instance_type ami_id
+    IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<<"$region_info"
 
-    for ((i=0; i<retries; i++)); do
-      if output=$(launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type"); then
-        INSTANCE_ID=$output
+    for ((i = 0; i < retries; i++)); do
+      if .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"; then
+        ami_id=$(fetch_latest_ami_image_id_by_name "FPO Training*" "$region")
+        status=$?
+        if [[ $status -ne 0 ]]; then
+          echo "Failed to fetch AMI ID after copying from $source_ami_region to $region."
+          return 1
+        fi
+      else
+        echo "Failed to copy AMI from $source_ami_region to $region."
+        return 1
+      fi
+
+      echo "Launching EC2 instance in $region with configuration..."
+      echo
+      echo "🌍 Region: $region"
+      echo "📀 AMI: $ami_id"
+      echo "🤖 Instance Type: $instance_type"
+      echo "☎️📞Subnet ID: $subnet_id"
+      echo "🔓 Security Group IDs: $security_group_ids"
+      echo "🔓 Key Pair Name: $key_pair_name"
+      echo
+      if output=$(launch_ec2_instance "$region" "$az" "$subnet_id" "$security_group_ids" "$key_pair_name" "$instance_type" "$ami_id"); then
+        INSTANCE_ID="$output"
         DESTINATION_REGION="$region"
+        echo "Launched instance in $DESTINATION_REGION with ID $INSTANCE_ID."
         break 2
       else
         status=$?
 
         case $status in
-          1)
-            echo "Failed to launch instance in $region. Received error: $output. Retrying in $current_delay seconds..."
-            sleep "$current_delay"
-            current_delay=$((current_delay * 2))
-            ;;
-          2)
-            echo "Insufficient capacity in $region. Retrying in $current_delay seconds..."
-            sleep "$current_delay"
-            current_delay=$((current_delay * 2))
-            ;;
-          *)
-            echo "Failed to launch instance in $region. Received error: $output."
-            exit 1
-            ;;
+        1)
+          echo "Failed to launch instance in $region. Received error: $output. Retrying in $current_delay seconds..."
+          sleep "$current_delay"
+          current_delay=$((current_delay * 2))
+          ;;
+        2)
+          echo "Insufficient capacity in $region. Retrying in $current_delay seconds..."
+          sleep "$current_delay"
+          current_delay=$((current_delay * 2))
+          ;;
+        *)
+          echo "Failed to launch instance in $region. Received error: $output."
+          exit 1
+          ;;
         esac
       fi
     done
@@ -150,18 +156,15 @@ try_launch_ec2_instance ()
   fi
 }
 
-wait_for_instance_to_be_available ()
-{
+wait_for_instance_to_be_available() {
   aws ec2 wait instance-status-ok --instance-ids "$1" --region "$DESTINATION_REGION"
 }
 
-fetch_ec2_instance_public_ip ()
-{
+fetch_ec2_instance_public_ip() {
   aws ec2 describe-instances --region "$DESTINATION_REGION" --instance-ids "$1" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
 }
 
-store_ec2_private_key ()
-{
+store_ec2_private_key() {
   local secret_id=$1
   local region='eu-west-2'
 
@@ -171,23 +174,20 @@ store_ec2_private_key ()
     --secret-id "$secret_id" \
     --region "$region" \
     --query 'SecretString' \
-    --output text > ~/.ssh/"$KEY_PAIR_NAME".pem
+    --output text >~/.ssh/"$KEY_PAIR_NAME".pem
 
   chmod 600 ~/.ssh/"$KEY_PAIR_NAME".pem
 }
 
-execute_command ()
-{
+execute_command() {
   ssh -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no ec2-user@"$1" "$2"
 }
 
-validate_connection ()
-{
+validate_connection() {
   execute_command "$1" "echo 'Connection successful!'"
 }
 
-bring_code_inline ()
-{
+bring_code_inline() {
   local branch_name
 
   branch_name=$(git rev-parse --abbrev-ref HEAD)
@@ -195,20 +195,17 @@ bring_code_inline ()
   execute_command "$1" "cd $PROJECT && git fetch origin $branch_name:$branch_name && git checkout $branch_name"
 }
 
-load_latest_input_data ()
-{
+load_latest_input_data() {
   aws s3 cp s3://"$MODEL_BUCKET_NAME/raw_source_data.zip" .
   scp -i ~/.ssh/"$KEY_PAIR_NAME".pem -o StrictHostKeyChecking=no raw_source_data.zip ec2-user@"$1":~/"$PROJECT"
   execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
 }
 
-run_training_script_on_ec2_instance ()
-{
+run_training_script_on_ec2_instance() {
   execute_command "$1" "cd $PROJECT && make train"
 }
 
-run_benchmarks_on_ec2_instance ()
-{
+run_benchmarks_on_ec2_instance() {
   local s3_prefix="$VERSION-$SHA"
 
   # Prepare benchmarking data
@@ -226,8 +223,7 @@ run_benchmarks_on_ec2_instance ()
   aws s3 cp benchmark_results.zip s3://"$MODEL_BUCKET_NAME"/"$s3_prefix"/benchmark_results.zip
 }
 
-copy_model_from_ec2_instance ()
-{
+copy_model_from_ec2_instance() {
   local s3_prefix="$VERSION-$SHA"
 
   execute_command "$1" "cd $PROJECT && zip model.zip target/model.pt target/subheadings.pkl"
@@ -237,13 +233,11 @@ copy_model_from_ec2_instance ()
   aws s3 cp search-config.toml s3://"$MODEL_BUCKET_NAME/$s3_prefix/search-config.toml"
 }
 
-terminate_ec2_instance ()
-{
+terminate_ec2_instance() {
   aws ec2 terminate-instances --instance-ids "$1" --region $DESTINATION_REGION
 }
 
-on_exit ()
-{
+on_exit() {
   local old_status=$?
 
   if [[ "$INSTANCE_ID" != '' ]]; then
