@@ -31,8 +31,6 @@ INSTANCE_ID=''
 launch_ec2_instance ()
 {
   name="fpo-search-training-$SHA"
-  retries=2
-  delay=5
   region=$1
   az=$2
   subnet_id=$3
