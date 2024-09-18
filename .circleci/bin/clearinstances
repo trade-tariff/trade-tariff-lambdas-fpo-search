@@ -5,28 +5,61 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-fetch_ec2_instances_for_termination ()
-{
-  aws ec2 describe-instances \
-          --region "us-east-1" \
-          --query 'Reservations[*].Instances[?State.Name==`running`].InstanceId' \
-          --output text |
-          tr '\n' ' '
+fetch_candidate_regions() {
+  local instance_type
+  local region_count
+  local candidate_regions
+
+  instance_type=$(cat .circleci/bin/buildmodel | grep 'INSTANCE_TYPE=' | head -1 | awk -F'=' '{print $2}')
+  region_count=$(cat .circleci/bin/buildmodel | grep 'REGION_COUNT=' | head -1 | awk -F'=' '{print $2}')
+  candidate_regions=$(.circleci/bin/getmodelregions --instance-type $instance_type --try-region-count $region_count)
+
+  echo $candidate_regions | sed 's/ /\n/g' | awk -F'|' '{print $1}'
 }
 
-terminate_ec2_instances ()
-{
-  aws ec2 terminate-instances --instance-ids $1 --region 'us-east-1'
+fetch_ec2_instances_for_termination() {
+  local region=$1
+  local candidate_instance_ids
+
+  candidate_instance_ids=$(aws ec2 describe-instances \
+    --region $region \
+    --filters Name=instance-state-name,Values=running \
+    --query 'Reservations[*].Instances[?State.Name==`running`].InstanceId' \
+    --output text |
+    tr '\n' ' ')
+
+  if [ "$candidate_instance_ids" = "" ]; then
+    return
+  fi
+
+  echo $candidate_instance_ids
 }
 
-echo "Fetching EC2 instances for termination..."
-instance_ids=$(fetch_ec2_instances_for_termination)
-if [ "$instance_ids" = "" ]; then
-  echo "No instances found for termination."
-  exit 0
-fi
+terminate_ec2_instances() {
+  local instance_ids=$1
+  local region=$2
 
-echo "Found instances: $instance_ids"
+  aws ec2 terminate-instances --instance-ids $instance_ids --region $region
+}
 
-echo "Terminating EC2 instances..."
-terminate_ec2_instances $instance_ids
+main() {
+  local regions
+  regions=$(fetch_candidate_regions)
+
+  for region in $regions; do
+    echo "Fetching EC2 instances for termination in region $region..."
+    local instance_ids
+    instance_ids=$(fetch_ec2_instances_for_termination $region)
+
+    if [ "$instance_ids" = "" ]; then
+      echo "No instances found for termination in region $region."
+    else
+      echo "Found instances: $instance_ids"
+      echo "Terminating EC2 instances in region $region..."
+      terminate_ec2_instances "$instance_ids" $region
+    fi
+    echo
+  done
+}
+
+main

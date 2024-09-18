@@ -84,7 +84,7 @@ try_launch_ec2_instance() {
     --instance-type "$INSTANCE_TYPE" \
     --create-security-group \
     --create-key-pair \
-    --try-region-count 8)
+    --try-region-count $REGION_COUNT)
 
   echo
   echo -e "Candidate regions:\n\n$candidate_regions\n"
@@ -258,6 +258,7 @@ else
 fi
 
 INSTANCE_TYPE=p3.8xlarge
+REGION_COUNT=8
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "FPO Training*")
 KEY_PAIR_NAME=fpo-training
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
