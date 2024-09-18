@@ -147,11 +147,11 @@ class IncorrectPairsRemover(Cleaner):
 
     These were identified by the team and are stored in a CSV file with the following columns:
     - Description
-    - Skipped Chapter
+    - Known Correct Chapter
     - Skipped Commodity
 
     If the description matches the description in the CSV file, the code will be skipped when
-    it matches the skipped code or skipped chapter.
+    it matches the skipped code or when its not part of the expected chapter
     """
 
     DESCRIPTION_COLUMN = 0
@@ -267,6 +267,21 @@ class RemoveDescriptionsMatchingRegexes(Cleaner):
             )
 
         return (subheading, description, {})
+
+    @classmethod
+    def build(cls):
+        return cls(
+            [
+                r"^\\d+$",  # Skip rows where description contains only numbers
+                r"^[0-9-]+$",  # Skip rows where description contains only numbers and dashes
+                r"^[./]+$",  # Skip rows where description consists only of a '.' or a '/'
+                r"^\d+-\d+$",  # skip numbers with hyphens in between
+                r"^[0-9*]+$",  # Skip rows where description contains only numbers and asterisks
+                r"^[-+]?\d+(\.\d+)?$",  # skip if just decimal numbers
+                r"^\d+\s+\d+$",  # Skip rows where description contains one or more digits and one or more whitespace characters (including spaces, tabs, and other Unicode spaces)
+                r"^[0-9,]+$",  # Skip rows where description contains only numbers and commas
+            ]
+        )
 
 
 class LanguageCleaning(Cleaner):
@@ -423,6 +438,7 @@ class PhraseRemover(Cleaner):
 
     Example where the phrase is "some phrase" a description like "description with some phrase" becomes "description with"
     """
+
     def __init__(self, phrases: List[str]) -> None:
         self._phrases = phrases
 
@@ -438,7 +454,8 @@ class PhraseRemover(Cleaner):
         for phrase in self._phrases:
             description = description.replace(phrase, "")
 
-        if not description.strip():
+        description = description.strip()
+        if not description:
             return (None, None, {"reason": "Empty description"})
 
         return (subheading, description, {})

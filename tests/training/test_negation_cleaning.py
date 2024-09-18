@@ -10,7 +10,7 @@ logger.addHandler(logging.StreamHandler())
 filter = NegationCleaning.build()
 
 
-class Test_NegationCleaning(unittest.TestCase):
+class TestNegationCleaning(unittest.TestCase):
     EXAMPLES: List[Tuple] = [
         ("some text, not other text", "some text"),
         ("some text, neither other text", "some text"),
@@ -49,7 +49,7 @@ class Test_NegationCleaning(unittest.TestCase):
         ),
     ]
 
-    def test_negation_cleaning(self):
-        for example, expected in Test_NegationCleaning.EXAMPLES:
+    def test_filter(self):
+        for example, expected in TestNegationCleaning.EXAMPLES:
             _, actual, meta = filter.filter("subheading", example) or (None, None, {})
             self.assertEqual(actual, expected)
