@@ -174,7 +174,7 @@ class TrainScriptArgsParser:
             "--model-dropout-layer-1-percentage",
             type=float,
             help="the percentage of dropout to use in the first dropout layer",
-            default=0.2,
+            default=0.1,
         )
         parser.add_argument(
             "--model-dropout-layer-2-percentage",
