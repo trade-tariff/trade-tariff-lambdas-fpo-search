@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+EPOCH=$(date +%s)
+
+update_patch_version() {
+  local raw_current_version
+  local current_version
+  local current_major_version
+  local current_minor_version
+  local current_patch_version
+  local new_patch_version
+  local new_version
+
+  raw_current_version=$(cat search-config.toml | grep version)
+  current_version=$(cat search-config.toml | grep version | cut -d= -f2 | tr -d "[:space:]" | tr -d '"')
+  current_major_version=$(echo $current_version | cut -d. -f1)
+  current_minor_version=$(echo $current_version | cut -d. -f2)
+  current_patch_version=$(echo $current_version | cut -d. -f3)
+  new_patch_version=$((current_patch_version + 1))
+  new_version=$(echo "$current_major_version.$current_minor_version.$new_patch_version")
+
+  sed -i "s/$raw_current_version/version = \"$new_version\"/g" search-config.toml
+}
+
+get_branch_name() {
+  echo "automated-model-run-$EPOCH"
+}
+
+get_model_version() {
+  echo "$(cat search-config.toml | grep version | cut -d= -f2 | tr -d "[:space:]" | tr -d '"')"
+}
+
+checkout_new_branch() {
+  git checkout -b "$(get_branch_name)"
+}
+
+stage_commit_and_push_changes() {
+  git add search-config.toml
+  git commit -m "BAU: Automated model run $EPOCH."
+  git push origin "$(get_branch_name)"
+}
+
+open_pr() {
+  local title
+  local description
+  local base_branch="main"
+  local branch_name
+
+  title="🔄 BAU: Automated model run updated to model version $(get_model_version)"
+  description=$(
+    cat <<EOF
+# Automated Model Run ${EPOCH}
+
+🚀 **What's happening?**
+
+This automated model run has been initiated to incorporate any new data added to the model via the training pipeline's dynamic data sources.
+
+🔔 **Note:**
+This pull request will be **closed automatically** once the model run is complete.
+
+Thank you for your patience! 🙌
+EOF
+  )
+  branch_name=$(get_branch_name)
+
+  gh pr create --title "$title" --body "$description" --base "$base_branch" --head "$branch_name"
+}
+
+tag_branch() {
+  local tag_name
+  local tag_description
+
+  tag_name=$(get_branch_name)-$(get_model_version)
+  tag_description="BAU: Automated model run bumping model to $(get_model_version) on $EPOCH."
+
+  git tag -a $tag_name -m "$tag_description"
+  git push origin $tag_name
+}
+
+main() {
+  update_patch_version
+  checkout_new_branch
+  stage_commit_and_push_changes
+  open_pr
+  tag_branch
+}
+
+main

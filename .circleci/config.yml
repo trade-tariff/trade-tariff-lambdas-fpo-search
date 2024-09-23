@@ -177,6 +177,13 @@ jobs:
           command: .circleci/bin/buildami
           no_output_timeout: 30m
 
+  automated-build-model:
+    executor: base
+    steps:
+      - checkout
+      - run: ".circleci/bin/ghinstall"
+      - run: ".circleci/bin/createpr"
+
   build-model:
     executor: base
     steps:
@@ -367,4 +374,13 @@ workflows:
           <<: *filter-main
     jobs:
       - clear-model-instances:
+          context: trade-tariff-fpo-models-development
+
+  bi-weekly-automated-model-build:
+    # triggers:
+    #   - schedule:
+    #       cron: "0 0 1,15 * *"    # 1st and 15th of every month at midnight UTC
+    #       <<: *filter-main
+    jobs:
+      - automated-build-model:
           context: trade-tariff-fpo-models-development
