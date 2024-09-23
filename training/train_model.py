@@ -47,7 +47,12 @@ class FlatClassifierModelTrainer:
         logger.info("Created model")
         logger.info(model)
 
-        ###Learning rate warm up
+        train_loader = DataLoader(
+            train_dataset, batch_size=self._batch_size, shuffle=True
+        )
+        total_steps = len(train_loader) * self._max_epochs
+
+        # Learning rate warm up
         def lr_lambda(current_step: int):
             warmup_steps = 0.05 * total_steps  # 5% of total steps for warmup
             if current_step < warmup_steps:
@@ -61,12 +66,7 @@ class FlatClassifierModelTrainer:
                 )
             )
 
-
-        train_loader = DataLoader(
-            train_dataset, batch_size=self._batch_size, shuffle=True
-        )
         scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-        total_steps = len(train_loader) * self._max_epochs
 
         batches = len(train_loader)
         size = len(train_dataset)
