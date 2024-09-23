@@ -1,5 +1,5 @@
 name = "fpo-search-model-generator"
-version = "1.7.0"
+version = "1.8.0"
 learning_rate = 0.0011
 max_epochs = 4
 model_batch_size = 1024
@@ -19,5 +19,5 @@ transformer = "all-mpnet-base-v2"
 preferred_languages = [ "ENGLISH",]
 detected_languages = [ "ENGLISH", "FRENCH", "GERMAN", "SPANISH",]
 minimum_relative_distance = 0.7
-model_dropout_layer_1_percentage = 0.2
+model_dropout_layer_1_percentage = 0.1
 model_dropout_layer_2_percentage = 0.5
