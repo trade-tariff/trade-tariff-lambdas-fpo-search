@@ -6,6 +6,7 @@ from model.model import SimpleNN
 from typing import Any, Dict
 from train_args import TrainScriptArgsParser
 import json
+import math
 
 
 logger = logging.getLogger("train")
@@ -49,6 +50,23 @@ class FlatClassifierModelTrainer:
         train_loader = DataLoader(
             train_dataset, batch_size=self._batch_size, shuffle=True
         )
+        total_steps = len(train_loader) * self._max_epochs
+
+        # Learning rate warm up
+        def lr_lambda(current_step: int):
+            warmup_steps = 0.05 * total_steps  # 5% of total steps for warmup
+            if current_step < warmup_steps:
+                return float(current_step) / float(max(1, warmup_steps))
+            return 0.5 * (
+                1
+                + math.cos(
+                    math.pi
+                    * (current_step - warmup_steps)
+                    / float(max(1, total_steps - warmup_steps))
+                )
+            )
+
+        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
         batches = len(train_loader)
         size = len(train_dataset)
@@ -75,6 +93,7 @@ class FlatClassifierModelTrainer:
                 loss = criterion(outputs, loader_labels)
                 loss.backward()
                 optimizer.step()
+                scheduler.step()  # Update learning rate (learning rate warm up)
                 running_loss += loss.item()
 
                 _, predicted = torch.max(outputs.data, 1)
@@ -85,7 +104,6 @@ class FlatClassifierModelTrainer:
                 # Explicitly remove the tensors from the GPU
                 del inputs
                 del loader_labels
-
 
             running_loss /= batches
             correct /= size
