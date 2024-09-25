@@ -7,6 +7,11 @@ set -o pipefail
 
 EPOCH=$(date +%s)
 
+configure_git() {
+  git config --global user.email "noreply@trade-tariff.service.gov.uk"
+  git config --global user.name "trade-tariff-bot"
+}
+
 update_patch_version() {
   local raw_current_version
   local current_version
@@ -83,6 +88,7 @@ tag_branch() {
 }
 
 main() {
+  configure_git
   update_patch_version
   checkout_new_branch
   stage_commit_and_push_changes
