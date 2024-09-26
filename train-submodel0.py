@@ -4,7 +4,6 @@ from fpo_args_parser import FPOArgsParser
 import logging
 from pathlib import Path
 import pickle
-from sklearn.model_selection import train_test_split
 
 import torch
 from training.train_model import (
