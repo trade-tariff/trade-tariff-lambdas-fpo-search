@@ -276,7 +276,7 @@ state_dict, input_size, hidden_size, output_size = trainer.run(
 
 print("💾⇦ Saving model")
 
-model_file = target_dir / "model.pt"
+model_file = target_dir / "model_flat.pt"
 torch.save(state_dict, model_file)
 
 config = toml.load("search-config.toml")
