@@ -214,6 +214,13 @@ jobs:
           name: "Clear Lingering Model Instances"
           command: .circleci/bin/clearinstances
 
+  merge-automated-model-pr:
+    executor: base
+    steps:
+      - checkout
+      - run: ".circleci/bin/ghinstall"
+      - run: ".circleci/bin/mergepr"
+
 workflows:
   version: 2
 
@@ -293,6 +300,15 @@ workflows:
           endpoint: https://search.dev.trade-tariff.service.gov.uk
           requires:
             - deploy-development
+          <<: *filter-not-main
+
+      - merge-automated-model-pr:
+          name: merge-automated-model-pr
+          context: trade-tariff-fpo-models-development
+          requires:
+            - smoketest-development
+            - e2etest-development
+            - perftest-development
           <<: *filter-not-main
 
   deploy-to-staging-and-production:
