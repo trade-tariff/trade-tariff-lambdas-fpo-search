@@ -11,6 +11,8 @@ MODEL_KEY=$(.circleci/bin/getmodel)
 VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
+source .circleci/bin/isautomatedbuild
+
 if [ "$MODEL_KEY" = "" ]; then
   echo "No model for current version found"
   exit 1
@@ -23,6 +25,12 @@ validate_model() {
     echo "Model $MODEL_KEY has not passed validation"
     aws s3 cp --quiet "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/failed" . && {
       echo "Model $MODEL_KEY is marked as failed"
+
+      if is_automated_build; then
+        echo "Automated build, closing PR"
+
+        .circleci/bin/closepr
+      fi
       exit 1
     }
     exit 1
@@ -51,7 +59,7 @@ mark_environment() {
 store_version() {
   echo "Storing version $VERSION_PREFIX"
   rm -f MODEL_VERSION
-  echo "$VERSION_PREFIX" > MODEL_VERSION
+  echo "$VERSION_PREFIX" >MODEL_VERSION
 }
 
 validate_model

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+close_pr() {
+  gh pr close "$CIRCLE_PULL_REQUEST"
+}
+
+delete_branch() {
+  git push origin --delete "$CIRCLE_BRANCH"
+}
+
+main() {
+  .circleci/bin/configuregit
+  close_pr
+  delete_branch
+}
+
+main
