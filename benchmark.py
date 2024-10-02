@@ -127,7 +127,7 @@ filters = [
     RemoveEmptyDescription(),
     DescriptionLower(),
     RemoveShortDescription(min_length=4),
-    RemoveSubheadingsNotMatchingRegexes(regexes=["^\d{" + str(args.digits) + "}$"]),
+    RemoveSubheadingsNotMatchingRegexes(regexes=["^\\d{" + str(args.digits) + "}$"]),
     RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
         detected_languages=training_args.detected_languages(),
@@ -220,6 +220,7 @@ for data_source in data_sources:
 
 
 logger.info(f"Loaded {len(benchmarking_data)} items")
+logger.info(f"Skipping {len(skip_descriptions)} items with ambiguous classifications")
 
 res = {
     "1": 0,
