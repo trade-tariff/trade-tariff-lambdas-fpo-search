@@ -1,5 +1,5 @@
 name = "fpo-search-model-generator"
-version = "1.8.9"
+version = "1.8.10"
 learning_rate = 0.0011
 max_epochs = 4
 model_batch_size = 1024
