@@ -393,10 +393,10 @@ workflows:
           context: trade-tariff-fpo-models-development
 
   bi-weekly-automated-model-build:
-    # triggers:
-    #   - schedule:
-    #       cron: "0 0 1,15 * *"    # 1st and 15th of every month at midnight UTC
-    #       <<: *filter-main
+    triggers:
+      - schedule:
+          cron: "0 0 1,15 * *"    # 1st and 15th of every month at midnight UTC
+          <<: *filter-main
     jobs:
       - automated-build-model:
           context: trade-tariff-fpo-models-development
