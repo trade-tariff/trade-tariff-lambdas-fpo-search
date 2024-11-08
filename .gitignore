@@ -188,3 +188,4 @@ benchmarking_data.zip
 check_result.json
 passed
 failed
+.sentence_transformer_cache
