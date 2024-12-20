@@ -78,7 +78,7 @@ class TrainScriptArgsParser:
             "--embedding-batch-size",
             type=int,
             help="the size of the batches to use when calculating embeddings. You should increase this if your GPU has tonnes of RAM!",
-            default=100,
+            default=25,
         )
         parser.add_argument(
             "--vague-terms-data-file",
@@ -96,7 +96,7 @@ class TrainScriptArgsParser:
             "--cn-data-file",
             type=str,
             help="the path to the CN data file",
-            default="reference_data/CN2024_SelfText_EN_DE_FR.csv",
+            default="reference_data/CN2025_SelfText_EN_DE_FR.csv",
         )
         parser.add_argument(
             "--brands-data-file",
@@ -155,13 +155,17 @@ class TrainScriptArgsParser:
         parser.add_argument(
             "--preferred-languages",
             type=str,
+            nargs="+",
             help="the preferred languages to keep",
+            default=["ENGLISH"],
             required=False,
         )
         parser.add_argument(
             "--detected-languages",
             type=str,
+            nargs="+",
             help="the detected languages to keep",
+            default=["ENGLISH", "FRENCH", "GERMAN", "SPANISH"],
             required=False,
         )
         parser.add_argument(

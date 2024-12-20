@@ -1,220 +1,226 @@
-import toml
-import logging
-import pickle
-import torch
+if __name__ == "__main__":
+    import toml
+    import logging
+    import pickle
+    import torch
 
-from pathlib import Path
+    from pathlib import Path
 
-from data_sources.commodities import CommoditiesDataSource
-from train_args import TrainScriptArgsParser
-from training.prepare_data import TrainingDataLoader
-from training.train_model import FlatClassifierModelTrainer
-from training.create_embeddings import EmbeddingsProcessor
+    from data_sources.commodities import CommoditiesDataSource
+    from train_args import TrainScriptArgsParser
+    from training.filters.map_2024_to_2025_codes import Map2024CodesTo2025Codes
+    from training.prepare_data import TrainingDataLoader
+    from training.train_model import FlatClassifierModelTrainer
+    from training.create_embeddings import EmbeddingsProcessor
 
-from training.cleaning_pipeline import (
-    CleaningPipeline,
-    DescriptionLower,
-    IncorrectPairsRemover,
-    LanguageCleaning,
-    NegationCleaning,
-    PhraseRemover,
-    PluralCleaning,
-    RemoveDescriptionsMatchingRegexes,
-    RemoveEmptyDescription,
-    RemoveShortDescription,
-    RemoveSubheadingsNotMatchingRegexes,
-    StripExcessCharacters,
-)
-
-from data_sources.vague_terms import VagueTermsCSVDataSource
-from data_sources.search_references import SearchReferencesDataSource
-from data_sources.data_source import DataSource
-from data_sources.basic_csv import BasicCSVDataSource
-
-args = TrainScriptArgsParser()
-args.print()
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("train")
-
-cwd = Path(__file__).resolve().parent
-
-target_dir = args.target_dir()
-target_dir.mkdir(parents=True, exist_ok=True)
-
-data_dir = args.data_dir()
-data_dir.mkdir(parents=True, exist_ok=True)
-
-args.reference_dir().mkdir(parents=True, exist_ok=True)
-
-# First load in the training data
-print("💾⇨ Loading training data")
-
-subheadings_file = target_dir / "subheadings.pkl"
-
-language_skips_file = args.pwd() / args.partial_non_english_terms()
-language_keeps_file = args.pwd() / args.partial_english_terms()
-language_keeps_exact_file = args.pwd() / args.exact_english_terms()
-
-with open(language_skips_file, "r") as f:
-    language_skips = f.read().splitlines()
-
-with open(language_keeps_file, "r") as f:
-    language_keeps = f.read().splitlines()
-
-with open(language_keeps_exact_file, "r") as f:
-    language_keeps_exact = f.read().splitlines()
-
-basic_filters = [
-    DescriptionLower(),
-    StripExcessCharacters(),
-    RemoveEmptyDescription(),
-    RemoveShortDescription(min_length=1),
-    RemoveSubheadingsNotMatchingRegexes(
-        regexes=[
-            "^\\d{" + str(args.digits()) + "}$",
-        ]
-    ),
-]
-tradestats_filters = [
-    DescriptionLower(),
-    PhraseRemover.build(args.phrases_to_remove_file()),
-    StripExcessCharacters(),
-    RemoveEmptyDescription(),
-    RemoveShortDescription(min_length=1),
-    RemoveSubheadingsNotMatchingRegexes(
-        regexes=[
-            "^\\d{" + str(args.digits()) + "}$",
-        ]
-    ),
-    RemoveDescriptionsMatchingRegexes.build(),
-    LanguageCleaning(
-        detected_languages=args.detected_languages(),
-        preferred_languages=args.preferred_languages(),
-        partial_skips=language_skips,
-        partial_keeps=language_keeps,
-        exact_keeps=language_keeps_exact,
-    ),
-    IncorrectPairsRemover.build(args.incorrect_description_pairs_file()),
-    PluralCleaning(),
-]
-
-self_texts_filters = basic_filters + [NegationCleaning.build()]
-
-basic_pipeline = CleaningPipeline(basic_filters)
-tradestats_pipeline = CleaningPipeline(tradestats_filters)
-self_texts_pipeline = CleaningPipeline(self_texts_filters)
-
-data_sources: list[DataSource] = []
-
-data_sources.append(VagueTermsCSVDataSource(args.vague_terms_data_file()))
-
-data_sources.append(
-    BasicCSVDataSource(
-        args.extra_references_data_file(),
-        code_col=1,
-        description_col=0,
-        authoritative=True,
-        creates_codes=False,
-        multiplier=5,
+    from training.cleaning_pipeline import (
+        CleaningPipeline,
+        DescriptionLower,
+        IncorrectPairsRemover,
+        LanguageCleaning,
+        NegationCleaning,
+        PhraseRemover,
+        PluralCleaning,
+        RemoveDescriptionsMatchingRegexes,
+        RemoveEmptyDescription,
+        RemoveShortDescription,
+        RemoveSubheadingsNotMatchingRegexes,
+        StripExcessCharacters,
     )
-)
 
-data_sources.append(SearchReferencesDataSource(multiplier=10))
-data_sources.append(CommoditiesDataSource(cleaning_pipeline=self_texts_pipeline))
-data_sources.append(
-    BasicCSVDataSource(
-        args.brands_data_file(),
-        code_col=0,
-        description_col=1,
-        cleaning_pipeline=basic_pipeline,
-        multiplier=3,
-        authoritative=True,
-        creates_codes=False,
+    from data_sources.vague_terms import VagueTermsCSVDataSource
+    from data_sources.search_references import SearchReferencesDataSource
+    from data_sources.data_source import DataSource
+    from data_sources.basic_csv import BasicCSVDataSource
+
+    args = TrainScriptArgsParser()
+    args.print()
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("train")
+
+    cwd = Path(__file__).resolve().parent
+
+    target_dir = args.target_dir()
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    data_dir = args.data_dir()
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    args.reference_dir().mkdir(parents=True, exist_ok=True)
+
+    # First load in the training data
+    print("💾⇨ Loading training data")
+
+    subheadings_file = target_dir / "subheadings.pkl"
+
+    language_skips_file = args.pwd() / args.partial_non_english_terms()
+    language_keeps_file = args.pwd() / args.partial_english_terms()
+    language_keeps_exact_file = args.pwd() / args.exact_english_terms()
+
+    with open(language_skips_file, "r") as f:
+        language_skips = f.read().splitlines()
+
+    with open(language_keeps_file, "r") as f:
+        language_keeps = f.read().splitlines()
+
+    with open(language_keeps_exact_file, "r") as f:
+        language_keeps_exact = f.read().splitlines()
+
+    basic_filters = [
+        DescriptionLower(),
+        StripExcessCharacters(),
+        RemoveEmptyDescription(),
+        RemoveShortDescription(min_length=1),
+        RemoveSubheadingsNotMatchingRegexes(
+            regexes=[
+                "^\\d{" + str(args.digits()) + "}$",
+            ]
+        ),
+        Map2024CodesTo2025Codes(),
+    ]
+    tradestats_filters = [
+        DescriptionLower(),
+        PhraseRemover.build(args.phrases_to_remove_file()),
+        StripExcessCharacters(),
+        RemoveEmptyDescription(),
+        RemoveShortDescription(min_length=1),
+        RemoveSubheadingsNotMatchingRegexes(
+            regexes=[
+                "^\\d{" + str(args.digits()) + "}$",
+            ]
+        ),
+        RemoveDescriptionsMatchingRegexes.build(),
+        LanguageCleaning(
+            detected_languages=args.detected_languages(),
+            preferred_languages=args.preferred_languages(),
+            partial_skips=language_skips,
+            partial_keeps=language_keeps,
+            exact_keeps=language_keeps_exact,
+        ),
+        IncorrectPairsRemover.build(args.incorrect_description_pairs_file()),
+        PluralCleaning(),
+    ]
+
+    self_texts_filters = basic_filters + [NegationCleaning.build()]
+
+    basic_pipeline = CleaningPipeline(basic_filters)
+    tradestats_pipeline = CleaningPipeline(tradestats_filters)
+    self_texts_pipeline = CleaningPipeline(self_texts_filters)
+
+    data_sources: list[DataSource] = []
+
+    data_sources.append(VagueTermsCSVDataSource(args.vague_terms_data_file()))
+
+    data_sources.append(
+        BasicCSVDataSource(
+            args.extra_references_data_file(),
+            code_col=1,
+            description_col=0,
+            authoritative=True,
+            creates_codes=False,
+            multiplier=5,
+        )
     )
-)
-data_sources.append(
-    BasicCSVDataSource(
-        args.cn_data_file(),
-        code_col=1,
-        description_col=3,
-        cleaning_pipeline=self_texts_pipeline,
-        authoritative=True,
-        creates_codes=True,
-        multiplier=2,
+
+    data_sources.append(
+        BasicCSVDataSource(
+            args.cn_data_file(),
+            code_col=1,
+            description_col=2,
+            cleaning_pipeline=self_texts_pipeline,
+            authoritative=True,
+            creates_codes=True,
+            multiplier=3,
+        )
     )
-)
-
-data_sources += [
-    BasicCSVDataSource(
-        filename,
-        cleaning_pipeline=tradestats_pipeline,
-        encoding="latin_1",
+    data_sources.append(SearchReferencesDataSource(multiplier=10))
+    data_sources.append(CommoditiesDataSource(cleaning_pipeline=self_texts_pipeline))
+    data_sources.append(
+        BasicCSVDataSource(
+            args.brands_data_file(),
+            code_col=0,
+            description_col=1,
+            cleaning_pipeline=basic_pipeline,
+            multiplier=3,
+            authoritative=True,
+            creates_codes=False,
+        )
     )
-    for filename in Path(args.tradesets_data_dir()).glob("*.csv")
-]
 
-training_data_loader = TrainingDataLoader()
+    data_sources += [
+        BasicCSVDataSource(
+            filename,
+            cleaning_pipeline=tradestats_pipeline,
+            encoding="latin_1",
+        )
+        for filename in Path(args.tradesets_data_dir()).glob("*.csv")
+    ]
 
-(unique_text_values, subheadings, text_indexes, labels) = training_data_loader.fetch_data(
-    data_sources, args.digits()
-)
+    training_data_loader = TrainingDataLoader()
 
-print(f"Found {len(unique_text_values)} unique descriptions")
+    (
+        unique_text_values,
+        subheadings,
+        text_indexes,
+        labels,
+    ) = training_data_loader.fetch_data(data_sources, args.digits())
 
-print("💾⇦ Saving subheadings")
-with open(subheadings_file, "wb") as fp:
-    pickle.dump(subheadings, fp)
+    print(f"Found {len(unique_text_values)} unique descriptions")
 
-# Impose the limit if required - this will limit the number of unique descriptions
-if args.limit() is not None:
-    unique_text_values = unique_text_values[: args.limit()]
+    print("💾⇦ Saving subheadings")
+    with open(subheadings_file, "wb") as fp:
+        pickle.dump(subheadings, fp)
 
-    new_texts: list[int] = []
-    new_labels: list[int] = []
+    # Impose the limit if required - this will limit the number of unique descriptions
+    if args.limit() is not None:
+        unique_text_values = unique_text_values[: args.limit()]
 
-    for i, t in enumerate(text_indexes):
-        if t < len(unique_text_values):
-            new_texts.append(t)
-            new_labels.append(labels[i])
+        new_texts: list[int] = []
+        new_labels: list[int] = []
 
-    text_indexes = new_texts
-    labels = new_labels
+        for i, t in enumerate(text_indexes):
+            if t < len(unique_text_values):
+                new_texts.append(t)
+                new_labels.append(labels[i])
 
-# Next create the embeddings
-print("Creating the embeddings")
+        text_indexes = new_texts
+        labels = new_labels
 
-embeddings_processor = EmbeddingsProcessor(
-    transformer_model=args.transformer(),
-    torch_device=args.torch_device(),
-    batch_size=args.embedding_batch_size(),
-)
+    # Next create the embeddings
+    print("Creating the embeddings")
 
-unique_embeddings = embeddings_processor.create_embeddings(unique_text_values)
+    embeddings_processor = EmbeddingsProcessor(
+        transformer_model=args.transformer(),
+        torch_device=args.torch_device(),
+        batch_size=args.embedding_batch_size(),
+    )
 
-# Now build and train the network
-trainer = FlatClassifierModelTrainer(args)
+    unique_embeddings = embeddings_processor.create_embeddings(unique_text_values)
 
-# Convert the labels to a Tensor
-labels = torch.tensor(labels, dtype=torch.long)
+    # Now build and train the network
+    trainer = FlatClassifierModelTrainer(args)
 
-embeddings = torch.stack([unique_embeddings[idx] for idx in text_indexes])
+    # Convert the labels to a Tensor
+    labels = torch.tensor(labels, dtype=torch.long)
 
-state_dict, input_size, hidden_size, output_size = trainer.run(
-    embeddings, labels, len(subheadings)
-)
+    embeddings = torch.stack([unique_embeddings[idx] for idx in text_indexes])
 
-print("💾⇦ Saving model")
+    state_dict, input_size, hidden_size, output_size = trainer.run(
+        embeddings, labels, len(subheadings)
+    )
 
-model_file = target_dir / "model.pt"
-torch.save(state_dict, model_file)
+    print("💾⇦ Saving model")
 
-config = toml.load("search-config.toml")
-config["model_input_size"] = input_size
-config["model_hidden_size"] = hidden_size
-config["model_output_size"] = output_size
+    model_file = target_dir / "model.pt"
+    torch.save(state_dict, model_file)
 
-with open("search-config.toml", "w") as f:
-    toml.dump(config, f)
+    config = toml.load("search-config.toml")
+    config["model_input_size"] = input_size
+    config["model_hidden_size"] = hidden_size
+    config["model_output_size"] = output_size
 
-print("✅ Training complete. Enjoy your model!")
+    with open("search-config.toml", "w") as f:
+        toml.dump(config, f)
+
+    print("✅ Training complete. Enjoy your model!")
