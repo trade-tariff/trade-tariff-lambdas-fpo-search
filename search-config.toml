@@ -1,12 +1,12 @@
 name = "fpo-search-model-generator"
-version = "1.8.0"
+version = "1.9.0"
 learning_rate = 0.0011
 max_epochs = 4
 model_batch_size = 1024
 embedding_batch_size = 250
 vague_terms_data_file = "reference_data/vague_terms.csv"
 extra_data_file = "reference_data/extra_references.csv"
-cn_data_file = "reference_data/CN2024_SelfText_EN_DE_FR.csv"
+cn_data_file = "reference_data/CN2025_SelfText_EN_DE_FR.csv"
 exact_english_terms = "reference_data/exact_english_terms.txt"
 partial_english_terms = "reference_data/partial_english_terms.txt"
 partial_non_english_terms = "reference_data/partial_non_english_terms.txt"
