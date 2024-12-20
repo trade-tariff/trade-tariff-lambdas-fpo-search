@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     from data_sources.commodities import CommoditiesDataSource
     from train_args import TrainScriptArgsParser
-    from training.filters.map_2024_to_2025_codes import Map2024CodesTo2025Codes
+    from training.cleaners.map_2024_to_2025_codes import Map2024CodesTo2025Codes
     from training.prepare_data import TrainingDataLoader
     from training.train_model import FlatClassifierModelTrainer
     from training.create_embeddings import EmbeddingsProcessor
