@@ -2,7 +2,7 @@ import logging
 from typing import List, Tuple
 import unittest
 
-from training.filters.map_2024_to_2025_codes import Map2024CodesTo2025Codes
+from training.cleaners.map_2024_to_2025_codes import Map2024CodesTo2025Codes
 
 logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler())
