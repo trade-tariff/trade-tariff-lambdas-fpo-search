@@ -48,5 +48,5 @@ tqdm==4.66.3
 transformers==4.39.3
 typing_extensions==4.11.0
 urllib3==2.2.2
-virtualenv==20.25.1
+virtualenv==20.26.6
 wcwidth==0.2.13
