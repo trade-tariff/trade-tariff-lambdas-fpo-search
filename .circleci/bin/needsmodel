@@ -8,7 +8,7 @@ set -o noclobber
 needsmodel ()
 {
   versions_unsorted=$(git --no-pager diff main search-config.toml | grep version | sed 's/^[+|-]//g')
-  versions_sorted=$(git --no-pager diff main search-config.toml | grep version | sed 's/^[+|-]//g' | sort)
+  versions_sorted=$(git --no-pager diff main search-config.toml | grep version | sed 's/^[+|-]//g' | sort -V)
 
   # No change to versions
   if [[ -z "$versions_unsorted" ]]; then
