@@ -8,9 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class SearchReferencesDataSource(DataSource):
-    SEARCH_REFS_API_URL = (
-        "https://staging.trade-tariff.service.gov.uk/api/v2/search_references"
-    )
+    SEARCH_REFS_API_URL = "https://trade-tariff.service.gov.uk/api/v2/search_references"
     DEFAULT_PATH = "reference_data/search_references.json"
 
     def __init__(
@@ -56,9 +54,9 @@ class SearchReferencesDataSource(DataSource):
         commodities = {}
         for entry in json_entries:
             if entry["attributes"]["referenced_class"] in ["Commodity", "Subheading"]:
-                commodities[entry["attributes"]["negated_title"].strip().lower()] = (
-                    entry["attributes"]["goods_nomenclature_item_id"]
-                )
+                commodities[
+                    entry["attributes"]["negated_title"].strip().lower()
+                ] = entry["attributes"]["goods_nomenclature_item_id"]
 
         self._commodities = commodities
         return commodities

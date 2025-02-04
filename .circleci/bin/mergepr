@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+[[ "$TRACE" ]] && set -o xtrace
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source .circleci/bin/isautomatedbuild
+
+merge_pr() {
+  gh pr merge "$CIRCLE_PULL_REQUEST"
+}
+
+main() {
+  .circleci/bin/configuregit
+
+  if is_automated_build; then
+    echo "Automated build, merging PR"
+
+    merge_pr
+  fi
+}
+
+main

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o noclobber
+
+get_current_head_tags() {
+  git tag --points-at HEAD
+}
+
+is_automated_build() {
+  if [[ "$(get_current_head_tags)" == *"automated-model-run"* ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
