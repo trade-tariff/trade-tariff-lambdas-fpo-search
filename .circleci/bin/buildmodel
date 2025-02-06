@@ -257,7 +257,7 @@ else
   exit 0
 fi
 
-INSTANCE_TYPE=p3.8xlarge
+INSTANCE_TYPE=g6e.8xlarge
 REGION_COUNT=8
 LATEST_AMI=$(fetch_latest_ami_image_id_by_name "FPO Training*")
 KEY_PAIR_NAME=fpo-training
