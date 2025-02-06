@@ -37,10 +37,10 @@ class CommoditiesDataSource(DataSource):
         multiplier: int = 1,
     ):
         url = f"{self.HOST}{self.PATH}"
-        today = datetime.datetime.now()
-        year = str(today.year)
-        month = str(today.month).rjust(2, "0")
-        day = str(today.day).rjust(2, "0")
+        yesterday = datetime.datetime.today() - datetime.timedelta(days=1)
+        year = str(yesterday.year)
+        month = str(yesterday.month).rjust(2, "0")
+        day = str(yesterday.day).rjust(2, "0")
 
         url = (
             url.replace(":service", service)
