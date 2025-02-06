@@ -25,6 +25,7 @@ class EmbeddingsProcessor:
             texts,
             batch_size=self._batch_size,
             show_progress_bar=True,
+            normalize_embeddings=True,
             convert_to_numpy=True,  # Avoid OOM issues for large datasets
         )
 
