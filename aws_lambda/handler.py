@@ -117,6 +117,11 @@ class LambdaHandler:
 
     @log_handler
     def handle_fpo_code_search_post(self, event, _context):
+        if not event.get("body"):
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Request body is required"}),
+            }
         try:
             body = json.loads(event.get("body", {}))
         except json.JSONDecodeError as e:
