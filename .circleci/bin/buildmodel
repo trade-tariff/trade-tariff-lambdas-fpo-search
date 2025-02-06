@@ -201,6 +201,10 @@ load_latest_input_data() {
   execute_command "$1" "cd $PROJECT && unzip raw_source_data.zip"
 }
 
+install_deps_on_ec2_instance() {
+  execute_command "$1" "cd $PROJECT && pip install -r requirements.txt"
+}
+
 run_training_script_on_ec2_instance() {
   execute_command "$1" "cd $PROJECT && make train"
 }
@@ -302,6 +306,9 @@ bring_code_inline "$PUBLIC_IP"
 
 echo "Loading latest input data..."
 load_latest_input_data "$PUBLIC_IP"
+
+echo "Install Python dependencies on EC2 instance..."
+install_deps_on_ec2_instance "$PUBLIC_IP"
 
 echo "Running training script on EC2 instance..."
 run_training_script_on_ec2_instance "$PUBLIC_IP"
