@@ -30,7 +30,7 @@ Example:
 EOF
 )
 INSTANCE_TYPE=""
-TRY_REGION_COUNT=5
+TRY_REGION_COUNT=20
 CREATE_SECURITY_GROUP="false"
 CREATE_KEY_PAIR="false"
 
@@ -70,10 +70,23 @@ if [ "$INSTANCE_TYPE" = "" ]; then
 fi
 
 fetch_regions() {
-  aws ec2 describe-regions \
-    --query 'Regions[].RegionName' \
-    --output text \
-    | tr '\t' '\n' \
+  # Rather convoluted way to get the list of regions for an instance type in order of price ascending
+  aws pricing get-products --service-code AmazonEC2 --region us-east-1 \
+    --filters Type=TERM_MATCH,Field=instanceType,Value="$INSTANCE_TYPE" \
+              Type=TERM_MATCH,Field=operatingSystem,Value=Linux \
+              Type=TERM_MATCH,Field=tenancy,Value=Shared \
+              Type=TERM_MATCH,Field=preInstalledSw,Value=NA \
+    --output json | jq -r '
+        [.PriceList[] |
+            try fromjson catch null |
+            select(type == "object" and .product.attributes.regionCode != null) |
+            {regionCode: .product.attributes.regionCode,
+             price: (.terms.OnDemand | to_entries[] | .value.priceDimensions | to_entries[] | .value.pricePerUnit.USD // empty | tonumber)}
+        ]
+        | group_by(.regionCode)
+        | map(max_by(.price))
+        | sort_by(.price)
+        | .[].regionCode' \
     | head -n "$TRY_REGION_COUNT" \
     | sed 's/\n/\t/'
 }
