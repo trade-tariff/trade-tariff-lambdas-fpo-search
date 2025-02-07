@@ -15,7 +15,7 @@ class SimpleNN(nn.Module):
             p=dropout_prob1
         )  # Add dropout layer on incoming (visible) units
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
+        self.relu = nn.LeakyReLU()
         self.dropout2 = nn.Dropout(p=dropout_prob2)  # Keep the dropout layer
         self.fc2 = nn.Linear(hidden_size, output_size)
 
