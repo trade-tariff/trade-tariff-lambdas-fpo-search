@@ -1,7 +1,6 @@
 from logging import Logger
 import logging
-import os
-from pathlib import Path
+from aws_lambda_powertools import Logger as AWSLogger
 
 import torch
 from sentence_transformers import SentenceTransformer
@@ -15,8 +14,6 @@ args.load_config_file()
 
 score_cutoff = 0.05  # We won't send back any results with a score lower than this
 vague_term_code = "vvvvvvvvvv"
-
-logger: Logger = logging.getLogger("inference")
 
 
 class ClassificationResult:
@@ -40,20 +37,25 @@ class FlatClassifier(Classifier):
         self,
         subheadings: list[str],
         device: str,
+        offline: bool = False,
+        logger: Logger | AWSLogger = logging.getLogger("inference"),
     ) -> None:
         super().__init__()
 
-        logger.info(
-            f"💾⇨ Sentence Transformer cache directory: {args.transformer_model_directory()}"
-        )
-
         self._subheadings = subheadings
-        self._device = torch.device(device)
+        self._device = device
         self._logger = logger
 
         # Load the model from disk
         self._model = self.load_model().to(self._device)
-        self._sentence_transformer_model = self.load_sentence_transformer()
+
+        logger.info(
+            f"💾⇨ Sentence Transformers running in {'Offline' if offline else 'Online'} mode"
+        )
+
+        self._sentence_transformer_model = SentenceTransformer(
+            args.transformer(), device=self._device, local_files_only=offline
+        )
 
     def classify(
         self, search_text: str, limit: int = 5, digits: int = 6
@@ -87,13 +89,15 @@ class FlatClassifier(Classifier):
 
         result = []
 
+        vague_term_truncated = vague_term_code[:digits]
+
         for i in top_results:
             # If the score is less than the cutoff then stop iterating through
             if i[1] < score_cutoff:
                 break
 
             # If we've hit the vague terms code then we'll stop iterating through
-            if i[0] == vague_term_code[:digits]:
+            if i[0] == vague_term_truncated:
                 break
 
             result.append(ClassificationResult(i[0], i[1]))
@@ -103,7 +107,7 @@ class FlatClassifier(Classifier):
     def load_model(self):
         model_file = args.target_dir() / "model.pt"
 
-        logger.info(f"💾⇨ Loading model file: {model_file}")
+        self._logger.info(f"💾⇨ Loading model file: {model_file}")
 
         model = SimpleNN(
             args.model_input_size(),
@@ -116,29 +120,11 @@ class FlatClassifier(Classifier):
         try:
             model.load_state_dict(torch.load(model_file, map_location=self._device))
         except Exception as e:
-            logger.error(f"Failed to load the model: {e}")
+            self._logger.error(f"Failed to load the model: {e}")
             raise e
 
         model.eval()
 
-        logger.info("🧠⚡ Model loaded")
+        self._logger.info("🧠⚡ Model loaded")
 
         return model
-
-    def load_sentence_transformer(self) -> SentenceTransformer:
-        if Path(args.transformer_model_directory()).exists():
-            logger.info(
-                f"💾⇨ Loading Sentence Transformer model from {args.transformer_model_directory()}"
-            )
-
-            exists = os.path.isdir(args.transformer_model_directory())
-            logger.info(f"💾⇨ Sentence Transformer model exists: {exists}")
-            return SentenceTransformer(
-                args.transformer_model_directory(), device=self._device
-            )
-        else:
-            logger.info(
-                f"💾⇨ Downloading Sentence Transformer model {args.transformer()}"
-            )
-            # Otherwise download it from the HuggingFace model hub
-            return SentenceTransformer(args.transformer(), device=self._device)
