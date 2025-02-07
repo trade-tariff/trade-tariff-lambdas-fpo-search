@@ -33,6 +33,7 @@ INSTANCE_TYPE=""
 TRY_REGION_COUNT=20
 CREATE_SECURITY_GROUP="false"
 CREATE_KEY_PAIR="false"
+PREFERRED_REGIONS="us-east-1,us-west-2,us-east-2,eu-west-1,eu-west-2,eu-central-1,ap-southeast-1,ap-northeast-1"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -70,25 +71,10 @@ if [ "$INSTANCE_TYPE" = "" ]; then
 fi
 
 fetch_regions() {
-  # Rather convoluted way to get the list of regions for an instance type in order of price ascending
-  aws pricing get-products --service-code AmazonEC2 --region us-east-1 \
-    --filters Type=TERM_MATCH,Field=instanceType,Value="$INSTANCE_TYPE" \
-              Type=TERM_MATCH,Field=operatingSystem,Value=Linux \
-              Type=TERM_MATCH,Field=tenancy,Value=Shared \
-              Type=TERM_MATCH,Field=preInstalledSw,Value=NA \
-    --output json | jq -r '
-        [.PriceList[] |
-            try fromjson catch null |
-            select(type == "object" and .product.attributes.regionCode != null) |
-            {regionCode: .product.attributes.regionCode,
-             price: (.terms.OnDemand | to_entries[] | .value.priceDimensions | to_entries[] | .value.pricePerUnit.USD // empty | tonumber)}
-        ]
-        | group_by(.regionCode)
-        | map(max_by(.price))
-        | sort_by(.price)
-        | .[].regionCode' \
+  echo "$PREFERRED_REGIONS" \
+    | sed 's/,/\n/g' \
     | head -n "$TRY_REGION_COUNT" \
-    | sed 's/\n/\t/'
+    | sed 's/\n/\t/g'
 }
 
 fetch_instance_type_location() {
