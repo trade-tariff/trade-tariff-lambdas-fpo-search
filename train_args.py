@@ -78,7 +78,7 @@ class TrainScriptArgsParser:
             "--embedding-batch-size",
             type=int,
             help="the size of the batches to use when calculating embeddings. You should increase this if your GPU has tonnes of RAM!",
-            default=100,
+            default=25,
         )
         parser.add_argument(
             "--vague-terms-data-file",
@@ -96,7 +96,7 @@ class TrainScriptArgsParser:
             "--cn-data-file",
             type=str,
             help="the path to the CN data file",
-            default="reference_data/CN2024_SelfText_EN_DE_FR.csv",
+            default="reference_data/CN2025_SelfText_EN_DE_FR.csv",
         )
         parser.add_argument(
             "--brands-data-file",
@@ -129,12 +129,6 @@ class TrainScriptArgsParser:
             default="all-mpnet-base-v2",
         )
         parser.add_argument(
-            "--transformer-cache-directory",
-            type=str,
-            help="the cache directory for the transformer",
-            default="/tmp/sentence_transformers/",
-        )
-        parser.add_argument(
             "--exact-english-terms",
             type=str,
             help="the path to the known english terms that match descriptions exactly.",
@@ -155,13 +149,17 @@ class TrainScriptArgsParser:
         parser.add_argument(
             "--preferred-languages",
             type=str,
+            nargs="+",
             help="the preferred languages to keep",
+            default=["ENGLISH"],
             required=False,
         )
         parser.add_argument(
             "--detected-languages",
             type=str,
+            nargs="+",
             help="the detected languages to keep",
+            default=["ENGLISH", "FRENCH", "GERMAN", "SPANISH"],
             required=False,
         )
         parser.add_argument(
@@ -210,12 +208,6 @@ class TrainScriptArgsParser:
         logger.info(f"  data_dir: {self.data_dir()}")
         logger.info(f"  target_dir: {self.target_dir()}")
         logger.info(f"  transformer: {self.transformer()}")
-        logger.info(
-            f"  transformer_cache_directory: {self.transformer_cache_directory()}"
-        )
-        logger.info(
-            f"  transformer_model_directory: {self.transformer_model_directory()}"
-        )
         logger.info(f"  partial_english_terms: {self.partial_english_terms()}")
         logger.info(f"  partial_non_english_terms: {self.partial_non_english_terms()}")
         logger.info(f"  exact_english_terms: {self.exact_english_terms()}")
@@ -248,13 +240,6 @@ class TrainScriptArgsParser:
 
     def pwd(self):
         return Path(__file__).resolve().parent
-
-    def transformer_model_directory(self):
-        return (
-            self.transformer_cache_directory()
-            + "sentence-transformers_"
-            + self.transformer()
-        )
 
     @config_from_file
     def device(self):
@@ -315,10 +300,6 @@ class TrainScriptArgsParser:
     @config_from_file
     def transformer(self):
         return self.parsed_args.transformer
-
-    @config_from_file
-    def transformer_cache_directory(self):
-        return self.parsed_args.transformer_cache_directory
 
     @config_from_file
     def model_input_size(self):

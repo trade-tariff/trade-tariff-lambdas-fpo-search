@@ -24,7 +24,9 @@ logger.info("🚀⇨ Subheadings loaded in %.2fms", (time.perf_counter() - start
 start = time.perf_counter()
 logger.info("🚀⇨ Loading static classifier")
 
-classifier = FlatClassifier(subheadings, "cpu")
+classifier = FlatClassifier(
+    subheadings, "cpu", offline=(os.environ.get("OFFLINE", "0") == "1"), logger=logger
+)
 logger.info(
     "🚀⇨ Static classifier loaded in %.2fms", (time.perf_counter() - start) * 1000
 )

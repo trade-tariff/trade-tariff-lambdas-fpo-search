@@ -39,7 +39,7 @@ function get_latest_versions() {
       for (version in latest) {
           print latest[version]
       }
-  }' | sort
+  }' | sort -V
 }
 
 get_latest_versions | tail -n "$NUMBER_OF_VERSIONS"
