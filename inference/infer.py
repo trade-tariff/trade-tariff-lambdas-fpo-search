@@ -67,6 +67,7 @@ class FlatClassifier(Classifier):
             convert_to_tensor=True,
             device=self._device,
             show_progress_bar=False,
+            normalize_embeddings=True,
         )
 
         # Run it through the model to get the predictions
