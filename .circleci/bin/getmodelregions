@@ -30,9 +30,10 @@ Example:
 EOF
 )
 INSTANCE_TYPE=""
-TRY_REGION_COUNT=5
+TRY_REGION_COUNT=20
 CREATE_SECURITY_GROUP="false"
 CREATE_KEY_PAIR="false"
+PREFERRED_REGIONS="us-east-1,us-west-2,us-east-2,eu-west-1,eu-west-2,eu-central-1,ap-southeast-1,ap-northeast-1"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -70,12 +71,10 @@ if [ "$INSTANCE_TYPE" = "" ]; then
 fi
 
 fetch_regions() {
-  aws ec2 describe-regions \
-    --query 'Regions[].RegionName' \
-    --output text \
-    | tr '\t' '\n' \
+  echo "$PREFERRED_REGIONS" \
+    | sed 's/,/\n/g' \
     | head -n "$TRY_REGION_COUNT" \
-    | sed 's/\n/\t/'
+    | sed 's/\n/\t/g'
 }
 
 fetch_instance_type_location() {
