@@ -1,18 +1,21 @@
 from logging import Logger
 import logging
+from math import floor
 from aws_lambda_powertools import Logger as AWSLogger
 
+import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 from model.model import SimpleNN
 
 from train_args import TrainScriptArgsParser
 
-
 args = TrainScriptArgsParser()
 args.load_config_file()
 
-score_cutoff = 0.05  # We won't send back any results with a score lower than this
+score_cutoff = 0.01 # We won't send back any results with a score lower than this
+top_n_softmax_percent = 0.05  # We only softmax over the top 5% of results to ignore the long tail of nonsense ones
+cumulative_cutoff = 0.9
 vague_term_code = "vvvvvvvvvv"
 
 
@@ -71,11 +74,11 @@ class FlatClassifier(Classifier):
         )
 
         # Run it through the model to get the predictions
-        predictions = torch.nn.functional.softmax(self._model(new_embeddings), dim=1)
+        results = self._model(new_embeddings)
 
         predictions_to_digits = {}
 
-        for i, prediction in enumerate(predictions[0]):
+        for i, prediction in enumerate(results[0]):
             code = str(self._subheadings[i])[:digits]
             score = prediction.item()
 
@@ -86,22 +89,53 @@ class FlatClassifier(Classifier):
 
         top_results = sorted(
             predictions_to_digits.items(), key=lambda x: x[1], reverse=True
-        )[:limit]
+        )
+
+        top_results = top_results[: floor(len(top_results) * top_n_softmax_percent)]
+
+        # Extract values
+        values = np.array([val for _, val in top_results])
+
+        # Compute softmax
+        exp_values = np.exp(
+            values - np.max(values)
+        )  # Subtract max for numerical stability
+        softmax_values = exp_values / np.sum(exp_values)
+
+        max = np.max(softmax_values)
+        min_confidence = 0.5
+
+        softmax_results = [
+            (category, softmax)
+            for (category, _), softmax in zip(top_results, softmax_values)
+            if max * min_confidence <= softmax
+        ]
 
         result = []
 
         vague_term_truncated = vague_term_code[:digits]
 
-        for i in top_results:
+        cumulative_score = 0
+
+        for i in softmax_results:
+            classification = ClassificationResult(i[0], i[1])
             # If the score is less than the cutoff then stop iterating through
-            if i[1] < score_cutoff:
+            if classification.score < score_cutoff:
                 break
 
-            # If we've hit the vague terms code then we'll stop iterating through
-            if i[0] == vague_term_truncated:
+            # If we've hit the vague terms code then we'll skip it
+            if classification.code == vague_term_truncated:
+                continue
+
+            result.append(classification)
+
+            cumulative_score += classification.score
+
+            if len(result) >= limit:
                 break
 
-            result.append(ClassificationResult(i[0], i[1]))
+            if cumulative_score >= cumulative_cutoff:
+                break
 
         return result
 

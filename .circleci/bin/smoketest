@@ -49,6 +49,14 @@ if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
   exit 1
 fi
 
+# Ensure it handles known shorter descriptions
+HAS_CORRECT_CODE=$(has_correct_code "trousers" "620462")
+
+if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
+  echo "ERROR: Expected trousers to have a code but not found" >&2
+  exit 1
+fi
+
 # Ensure it handles vague terms
 HAS_NO_RESULTS=$(has_no_results "bits")
 

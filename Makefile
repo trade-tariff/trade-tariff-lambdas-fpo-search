@@ -82,7 +82,7 @@ test:
 	${PYTHON} -m unittest -v -b
 
 test-infer:
-	${PYTHON} infer.py "jewelry"
+	${PYTHON} infer.py "trousers"
 
 benchmark-goods-descriptions:
 	${PYTHON} benchmark.py \
