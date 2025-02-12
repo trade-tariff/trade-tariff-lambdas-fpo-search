@@ -4,7 +4,7 @@ from aws_lambda_powertools import Logger as AWSLogger
 
 import torch
 from sentence_transformers import SentenceTransformer
-from model.model import SimpleNN
+from model.classifier_model import ClassifierModel
 
 from train_args import TrainScriptArgsParser
 
@@ -110,7 +110,7 @@ class FlatClassifier(Classifier):
 
         self._logger.info(f"💾⇨ Loading model file: {model_file}")
 
-        model = SimpleNN(
+        model = ClassifierModel(
             args.model_input_size(),
             args.model_hidden_size(),
             args.model_output_size(),

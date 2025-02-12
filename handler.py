@@ -5,7 +5,7 @@ import os
 import sentry_sdk
 
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
-from aws_lambda.handler import LambdaHandler
+from aws_lambda.aws_handler import LambdaHandler
 from aws_lambda_powertools import Logger
 
 from inference.infer import FlatClassifier

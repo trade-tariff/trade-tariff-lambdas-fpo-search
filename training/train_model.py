@@ -2,7 +2,7 @@ import logging
 import torch
 from torch import Tensor, optim, nn
 from torch.utils.data import DataLoader, TensorDataset
-from model.model import SimpleNN
+from model.classifier_model import ClassifierModel
 from typing import Any, Dict
 from train_args import TrainScriptArgsParser
 import json
@@ -33,7 +33,7 @@ class FlatClassifierModelTrainer:
         output_size = num_labels  # Number of unique classes in your labels
         hidden_size = int(0.8 * (input_size + output_size))
 
-        model = SimpleNN(
+        model = ClassifierModel(
             input_size,
             hidden_size,
             output_size,

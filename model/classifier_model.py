@@ -1,7 +1,7 @@
 from torch import nn
 
 
-class SimpleNN(nn.Module):
+class ClassifierModel(nn.Module):
     def __init__(
         self,
         input_size: int,
@@ -10,7 +10,7 @@ class SimpleNN(nn.Module):
         dropout_prob1: float,
         dropout_prob2: float,
     ):
-        super(SimpleNN, self).__init__()
+        super(ClassifierModel, self).__init__()
         self.dropout1 = nn.Dropout(
             p=dropout_prob1
         )  # Add dropout layer on incoming (visible) units

@@ -1,7 +1,7 @@
 import json
 import logging
 import unittest
-from aws_lambda.handler import LambdaHandler
+from aws_lambda.aws_handler import LambdaHandler
 
 from inference.infer import ClassificationResult, Classifier
 
