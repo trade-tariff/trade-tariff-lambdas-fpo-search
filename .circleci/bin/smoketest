@@ -50,10 +50,10 @@ if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
 fi
 
 # Ensure it handles known shorter descriptions
-HAS_CORRECT_CODE=$(has_correct_code "trousers" "620462")
+HAS_CORRECT_CODE=$(has_correct_code "trousers" "620342")
 
 if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
-  echo "ERROR: Expected trousers to have a code but not found" >&2
+  echo "ERROR: Expected short description example to have a code but not found" >&2
   exit 1
 fi
 

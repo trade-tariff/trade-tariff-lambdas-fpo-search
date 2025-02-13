@@ -13,7 +13,7 @@ from train_args import TrainScriptArgsParser
 args = TrainScriptArgsParser()
 args.load_config_file()
 
-score_cutoff = 0.01 # We won't send back any results with a score lower than this
+score_cutoff = 0.001 # We won't send back any results with a score lower than this
 top_n_softmax_percent = 0.05  # We only softmax over the top 5% of results to ignore the long tail of nonsense ones
 cumulative_cutoff = 0.9
 vague_term_code = "vvvvvvvvvv"
@@ -103,8 +103,9 @@ class FlatClassifier(Classifier):
         softmax_values = exp_values / np.sum(exp_values)
 
         max = np.max(softmax_values)
-        min_confidence = 0.5
+        min_confidence = 0.05
 
+        # Cutoff everything below confidence level of the top result
         softmax_results = [
             (category, softmax)
             for (category, _), softmax in zip(top_results, softmax_values)
@@ -125,7 +126,7 @@ class FlatClassifier(Classifier):
 
             # If we've hit the vague terms code then we'll skip it
             if classification.code == vague_term_truncated:
-                continue
+                break
 
             result.append(classification)
 
