@@ -14,9 +14,8 @@
         };
       in
       {
-
-        LD_LIBRARY_PATH = "${stdenv.cc.cc.lib}/lib/";
         devShells.default = pkgs.mkShell {
+          LD_LIBRARY_PATH = "${stdenv.cc.cc.lib}/lib/";
           shellHook = ''
             if [[ ! -f venv ]]
             then

@@ -13,7 +13,7 @@ from train_args import TrainScriptArgsParser
 args = TrainScriptArgsParser()
 args.load_config_file()
 
-score_cutoff = 0.00  # We won't send back any results with a score lower than this
+score_cutoff = 0.01 # We won't send back any results with a score lower than this
 top_n_softmax_percent = 0.05  # We only softmax over the top 5% of results to ignore the long tail of nonsense ones
 cumulative_cutoff = 0.9
 vague_term_code = "vvvvvvvvvv"
@@ -76,8 +76,6 @@ class FlatClassifier(Classifier):
         # Run it through the model to get the predictions
         results = self._model(new_embeddings)
 
-        #        print(results)
-
         predictions_to_digits = {}
 
         for i, prediction in enumerate(results[0]):
@@ -104,36 +102,14 @@ class FlatClassifier(Classifier):
         )  # Subtract max for numerical stability
         softmax_values = exp_values / np.sum(exp_values)
 
-        # print(softmax_results)
-
-        # # Compute mean and standard deviation
-        # max = np.max(softmax_values)
-        # std = np.std(softmax_values) * 3
-
-        # print(f"Standard deviation: {std}")
-
-        # # Define threshold range
-        # lower_bound = max - std
-        # upper_bound = max
-
-        # # Filter values within 1 standard deviation
-        # softmax_results = [(category, softmax) for (category, _), softmax in zip(top_results, softmax_values)
-        #                 if lower_bound <= softmax <= upper_bound]
-
         max = np.max(softmax_values)
+        min_confidence = 0.5
 
         softmax_results = [
             (category, softmax)
             for (category, _), softmax in zip(top_results, softmax_values)
-            if max * 0.5 <= softmax
+            if max * min_confidence <= softmax
         ]
-
-        # softmax_results = [(category, softmax) for (category, _), softmax in zip(top_results, softmax_values)]
-
-        print(f"Number of results: {len(softmax_results)}")
-
-        # Reconstruct list
-        # softmax_results = [(category, softmax) for (category, _), softmax in zip(top_results, softmax_values)]
 
         result = []
 
@@ -142,17 +118,18 @@ class FlatClassifier(Classifier):
         cumulative_score = 0
 
         for i in softmax_results:
+            classification = ClassificationResult(i[0], i[1])
             # If the score is less than the cutoff then stop iterating through
-            if i[1] < score_cutoff:
+            if classification.score < score_cutoff:
                 break
 
-            # If we've hit the vague terms code then we'll stop iterating through
-            if i[0] == vague_term_truncated:
+            # If we've hit the vague terms code then we'll skip it
+            if classification.code == vague_term_truncated:
                 continue
 
-            result.append(ClassificationResult(i[0], i[1]))
+            result.append(classification)
 
-            cumulative_score += i[1]
+            cumulative_score += classification.score
 
             if len(result) >= limit:
                 break
