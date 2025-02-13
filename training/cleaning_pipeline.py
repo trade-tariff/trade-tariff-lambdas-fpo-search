@@ -110,11 +110,7 @@ class StripExcessCharacters(Cleaner):
     ) -> tuple[str | None, str | None, dict]:
         characters_to_rstrip = ["\n", "\t", "\r", ".", ","]
         subheading = subheading.strip()
-        description = (
-            " ".join(str(description).split())
-            if isinstance(description, (str, float, int))
-            else ""
-        )
+        description = " ".join(description.split())
 
         for character in characters_to_rstrip:
             subheading = subheading.rstrip(character)
