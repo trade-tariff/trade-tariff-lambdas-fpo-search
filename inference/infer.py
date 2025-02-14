@@ -1,6 +1,8 @@
 from logging import Logger
 import logging
 from math import floor
+
+import toml
 from aws_lambda_powertools import Logger as AWSLogger
 
 import numpy as np
@@ -142,15 +144,16 @@ class FlatClassifier(Classifier):
 
     def load_model(self):
         model_file = args.target_dir() / "model.pt"
+        model_config = toml.load(args.target_dir() / "model.toml")
 
         self._logger.info(f"💾⇨ Loading model file: {model_file}")
 
         model = SimpleNN(
-            args.model_input_size(),
-            args.model_hidden_size(),
-            args.model_output_size(),
-            args.model_dropout_layer_1_percentage(),
-            args.model_dropout_layer_2_percentage(),
+            model_config["input_size"],
+            model_config["hidden_size"],
+            model_config["output_size"],
+            model_config["dropout_layer_1_percentage"],
+            model_config["dropout_layer_2_percentage"],
         )
 
         try:
