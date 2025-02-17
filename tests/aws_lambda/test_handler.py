@@ -211,6 +211,18 @@ class Test_handler_handle(unittest.TestCase):
             "Expected a request id",
         )
 
+    def test_it_should_handle_body_with_quotes(self):
+        event = self._create_post_event_quoted_body()
+
+        result = handler.handle(event, {})
+        self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+
+        self.assertEqual(
+            "Invalid JSON in request body",
+            json.loads(result["body"])["message"],
+            "Expected invalid json message",
+        )
+
     def test_it_should_handle_healthcheck(self):
         event = self._create_healthcheck_event()
 
@@ -263,6 +275,14 @@ class Test_handler_handle(unittest.TestCase):
         return {
             "path": "/healthcheck",
             "httpMethod": "GET",
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
+        }
+
+    def _create_post_event_quoted_body(self):
+        return {
+            "path": "/fpo-code-search",
+            "httpMethod": "POST",
+            "body": '""',
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 
