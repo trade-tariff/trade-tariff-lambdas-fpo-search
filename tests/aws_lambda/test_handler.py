@@ -151,6 +151,30 @@ class Test_handler_handle(unittest.TestCase):
 
         self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
 
+    def test_it_should_handle_no_description(self):
+        event = self._create_post_event("")
+
+        result = handler.handle(event, {})
+
+        self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
+    def test_it_should_handle_body_with_quotes(self):
+        event = self._create_post_event_quoted_body()
+
+        result = handler.handle(event, {})
+        self.assertEqual(400, result["statusCode"], "Expected a 400 status code")
+
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
     def test_it_should_handle_too_many_digits(self):
         event = self._create_post_event("foo", "10")
 
@@ -263,6 +287,14 @@ class Test_handler_handle(unittest.TestCase):
         return {
             "path": "/healthcheck",
             "httpMethod": "GET",
+            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
+        }
+
+    def _create_post_event_quoted_body(self):
+        return {
+            "path": "/fpo-code-search",
+            "httpMethod": "POST",
+            "body": '""',
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }
 

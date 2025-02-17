@@ -263,7 +263,9 @@ class RemoveDescriptionsMatchingRegexes(Cleaner):
             return (
                 None,
                 None,
-                {"reason": f"Description matches regexes {self._regexes}"},
+                {
+                    "reason": "Description cannot contain only numbers and dashes. Please add some text."
+                },
             )
 
         return (subheading, description, {})
