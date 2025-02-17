@@ -133,7 +133,8 @@ class LambdaHandler:
                 "headers": self._headers(event),
             }
 
-        description = (body and body.get("description", "")) or ""
+        body = body or {}
+        description = body.get("description", "")
         digits = body.get("digits", "6")
         limit = body.get("limit", "5")
 
