@@ -215,12 +215,15 @@ if __name__ == "__main__":
     model_file = target_dir / "model.pt"
     torch.save(state_dict, model_file)
 
-    config = toml.load("search-config.toml")
-    config["model_input_size"] = input_size
-    config["model_hidden_size"] = hidden_size
-    config["model_output_size"] = output_size
+    model_config = {
+        "input_size": input_size,
+        "hidden_size": hidden_size,
+        "output_size": output_size,
+        "dropout_layer_1_percentage": args.model_dropout_layer_1_percentage(),
+        "dropout_layer_2_percentage": args.model_dropout_layer_2_percentage(),
+    }
 
-    with open("search-config.toml", "w") as f:
-        toml.dump(config, f)
+    with open("target/model.toml", "w") as f:
+        toml.dump(model_config, f)
 
     print("✅ Training complete. Enjoy your model!")
