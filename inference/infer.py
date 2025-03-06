@@ -15,7 +15,7 @@ from train_args import TrainScriptArgsParser
 args = TrainScriptArgsParser()
 args.load_config_file()
 
-score_cutoff = 0.001 # We won't send back any results with a score lower than this
+score_cutoff = 0.01  # We won't send back any results with a score lower than this
 top_n_softmax_percent = 0.05  # We only softmax over the top 5% of results to ignore the long tail of nonsense ones
 cumulative_cutoff = 0.9
 vague_term_code = "vvvvvvvvvv"
@@ -32,7 +32,10 @@ class ClassificationResult:
 
 class Classifier:
     def classify(
-        self, search_text: str, limit: int = 5, digits: int = 6
+        self,
+        search_text: str,
+        limit: int = 5,
+        digits: int = 6,
     ) -> list[ClassificationResult]:
         raise NotImplementedError()
 
@@ -63,7 +66,10 @@ class FlatClassifier(Classifier):
         )
 
     def classify(
-        self, search_text: str, limit: int = 5, digits: int = 6
+        self,
+        search_text: str,
+        limit: int = 5,
+        digits: int = 6,
     ) -> list[ClassificationResult]:
         # Fetch the embedding for the search text
         new_texts = [search_text]
