@@ -8,7 +8,7 @@ ENV HF_HOME=${LAMBDA_TASK_ROOT}/.sentence_transformer_cache/transformers_cache/
 
 RUN pip install --upgrade pip
 
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements_lambda.txt
+RUN pip install accelerate --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements_lambda.txt
 
 RUN python download_transformer.py
 

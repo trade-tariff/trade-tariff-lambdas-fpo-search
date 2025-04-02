@@ -14,7 +14,7 @@ delete_branch() {
 }
 
 main() {
-  .circleci/bin/configuregit
+  .github/bin/configuregit
   close_pr
   delete_branch
 }

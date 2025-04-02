@@ -1,0 +1,34 @@
+name: nightly-clear-model-instances
+
+on:
+    schedule:
+    - cron: "0 0 * * *"    # Every day at midnight UTC
+    
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: 'Branch to run the workflow on'
+                required: true
+                default: 'main'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  clear-model-instances:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-ECS-Deployments-Role
+          aws-region: eu-west-2
+     
+      - name: Checkout Repository and fetch git history
+        uses: actions/checkout@v4
+      
+      - name: Make the script files executable
+        run: chmod +x .github/bin/clearinstances
+      
+      - name: Run the scripts
+        run: .github/bin/clearinstances

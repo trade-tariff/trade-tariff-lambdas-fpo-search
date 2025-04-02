@@ -1,0 +1,133 @@
+name: deploy-to-production
+
+on:
+  workflow_run:
+    workflows:
+      - 'deploy-to-staging'
+    types:
+      - completed
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  fetch-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role
+          aws-region: eu-west-2
+      
+      - name: Checkout Repository and fetch git history
+        uses: actions/checkout@v4
+      
+      - name: Make the script files executable
+        run: chmod +x .github/bin/fetchmodel
+      
+      - name: Run the scripts
+        run: .github/bin/fetchmodel production
+      
+      - name: Persist To Workspace
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            target/
+            search-config.toml
+            MODEL_VERSION
+
+  build:
+    needs: fetch-model
+    runs-on: ubuntu-latest
+    env:
+      FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-ECS-Deployments-Role
+          aws-region: eu-west-2
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Download Model Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: .
+
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install requests==2.32.0
+
+      - name: Build and Push to ECR
+        run: |
+          source venv/bin/activate
+          .github/bin/download_search_references
+          .github/bin/ecr "$FPO_SEARCH_ECR_URL"
+  
+  deploy:
+    needs: [fetch-model]
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.set-result.outputs.result }}
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
+          aws-region: eu-west-2
+      
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        
+      - name: Install Serverless CLI
+        run: npm install -g serverless@3
+
+      - name: Install Serverless Domain Manager Plugin
+        run: npm install -g serverless-domain-manager
+
+      - name: Deploy
+        run: |
+          export STAGE=production
+          export DOCKER_TAG=$(git rev-parse --short HEAD)
+          export SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)
+          export FPO_SEARCH_ECR_URL=382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          make deploy-production
+
+      - name: Set result
+        id: set-result
+        run: echo "result=success" >> $GITHUB_OUTPUT
+        if: success()
+  
+      - name: Set result (fail)
+        id: set-result-fail
+        run: echo "result=failure" >> $GITHUB_OUTPUT
+        if: failure()
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Slack
+        uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
+        with:
+          result: ${{ needs.deploy.outputs.result }}
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}

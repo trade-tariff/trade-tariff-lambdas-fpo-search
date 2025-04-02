@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-source .circleci/bin/needsami
+source .github/bin/needsami
 
 if needsami; then
   echo "Building new AMI"
