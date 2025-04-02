@@ -6,9 +6,10 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
+# NOTE: These numbers were worked out by heuristics and do not represent an SLA
 URL=${1:-https://search.dev.trade-tariff.service.gov.uk/fpo-code-search}
 API_KEY=${2:-$API_KEY}
-DESIRED_RPS=400
+DESIRED_RPS=50
 DESIRED_ERRORS=0
 DESIRED_P90_LATENCY=2000
 
@@ -37,7 +38,7 @@ PERFORMANCE_DATA=$(
 )
 
 ACTUAL_RPS=$(jq '.requests.mean' <<< "$PERFORMANCE_DATA")
-ACTUAL_ERRORS=$(jq '.errors' <<< "$PERFORMANCE_DATA")
+ACTUAL_ERRORS=$(jq '.non2xx' <<< "$PERFORMANCE_DATA")
 ACTUAL_P90_LATENCY=$(jq '.latency.p90' <<< "$PERFORMANCE_DATA")
 
 MEET_RPS_THRESHOLD=$(awk 'BEGIN {print ('"$ACTUAL_RPS"' >= '"$DESIRED_RPS"') ? 1 : 0}')

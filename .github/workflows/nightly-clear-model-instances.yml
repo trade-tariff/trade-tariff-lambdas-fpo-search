@@ -1,0 +1,24 @@
+name: nightly-clear-model-instances
+
+on:
+    schedule:
+    - cron: "0 0 * * *"    # Every day at midnight UTC
+
+    workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  clear-model-instances:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
+          aws-region: eu-west-2
+
+      - uses: actions/checkout@v4
+
+      - run: .github/bin/clearinstances

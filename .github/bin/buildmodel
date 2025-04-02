@@ -8,7 +8,7 @@ set -o noclobber
 DESTINATION_REGION=''
 INSTANCE_ID=''
 
-source .circleci/bin/needsmodel
+source .github/bin/needsmodel
 
 fetch_account_id() {
   aws sts get-caller-identity --query Account --output text
@@ -80,7 +80,7 @@ try_launch_ec2_instance() {
   local current_delay=$default_delay
   local source_ami_region="us-east-1"
 
-  candidate_regions=$(.circleci/bin/getmodelregions \
+  candidate_regions=$(.github/bin/getmodelregions \
     --instance-type "$INSTANCE_TYPE" \
     --create-security-group \
     --create-key-pair \
@@ -101,7 +101,7 @@ try_launch_ec2_instance() {
     IFS='|' read -r region az subnet_id security_group_ids key_pair_name instance_type <<<"$region_info"
 
     for ((i = 0; i < retries; i++)); do
-      if .circleci/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"; then
+      if .github/bin/copyami "$LATEST_AMI" "$source_ami_region" "$region"; then
         ami_id=$(fetch_latest_ami_image_id_by_name "FPO Training*" "$region")
         status=$?
         if [[ $status -ne 0 ]]; then
@@ -169,6 +169,8 @@ store_ec2_private_key() {
   local region='eu-west-2'
 
   rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
+
+  mkdir -p ~/.ssh
 
   aws secretsmanager get-secret-value \
     --secret-id "$secret_id" \

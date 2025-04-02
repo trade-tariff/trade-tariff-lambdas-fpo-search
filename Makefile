@@ -102,25 +102,22 @@ benchmark-classifieds:
 benchmark: benchmark-goods-descriptions benchmark-classifieds
 
 deploy-development:
-	STAGE=development \
-				serverless deploy \
-				--verbose \
-				--param="custom_domain=search.dev.trade-tariff.service.gov.uk" \
-				--param="certificate_domain=dev.trade-tariff.service.gov.uk" \
-				--param="provisioned_concurrency=2"
+	serverless deploy \
+		--verbose \
+		--param="custom_domain=search.dev.trade-tariff.service.gov.uk" \
+		--param="certificate_domain=dev.trade-tariff.service.gov.uk" \
+		--param="provisioned_concurrency=2"
 
 deploy-staging:
-	STAGE=staging \
-				serverless deploy \
-				--verbose \
-				--param="custom_domain=search.staging.trade-tariff.service.gov.uk" \
-				--param="certificate_domain=staging.trade-tariff.service.gov.uk" \
-				--param="provisioned_concurrency=2"
+	serverless deploy \
+	--verbose \
+	--param="custom_domain=search.staging.trade-tariff.service.gov.uk" \
+	--param="certificate_domain=staging.trade-tariff.service.gov.uk" \
+	--param="provisioned_concurrency=2"
 
 deploy-production:
-	STAGE=production \
-				serverless deploy \
-				--verbose \
-				--param="custom_domain=search.trade-tariff.service.gov.uk" \
-				--param="certificate_domain=trade-tariff.service.gov.uk" \
-				--param="provisioned_concurrency=12"
+	serverless deploy \
+	--verbose \
+	--param="custom_domain=search.trade-tariff.service.gov.uk" \
+	--param="certificate_domain=trade-tariff.service.gov.uk" \
+	--param="provisioned_concurrency=12"

@@ -10,9 +10,9 @@ fetch_candidate_regions() {
   local region_count
   local candidate_regions
 
-  instance_type=$(cat .circleci/bin/buildmodel | grep 'INSTANCE_TYPE=' | head -1 | awk -F'=' '{print $2}')
-  region_count=$(cat .circleci/bin/buildmodel | grep 'REGION_COUNT=' | head -1 | awk -F'=' '{print $2}')
-  candidate_regions=$(.circleci/bin/getmodelregions --instance-type $instance_type --try-region-count $region_count)
+  instance_type=$(cat .github/bin/buildmodel | grep 'INSTANCE_TYPE=' | head -1 | awk -F'=' '{print $2}')
+  region_count=$(cat .github/bin/buildmodel | grep 'REGION_COUNT=' | head -1 | awk -F'=' '{print $2}')
+  candidate_regions=$(.github/bin/getmodelregions --instance-type $instance_type --try-region-count $region_count)
 
   echo $candidate_regions | sed 's/ /\n/g' | awk -F'|' '{print $1}'
 }

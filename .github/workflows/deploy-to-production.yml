@@ -1,0 +1,106 @@
+name: deploy-to-production
+
+on:
+  workflow_run:
+    workflows:
+      - 'deploy-to-staging'
+    types:
+      - completed
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-ECS-Deployments-Role
+          aws-region: eu-west-2
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - run: .github/bin/fetchmodel production
+
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install requests==2.32.0
+          .github/bin/download_search_references
+
+      - id: docker-tag
+        run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/build-and-push@main
+        with:
+          ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
+        env:
+          AWS_REGION: eu-west-2
+          IAM_ROLE_ARN: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
+          aws-region: eu-west-2
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+
+      - run: npm install -g serverless@3
+
+      - run: npm install -g serverless-domain-manager
+
+      - id: docker-tag
+        run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - id: sentry-dsn
+        run: echo "SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)" >> "$GITHUB_OUTPUT"
+
+      - run: make deploy-production
+        env:
+          STAGE: production
+          DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
+          FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          SENTRY_DSN: ${{ steps.sentry-dsn.outputs.SENTRY_DSN }}
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
+        with:
+          result: ${{ needs.deploy.result }}
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+
+  tag:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: docker-tag
+        run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/tag-production@main
+        with:
+          ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}

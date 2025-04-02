@@ -28,6 +28,7 @@
             pkgs.nodejs_latest
             pkgs.yarn
             pkgs.rufo
+            pkgs.ruff
           ];
         };
       });
