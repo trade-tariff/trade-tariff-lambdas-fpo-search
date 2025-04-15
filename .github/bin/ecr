@@ -10,22 +10,6 @@ set -o pipefail
 docker_tag=$(git rev-parse --short HEAD)
 container="fpo-search:${docker_tag}"
 
-# function fetch_ecr_url {
-#   json=$(aws ssm get-parameter \
-#   --name "$ssm_parameter"    \
-#   --with-decryption            \
-#   --output json                \
-#   --color off)
-
-#   output=$(jq -r .Parameter.Value <<< "$json")
-
-#   if [ "$output" != "" ]; then
-#     echo "$output"
-#   else
-#     exit 1
-#   fi
-# }
-
 ecr_url="$1"
 
 git rev-parse --short HEAD > REVISION
