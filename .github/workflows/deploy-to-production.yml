@@ -21,16 +21,13 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
-      
+
       - name: Checkout Repository and fetch git history
         uses: actions/checkout@v4
-      
-      - name: Make the script files executable
-        run: chmod +x .github/bin/fetchmodel
-      
+
       - name: Run the scripts
         run: .github/bin/fetchmodel production
-      
+
       - name: Persist To Workspace
         uses: actions/upload-artifact@v4
         with:
@@ -57,7 +54,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
@@ -78,7 +75,7 @@ jobs:
           source venv/bin/activate
           .github/bin/download_search_references
           .github/bin/ecr "$FPO_SEARCH_ECR_URL"
-  
+
   deploy:
     needs: [fetch-model]
     runs-on: ubuntu-latest
@@ -90,13 +87,13 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
           aws-region: eu-west-2
-      
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
-        
+
       - name: Install Serverless CLI
         run: npm install -g serverless@3
 
@@ -115,7 +112,7 @@ jobs:
         id: set-result
         run: echo "result=success" >> $GITHUB_OUTPUT
         if: success()
-  
+
       - name: Set result (fail)
         id: set-result-fail
         run: echo "result=failure" >> $GITHUB_OUTPUT

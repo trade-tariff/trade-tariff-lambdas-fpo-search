@@ -5,12 +5,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# ssm_parameter="$1"
-
+ecr_url="$1"
 docker_tag=$(git rev-parse --short HEAD)
 container="fpo-search:${docker_tag}"
-
-ecr_url="$1"
 
 git rev-parse --short HEAD > REVISION
 

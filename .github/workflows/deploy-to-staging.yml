@@ -20,16 +20,13 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role ## assume prod role as getmodel uses prod S3 bucket
           aws-region: eu-west-2
-      
+
       - name: Checkout Repository and fetch git history
         uses: actions/checkout@v4
-      
-      - name: Make the script files executable
-        run: chmod +x .github/bin/fetchmodel
-      
+
       - name: Run the scripts
         run: .github/bin/fetchmodel staging
-      
+
       - name: Persist To Workspace
         uses: actions/upload-artifact@v4
         with:
@@ -56,7 +53,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
@@ -89,13 +86,13 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::451934005581:role/GithubActions-Serverless-Lambda-Role
           aws-region: eu-west-2
-      
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
-        
+
       - name: Install Serverless CLI
         run: npm install -g serverless@3
 
@@ -109,7 +106,7 @@ jobs:
           export SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)
           export FPO_SEARCH_ECR_URL=382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
           make deploy-staging
-      
+
       - name: Set result
         id: set-result
         run: echo "result=success" >> $GITHUB_OUTPUT
@@ -140,13 +137,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: Make the script files executable
-        run: chmod +x .github/bin/perf
-      
+
       - name: Run the scripts
         run: .github/bin/smoketest https://search.staging.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
-  
+
   e2etest:
     needs: deploy
     if: needs.deploy.outputs.result == 'success'
@@ -155,7 +149,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: Run E2E Tests
         run: |
           git clone --depth=1 https://github.com/trade-tariff/trade-tariff-fpo-dev-hub-e2e
@@ -172,9 +166,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: Make the script files executable
-        run: chmod +x .github/bin/smoketest
-      
+
       - name: Run the scripts
         run: .github/bin/smoketest https://search.staging.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
