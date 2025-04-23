@@ -28,7 +28,7 @@ amiexists() {
 }
 
 versionchanged() {
-  git diff --name-only "$(git merge-base main HEAD)"..HEAD -- .packer/ami-version.txt | grep -q .packer/ami-version.txt
+  git diff --name-only "$(git merge-base origin/main HEAD)"..HEAD -- .packer/ami-version.txt | grep -q .packer/ami-version.txt
 
   if [[ $? -eq 0 ]]; then
     return 0

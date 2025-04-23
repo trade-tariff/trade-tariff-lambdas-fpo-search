@@ -62,6 +62,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Fetch main branch (for needsami comparison)
+        run: git fetch origin main:refs/remotes/origin/main
+
       - name: Run the scripts
         run: .github/bin/buildami
 
