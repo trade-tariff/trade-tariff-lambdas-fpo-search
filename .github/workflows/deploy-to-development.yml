@@ -167,9 +167,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    outputs:
-      result: ${{ steps.set-result.outputs.result }}
-
+   
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -196,16 +194,6 @@ jobs:
           export FPO_SEARCH_ECR_URL=382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
           make deploy-development
 
-      - name: Set result
-        id: set-result
-        run: echo "result=success" >> $GITHUB_OUTPUT
-        if: success()
-
-      - name: Set result (fail)
-        id: set-result-fail
-        run: echo "result=failure" >> $GITHUB_OUTPUT
-        if: failure()
-
   notify:
     needs: deploy
     runs-on: ubuntu-latest
@@ -214,12 +202,11 @@ jobs:
       - name: Notify Slack
         uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
         with:
-          result: ${{ needs.deploy.outputs.result }}
+          result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
   perftest:
     needs: deploy
-    if: needs.deploy.outputs.result == 'success'
     runs-on: ubuntu-latest
     environment: development
 
@@ -232,7 +219,6 @@ jobs:
 
   e2etest:
     needs: deploy
-    if: needs.deploy.outputs.result == 'success'
     runs-on: ubuntu-latest
     environment: development
     steps:
@@ -249,7 +235,6 @@ jobs:
 
   smoketest:
     needs: deploy
-    if: needs.deploy.outputs.result == 'success'
     runs-on: ubuntu-latest
     environment: development
     steps:
