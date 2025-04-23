@@ -218,7 +218,7 @@ jobs:
         run: .github/bin/perf https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
 
   e2etest:
-    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@HMRC-896-adds-e2e-tests-workflow
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     needs: deploy
     with:
       test-environment: development
