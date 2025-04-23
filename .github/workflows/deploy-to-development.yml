@@ -221,7 +221,7 @@ jobs:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@HMRC-896-adds-e2e-tests-workflow
     needs: deploy
     with:
-      test-url: "https://hub.dev.trade-tariff.service.gov.uk"
+      test-environment: development
     secrets:
       scp-username: ${{ secrets.SCP_USERNAME }}
       scp-password: ${{ secrets.SCP_PASSWORD }}
