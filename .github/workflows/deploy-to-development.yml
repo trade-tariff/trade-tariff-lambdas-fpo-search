@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-Build-Ami-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-Build-Ami-Role       
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository and fetch git history
