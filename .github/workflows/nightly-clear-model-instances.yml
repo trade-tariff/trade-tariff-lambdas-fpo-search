@@ -5,11 +5,6 @@ on:
     - cron: "0 0 * * *"    # Every day at midnight UTC
 
     workflow_dispatch:
-        inputs:
-            branch:
-                description: 'Branch to run the workflow on'
-                required: true
-                default: 'main'
 
 permissions:
   id-token: write

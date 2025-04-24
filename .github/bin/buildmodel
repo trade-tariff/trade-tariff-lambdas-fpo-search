@@ -170,6 +170,8 @@ store_ec2_private_key() {
 
   rm -f ~/.ssh/"$KEY_PAIR_NAME".pem
 
+  mkdir -p ~/.ssh
+
   aws secretsmanager get-secret-value \
     --secret-id "$secret_id" \
     --region "$region" \
