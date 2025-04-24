@@ -57,7 +57,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-Build-Ami-Role
-          aws-region: eu-west-2
+          aws-region: us-east-1
 
       - name: Checkout Repository
         uses: actions/checkout@v4
