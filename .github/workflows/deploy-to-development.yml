@@ -78,6 +78,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
+          role-duration-seconds: 7200
 
       - name: Checkout Repository and fetch git history
         uses: actions/checkout@v4
@@ -94,7 +95,7 @@ jobs:
     needs: build-model
     runs-on: ubuntu-latest
     steps:
-      
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role ## assume prod role as getmodel uses prod S3 bucket
