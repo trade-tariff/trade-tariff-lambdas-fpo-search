@@ -6,11 +6,6 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-# Get credentials from environment (populated by `configure-aws-credentials`)
-AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-$(aws configure get aws_access_key_id)}"
-AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-$(aws configure get aws_secret_access_key)}"
-AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN:-$(aws configure get aws_session_token)}"
-
 IMAGE_NAME="packer-builder"
 PACKER_TEMPLATE=".packer/template.pkr.hcl"
 
@@ -33,6 +28,7 @@ docker run -v "$PWD"/:/packer \
   -w /app \
   -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
   -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+  -e AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
   -e AWS_MAX_ATTEMPTS=300 \
   -e AWS_POLL_DELAY_SECONDS=10 \
   "$IMAGE_NAME" build -var "ami_version=$AMI_VERSION" -var "git_branch=$GIT_BRANCH" "$(basename $PACKER_TEMPLATE)"
