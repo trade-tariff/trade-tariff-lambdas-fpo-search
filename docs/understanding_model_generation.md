@@ -16,7 +16,7 @@ To ensure that our model generation pipeline is efficient, reliable, and sustain
 - **DLAMI (Deep Learning AMI)**: Amazon Machine Images specially configured for deep learning tasks. [Learn more about DLAMI](https://docs.aws.amazon.com/dlami/latest/devguide/gs.html).
 - **Packer**: Used to create machine images from a single source configuration. [Learn more about Packer](https://www.packer.io/).
 - **EC2**: Amazon Elastic Compute Cloud where the models are trained and deployed.
-- **CircleCI**: Our continuous integration service that orchestrates the build and deployment processes.
+- **GithubActions**: Our continuous integration service that orchestrates the build and deployment processes.
 - **Raw Data Sources**: Essential inputs needed for generating embeddings and training the models.
 - **Additional Data Sources**: Supplementary data that may change over time and influence model training.
 
