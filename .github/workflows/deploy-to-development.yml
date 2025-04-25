@@ -109,8 +109,12 @@ jobs:
       - name: Fetch main branch (for needsmodel comparison)
         run: git fetch origin main:refs/remotes/origin/main
 
-      - name: Run the scripts
-        run: .github/bin/validatemodel
+      - run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install toml
+
+      - run: .github/bin/validatemodel
 
   fetch-model:
     needs: validate-model
