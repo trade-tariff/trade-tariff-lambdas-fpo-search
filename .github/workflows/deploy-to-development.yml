@@ -232,12 +232,13 @@ jobs:
   # This is required however cron for automated builds is commented out in the circeci config as there is an issue with them.
   # TODO: Ticket https://transformuk.atlassian.net/browse/HMRC-978
   # merge-automated-model-pr:
-  #    needs: [smoketest, perftest] # e2etest is removed as it is not currently working in dev
+  #    needs: [smoketest, perftest]
   #    runs-on: ubuntu-latest
   #    steps:
-  #       - name: Checkout Repository
-  #         uses: actions/checkout@v4
-  #       - name: Run the scripts
-  #         run: |
-  #             .github/bin/ghinstall
-  #             .github/bin/mergepr
+  #       - uses: actions/checkout@v4
+  #
+  #       - run: .github/bin/mergepr
+  #         env:
+  #           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+  #

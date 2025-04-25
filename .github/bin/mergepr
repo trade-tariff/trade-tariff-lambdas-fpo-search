@@ -8,7 +8,7 @@ set -o pipefail
 source .github/bin/isautomatedbuild
 
 merge_pr() {
-  gh pr merge "$CIRCLE_PULL_REQUEST"
+  gh pr merge "$PULL_REQUEST_NUMBER"
 }
 
 main() {
