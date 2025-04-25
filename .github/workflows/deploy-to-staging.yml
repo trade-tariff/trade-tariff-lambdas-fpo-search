@@ -37,7 +37,7 @@ jobs:
             MODEL_VERSION
 
   build:
-    needs: validate-model
+    needs: fetch-model
     runs-on: ubuntu-latest
     env:
       FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
