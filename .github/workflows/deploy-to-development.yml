@@ -98,11 +98,16 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role ## assume prod role as getmodel uses prod S3 bucket
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
 
-      - name: Checkout Repository and fetch git history
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main branch (for needsmodel comparison)
+        run: git fetch origin main:refs/remotes/origin/main
 
       - name: Run the scripts
         run: .github/bin/validatemodel
@@ -113,7 +118,7 @@ jobs:
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role ## assume prod role as getmodel uses prod S3 bucket
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository and fetch git history
@@ -139,7 +144,7 @@ jobs:
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-ECS-Deployments-Role
+          role-to-assume: arn:aws:iam::844815912454:role/GithubActions-Serverless-Lambda-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository
