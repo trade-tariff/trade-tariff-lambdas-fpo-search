@@ -132,20 +132,13 @@ jobs:
         run: .github/bin/smoketest https://search.staging.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
 
   e2etest:
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     needs: deploy
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run E2E Tests
-        run: |
-          git clone --depth=1 https://github.com/trade-tariff/trade-tariff-fpo-dev-hub-e2e
-          cd trade-tariff-fpo-dev-hub-e2e
-          yarn install
-          yarn playwright install --with-deps chromium
-          yarn run test-staging
+    with:
+      test-environment: staging
+    secrets:
+      scp-username: ${{ secrets.SCP_USERNAME }}
+      scp-password: ${{ secrets.SCP_PASSWORD }}
 
   smoketest:
     needs: deploy
