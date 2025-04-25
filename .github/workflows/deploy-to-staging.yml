@@ -2,7 +2,7 @@ name: deploy-to-staging
 
 on:
   push:
-    branches:
+    branches-ignore:
        - main
        - "hotfix/**"
 
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-FPO-Models-Role ## assume prod role as getmodel uses prod S3 bucket
+          role-to-assume: arn:aws:iam::451934005581:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository and fetch git history
@@ -37,14 +37,14 @@ jobs:
             MODEL_VERSION
 
   build:
-    needs: fetch-model
+    needs: validate-model
     runs-on: ubuntu-latest
     env:
       FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::451934005581:role/GithubActions-ECS-Deployments-Role
+          role-to-assume: arn:aws:iam::451934005581:role/GithubActions-Serverless-Lambda-Role
           aws-region: eu-west-2
 
       - name: Checkout Repository
@@ -57,23 +57,26 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Download Model Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: model-artifacts
-          path: .
-
       - name: Install Dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install requests==2.32.0
 
-      - name: Build and Push to ECR
-        run: |
-          source venv/bin/activate
-          .github/bin/download_search_references
-          .github/bin/ecr "$FPO_SEARCH_ECR_URL"
+      - run: .github/bin/fetchmodel staging
+
+      - run: .github/bin/download_search_references
+
+      - id: docker-tag
+        run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/build-and-push@main
+        with:
+          ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
+        env:
+          AWS_REGION: eu-west-2
+          IAM_ROLE_ARN: arn:aws:iam::451934005581:role/GithubActions-Serverless-Lambda-Role
 
   deploy:
     needs: build
