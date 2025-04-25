@@ -2,9 +2,8 @@ name: deploy-to-staging
 
 on:
   push:
-    branches-ignore:
+    branches:
        - main
-       - "hotfix/**"
 
   workflow_dispatch:
 

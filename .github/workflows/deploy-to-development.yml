@@ -4,7 +4,7 @@ on:
   push:
     branches-ignore:
        - main
-       - "hotfix/**"
+       
   workflow_dispatch:
 
 permissions:
