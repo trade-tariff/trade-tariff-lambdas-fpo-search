@@ -92,6 +92,6 @@ function handle_result() {
 }
 
 check_validation
-.github/bin/fetchbenchmarks
+.github/bin/fetchbenchmarks --force
 .github/bin/checkbenchmarks
 handle_result
