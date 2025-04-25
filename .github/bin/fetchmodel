@@ -22,7 +22,7 @@ validate_model() {
   echo "Validating $MODEL_KEY"
 
   echo "aws s3 cp --quiet \"s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed\" ."
-  aws s3 cp --quiet "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" . || {
+  aws s3 cp "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/passed" . || {
     echo "Model $MODEL_KEY has not passed validation"
     aws s3 cp --quiet "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/failed" . && {
       echo "Model $MODEL_KEY is marked as failed"
