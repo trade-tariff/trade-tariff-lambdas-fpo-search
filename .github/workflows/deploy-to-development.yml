@@ -170,33 +170,33 @@ jobs:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-Serverless-Lambda-Role
           aws-region: eu-west-2
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
 
-      - name: Install Serverless CLI
-        run: npm install -g serverless@3
+      - run: npm install -g serverless@3
 
-      - name: Install Serverless Domain Manager Plugin
-        run: npm install -g serverless-domain-manager
+      - run: npm install -g serverless-domain-manager
 
-      - name: Deploy
-        run: |
-          export STAGE=development
-          export DOCKER_TAG=$(git rev-parse --short HEAD)
-          export SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)
-          export FPO_SEARCH_ECR_URL=382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
-          make deploy-development
+      - id: docker-tag
+        run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - id: sentry-dsn
+        run: echo "SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)" >> "$GITHUB_OUTPUT"
+
+      - run: make deploy-development
+        env:
+          STAGE: development
+          DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
+          FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
+          SENTRY_DSN: ${{ steps.sentry-dsn.outputs.SENTRY_DSN }}
 
   notify:
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Notify Slack
-        uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
         with:
           result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
@@ -207,11 +207,9 @@ jobs:
     environment: development
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Run the scripts
-        run: .github/bin/perf https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+      - run: .github/bin/perf https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
 
   e2etest:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
@@ -227,11 +225,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Run the scripts
-        run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+      - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
 
   # This is required however cron for automated builds is commented out in the circeci config as there is an issue with them.
   # TODO: Ticket https://transformuk.atlassian.net/browse/HMRC-978
