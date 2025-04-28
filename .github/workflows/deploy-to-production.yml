@@ -102,6 +102,9 @@ jobs:
         run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: trade-tariff/trade-tariff-tools/.github/actions/tag-production@main
+        env:
+          AWS_REGION: eu-west-2
         with:
           ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
           ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
+       
