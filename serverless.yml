@@ -22,7 +22,7 @@ provider:
   ecr:
     images:
       fpo-search:
-        uri: "${ssm:/${sls:stage}/FPO_SEARCH_ECR_URL}:${env:DOCKER_TAG}"
+        uri: "${env:FPO_SEARCH_ECR_URL}:${env:DOCKER_TAG}"
 
   stackTags:
     customer: "fpo"

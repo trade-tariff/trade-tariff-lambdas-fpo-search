@@ -5,14 +5,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source .circleci/bin/isautomatedbuild
+source .github/bin/isautomatedbuild
 
 merge_pr() {
-  gh pr merge "$CIRCLE_PULL_REQUEST"
+  gh pr merge "$PULL_REQUEST_NUMBER"
 }
 
 main() {
-  .circleci/bin/configuregit
+  .github/bin/configuregit
 
   if is_automated_build; then
     echo "Automated build, merging PR"

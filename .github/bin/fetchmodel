@@ -7,11 +7,11 @@ set -o pipefail
 set -o noclobber
 
 ENVIRONMENT=${1:?Environment not provided}
-MODEL_KEY=$(.circleci/bin/getmodel)
+MODEL_KEY=$(.github/bin/getmodel)
 VERSION_PREFIX=$(echo "$MODEL_KEY" | awk -F/ '{print $1}')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
-source .circleci/bin/isautomatedbuild
+source .github/bin/isautomatedbuild
 
 if [ "$MODEL_KEY" = "" ]; then
   echo "No model for current version found"
@@ -29,7 +29,7 @@ validate_model() {
       if is_automated_build; then
         echo "Automated build, closing PR"
 
-        .circleci/bin/closepr
+        .github/bin/closepr
       fi
       exit 1
     }

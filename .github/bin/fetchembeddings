@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 set -o noclobber
 
-VERSION_PREFIX=$(.circleci/bin/getmodel | awk -F/ '{print $1}')
+VERSION_PREFIX=$(.github/bin/getmodel | awk -F/ '{print $1}')
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
 
 aws s3 cp "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/embeddings.zip" .

@@ -8,7 +8,7 @@ import os
 cwd = Path.cwd()
 
 # Load the thresholds
-with open(".circleci/benchmark-thresholds.toml") as f:
+with open(".github/benchmark-thresholds.toml") as f:
     thresholds = toml.load(f)["thresholds"]
 
 # Load the results

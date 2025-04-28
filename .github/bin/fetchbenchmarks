@@ -20,29 +20,29 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 MODEL_BUCKET_NAME=trade-tariff-models-382373577178
-DIFF=$(git diff main search-config.toml)
+DIFF=$(git diff origin/main search-config.toml)
 
 if [[ -n "$OLD_VERSION" && -n "$NEW_VERSION" ]]
 then
   echo "Fetching latest specified versions $OLD_VERSION and $NEW_VERSION"
-  LATEST_OLD_VERSION=$(.circleci/bin/getversions 1 "$OLD_VERSION")
-  LATEST_NEW_VERSION=$(.circleci/bin/getversions 1 "$NEW_VERSION")
+  LATEST_OLD_VERSION=$(.github/bin/getversions 1 "$OLD_VERSION")
+  LATEST_NEW_VERSION=$(.github/bin/getversions 1 "$NEW_VERSION")
 elif [[ -z "$DIFF" ]]
 then
   if [[ "$FORCE" == "true" ]]
   then
     echo "Forcing fetching benchmarks"
-    LATEST_OLD_VERSION=$(.circleci/bin/getversions 2 | head -n 1)
-    LATEST_NEW_VERSION=$(.circleci/bin/getversions 2 | tail -n 1)
+    LATEST_OLD_VERSION=$(.github/bin/getversions 2 | head -n 1)
+    LATEST_NEW_VERSION=$(.github/bin/getversions 2 | tail -n 1)
   else
     echo "No changes in search-config.toml"
     exit 0
   fi
 else
-  OLD_VERSION=$(git diff main search-config.toml | grep '\-version' | awk '{print $3}' | sed 's/"//g')
-  NEW_VERSION=$(git diff main search-config.toml | grep '+version' | awk '{print $3}' | sed 's/"//g')
-  LATEST_OLD_VERSION=$(.circleci/bin/getversions 1 "$OLD_VERSION")
-  LATEST_NEW_VERSION=$(.circleci/bin/getversions 1 "$NEW_VERSION")
+  OLD_VERSION=$(git diff origin/main search-config.toml | grep '\-version' | awk '{print $3}' | sed 's/"//g')
+  NEW_VERSION=$(git diff origin/main search-config.toml | grep '+version' | awk '{print $3}' | sed 's/"//g')
+  LATEST_OLD_VERSION=$(.github/bin/getversions 1 "$OLD_VERSION")
+  LATEST_NEW_VERSION=$(.github/bin/getversions 1 "$NEW_VERSION")
 fi
 
 function fetch_benchmarks() {
