@@ -1,0 +1,26 @@
+name: nightly-clear-model-instances
+
+on:
+    schedule:
+    - cron: "0 4 * * 1 [ $(($(date +\%U) \% 2)) -eq 0 ]"    # Monday every other week at 4AM UTC
+
+    workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  automated-build-model:
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TRACE: true
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run create pr script
+        run: .github/bin/createpr

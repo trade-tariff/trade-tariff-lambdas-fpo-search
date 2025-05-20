@@ -68,7 +68,7 @@ EOF
   )
   branch_name=$(get_branch_name)
 
-  gh pr create --title "$title" --body "$description" --base "$base_branch" --head "$branch_name"
+  gh pr create --title "$title" --body "$description" --base "$base_branch" --head "$branch_name" --label "automated-build-model"
 }
 
 tag_branch() {
