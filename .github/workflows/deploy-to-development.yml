@@ -72,12 +72,6 @@ jobs:
   build-model:
     needs: build-ami
     runs-on: ubuntu-latest
-
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-      TRACE: true
-
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -95,10 +89,6 @@ jobs:
 
       - name: Run the scripts
         run: .github/bin/buildmodel
-
-      - name: Merge PR
-        if: contains(github.event.pull_request.labels.*.name, 'automated-build-model')
-        run: .github/bin/mergepr
 
   validate-model:
     needs: build-model
@@ -126,6 +116,25 @@ jobs:
       - run: .github/bin/validatemodel
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Check for 'automated-build-model' label
+        id: check-label
+        run: |
+          PULL_REQUEST_NUMBER="${{ github.event.pull_request.number }}"
+          if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
+            echo "label-found=true" >> $GITHUB_OUTPUT
+          else
+            echo "PR does not have the required label. Exiting."
+            echo "label-found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge PR
+        if: steps.check-label.outputs.label-found == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          TRACE: true
+        run: .github/bin/mergepr
 
   build:
     needs: validate-model
