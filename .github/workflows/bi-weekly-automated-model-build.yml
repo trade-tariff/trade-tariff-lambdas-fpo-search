@@ -1,8 +1,8 @@
-name: nightly-clear-model-instances
+name: bi-weekly-automated-model-build
 
 on:
     schedule:
-    - cron: "0 4 * * 1 [ $(($(date +\%U) \% 2)) -eq 0 ]"    # Monday every other week at 4AM UTC
+    - cron: "0 0 1,15 * *"    # Bi weekly (almost)
 
     workflow_dispatch:
 
