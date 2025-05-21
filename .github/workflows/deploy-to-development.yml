@@ -93,12 +93,6 @@ jobs:
   validate-model:
     needs: build-model
     runs-on: ubuntu-latest
-
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-      TRACE: true
-
     steps:
 
       - uses: aws-actions/configure-aws-credentials@v4
@@ -126,6 +120,7 @@ jobs:
       - name: Check for 'automated-build-model' label
         id: check-label
         run: |
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
             echo "label-found=true" >> $GITHUB_OUTPUT
           else
@@ -135,6 +130,10 @@ jobs:
 
       - name: Merge PR
         if: steps.check-label.outputs.label-found == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          TRACE: true
         run: .github/bin/mergepr
 
   build:
