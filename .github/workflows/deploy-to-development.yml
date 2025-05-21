@@ -72,6 +72,12 @@ jobs:
   build-model:
     needs: build-ami
     runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+      TRACE: true
+
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -89,6 +95,10 @@ jobs:
 
       - name: Run the scripts
         run: .github/bin/buildmodel
+
+      - name: Merge PR
+        if: contains(github.event.pull_request.labels.*.name, 'automated-build-model')
+        run: .github/bin/mergepr
 
   validate-model:
     needs: build-model
@@ -227,17 +237,3 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
-
-  # This is required however cron for automated builds is commented out in the circeci config as there is an issue with them.
-  # TODO: Ticket https://transformuk.atlassian.net/browse/HMRC-978
-  # merge-automated-model-pr:
-  #    needs: [smoketest, perftest]
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #       - uses: actions/checkout@v4
-  #
-  #       - run: .github/bin/mergepr
-  #         env:
-  #           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-  #
