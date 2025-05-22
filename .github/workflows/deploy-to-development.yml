@@ -120,7 +120,7 @@ jobs:
       - name: Check for 'automated-build-model' label
         id: check-label
         run: |
-          PULL_REQUEST_NUMBER="${{ github.event.pull_request.number }}"
+          PULL_REQUEST_NUMBER="${{ github.event.number }}"
           if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
             echo "label-found=true" >> $GITHUB_OUTPUT
           else
@@ -132,7 +132,7 @@ jobs:
         if: steps.check-label.outputs.label-found == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
           TRACE: true
         run: .github/bin/mergepr
 
