@@ -4,6 +4,8 @@ on:
   push:
     branches-ignore:
        - main
+    tags:
+      - 'automated-model-run-*'
   workflow_dispatch:
 
 permissions:
