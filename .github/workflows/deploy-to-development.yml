@@ -9,6 +9,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
 
 jobs:
   check:
@@ -94,7 +95,6 @@ jobs:
     needs: build-model
     runs-on: ubuntu-latest
     steps:
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
@@ -117,24 +117,21 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-      - name: Check for 'automated-build-model' label
-        id: check-label
-        run: |
-          PULL_REQUEST_NUMBER="${{ github.event.number }}"
-          if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
-            echo "label-found=true" >> $GITHUB_OUTPUT
-          else
-            echo "PR does not have the required label. Exiting."
-            echo "label-found=false" >> $GITHUB_OUTPUT
-          fi
+  merge-pr:
+    needs: validate-model
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.validate-model.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh pr merge --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
 
-      - name: Merge PR
-        if: steps.check-label.outputs.label-found == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_NUMBER: ${{ github.event.number }}
-          TRACE: true
-        run: .github/bin/mergepr
+  close-pr:
+    needs: validate-model
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.validate-model.result != 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh pr close --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
 
   build:
     needs: validate-model
