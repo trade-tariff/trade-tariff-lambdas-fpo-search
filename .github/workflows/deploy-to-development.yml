@@ -34,7 +34,7 @@ jobs:
           PULL_REQUEST_NUMBER=$(gh pr list --state open --head ${{ github.ref_name }} --json number -q '.[0]')
           echo "pr_number=PULL_REQUEST_NUMBER" >> "$GITHUB_OUTPUT"
 
-          if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
+          if gh pr view ${{ github.ref_name }} --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
             echo "label-found=true" >> $GITHUB_OUTPUT
           else
             echo "PR does not have the required label. Exiting."
