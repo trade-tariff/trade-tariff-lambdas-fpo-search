@@ -28,19 +28,16 @@ jobs:
       - name: Run Linting
         run: ruff check .
 
-      - name: Check for 'automated-build-model' label
-        id: check-label
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+      - name: Get pull request number
+        id: get_pr
         run: |
-          PULL_REQUEST_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
-            echo "label-found=true" >> $GITHUB_OUTPUT
-          else
-            echo "PR does not have the required label. Exiting."
-            echo "label-found=false" >> $GITHUB_OUTPUT
-          fi
+          PR_JSON=$(gh pr list --state open --head ${{ github.ref_name }} --json number -q '.[0]')
+          echo "pr_number=$PR_JSON" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Use PR number
+        run: echo "Found PR ${{ steps.get_pr.outputs.pr_number }}"
 
   test:
     needs: check
