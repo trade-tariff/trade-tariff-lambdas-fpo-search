@@ -42,7 +42,6 @@ jobs:
   test:
     needs: check
     runs-on: ubuntu-latest
-    if: steps.check-label.outputs.label-found == 'true'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
