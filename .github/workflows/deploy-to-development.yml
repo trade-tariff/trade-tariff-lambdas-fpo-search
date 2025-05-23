@@ -30,6 +30,9 @@ jobs:
 
       - name: Check for 'automated-build-model' label
         id: check-label
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
         run: |
           PULL_REQUEST_NUMBER="${{ github.event.number }}"
           if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
