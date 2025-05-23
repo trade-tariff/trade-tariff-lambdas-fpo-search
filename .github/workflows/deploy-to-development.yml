@@ -1,9 +1,8 @@
 name: deploy-to-development
 
 on:
-  push:
-    branches-ignore:
-       - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
 
 permissions:
@@ -117,22 +116,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-  merge-pr:
-    needs: validate-model
-    runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.validate-model.result == 'success'
-    steps:
-      - uses: actions/checkout@v4
-      - run: gh pr merge --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
-
-  close-pr:
-    needs: validate-model
-    runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.validate-model.result != 'success'
-    steps:
-      - uses: actions/checkout@v4
-      - run: gh pr close --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
-
   build:
     needs: validate-model
     runs-on: ubuntu-latest
@@ -243,3 +226,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+
+  merge-pr:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh pr merge --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  close-pr:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result != 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh pr close --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
