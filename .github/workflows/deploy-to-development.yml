@@ -199,16 +199,6 @@ jobs:
           result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
-  perftest:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: .github/bin/perf https://search.dev.trade-tariff.service.gov.uk/fpo-code-search ${{ secrets.SMOKETEST_API_KEY }}
-
   e2etest:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     needs: deploy
@@ -233,7 +223,9 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result == 'success'
     steps:
       - uses: actions/checkout@v4
-      - run: gh pr merge --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
+        with:
+          fetch-depth: 0
+      - run: gh pr merge ${{ github.event.pull_request.number }} --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
