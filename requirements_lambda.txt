@@ -3,6 +3,5 @@ jmespath==1.0.1
 lingua-language-detector==2.0.2
 numpy==1.26.4
 sentence-transformers==3.4.1
-sentry-sdk==2.8.0
 toml==0.10.2
 torch==2.6.0
