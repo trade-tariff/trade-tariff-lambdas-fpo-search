@@ -1,14 +1,14 @@
 name: deploy-to-development
 
 on:
-  push:
-    branches-ignore:
-       - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
 
 jobs:
   check:
@@ -94,7 +94,6 @@ jobs:
     needs: build-model
     runs-on: ubuntu-latest
     steps:
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
@@ -116,25 +115,6 @@ jobs:
       - run: .github/bin/validatemodel
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-
-      - name: Check for 'automated-build-model' label
-        id: check-label
-        run: |
-          PULL_REQUEST_NUMBER="${{ github.event.number }}"
-          if gh pr view "$PULL_REQUEST_NUMBER" --json labels --jq '.labels[].name' | grep -q "automated-build-model"; then
-            echo "label-found=true" >> $GITHUB_OUTPUT
-          else
-            echo "PR does not have the required label. Exiting."
-            echo "label-found=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Merge PR
-        if: steps.check-label.outputs.label-found == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_NUMBER: ${{ github.event.number }}
-          TRACE: true
-        run: .github/bin/mergepr
 
   build:
     needs: validate-model
@@ -215,16 +195,6 @@ jobs:
           result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
-  perftest:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: development
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: .github/bin/perf https://search.dev.trade-tariff.service.gov.uk/fpo-code-search ${{ secrets.SMOKETEST_API_KEY }}
-
   e2etest:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     needs: deploy
@@ -242,3 +212,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+
+  merge-pr:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: gh pr merge ${{ github.event.pull_request.number }} --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  close-pr:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result != 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh pr close --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
