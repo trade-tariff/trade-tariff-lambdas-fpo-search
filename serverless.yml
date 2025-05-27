@@ -12,10 +12,6 @@ provider:
   timeout: 29
   memorySize: 3072
 
-  environment:
-    SENTRY_DSN: ${env:SENTRY_DSN}
-    SENTRY_ENVIRONMENT: ${env:STAGE}
-
   deploymentBucket:
     name: "trade-tariff-lambda-deployment-${aws:accountId}"
 

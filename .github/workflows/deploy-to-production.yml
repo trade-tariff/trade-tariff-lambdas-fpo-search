@@ -37,7 +37,7 @@ jobs:
           pip install requests==2.32.0
 
       - run: .github/bin/fetchmodel production
-      
+
       - run: .github/bin/download_search_references
 
       - id: docker-tag
@@ -72,15 +72,11 @@ jobs:
       - id: docker-tag
         run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - id: sentry-dsn
-        run: echo "SENTRY_DSN=$(.github/bin/getsecret fpo-search-sentry-dsn)" >> "$GITHUB_OUTPUT"
-
       - run: make deploy-production
         env:
           STAGE: production
           DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
           FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
-          SENTRY_DSN: ${{ steps.sentry-dsn.outputs.SENTRY_DSN }}
 
   notify:
     needs: deploy
@@ -109,4 +105,3 @@ jobs:
         with:
           ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
           ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
-       

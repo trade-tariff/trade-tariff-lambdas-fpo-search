@@ -1,13 +1,11 @@
-from pathlib import Path
+import os
 import pickle
 import time
-import os
-import sentry_sdk
+from pathlib import Path
 
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
-from aws_lambda.handler import LambdaHandler
 from aws_lambda_powertools import Logger
 
+from aws_lambda.handler import LambdaHandler
 from inference.infer import FlatClassifier
 
 logger = Logger(service="fpo-commodity-code-tool")
@@ -49,14 +47,6 @@ def strip_sensitive_headers(event, _hint):
         event["request"]["multiValueHeaders"] = multi_value_headers
 
     return event
-
-
-sentry_sdk.init(
-    os.getenv("SENTRY_DSN", ""),
-    integrations=[AwsLambdaIntegration(timeout_warning=True)],
-    environment=os.getenv("SENTRY_ENVIRONMENT", ""),
-    before_send=strip_sensitive_headers,
-)
 
 
 @logger.inject_lambda_context
