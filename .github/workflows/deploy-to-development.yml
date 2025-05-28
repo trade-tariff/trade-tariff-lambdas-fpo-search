@@ -223,7 +223,7 @@ jobs:
           fetch-depth: 0
       - run: gh pr merge ${{ github.event.pull_request.number }} --delete-branch --admin --merge --author-email "noreply@trade-tariff.service.gov.uk"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PULL_REQUEST_PAT }}
 
   close-pr:
     needs: deploy
@@ -231,6 +231,6 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'automated-build-model') && needs.deploy.result != 'success'
     steps:
       - uses: actions/checkout@v4
-      - run: gh pr close --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
+      - run: gh pr close ${{ github.event.pull_request.number }} --delete-branch --comment "This PR due a a model validation failure. Please check the logs for more details."
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PULL_REQUEST_PAT }}
