@@ -87,16 +87,6 @@ jobs:
           result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
-  perftest:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: staging
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: .github/bin/perf https://search.staging.trade-tariff.service.gov.uk/fpo-code-search ${{ secrets.SMOKETEST_API_KEY }}
-
   e2etest:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     needs: deploy
