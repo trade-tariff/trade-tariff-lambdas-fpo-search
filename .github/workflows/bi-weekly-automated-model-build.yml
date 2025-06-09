@@ -15,8 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TRACE: true
+      GITHUB_TOKEN: ${{ secrets.PULL_REQUEST_PAT }}
 
     steps:
       - name: Checkout repo
