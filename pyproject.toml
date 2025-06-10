@@ -1,7 +1,6 @@
 [project]
 name = "hmrc_fpo_categorisation_api"
 description = "FPO Parcel Item Categorisation API"
-version = "0.1.0"
 dependencies = [
     "aws-lambda-powertools",
     "sentence-transformers", # Model/embedding generation
@@ -10,7 +9,8 @@ dependencies = [
     "prettytable", # Benchmarking
     "toml",
     "lingua-language-detector",
-    "dill" # Flexible marshalling for forked multiprocessing
+    "dill", # Flexible marshalling for forked multiprocessing
+    "requests" # HTTP requests
 ]
 
 [project.optional-dependencies]
