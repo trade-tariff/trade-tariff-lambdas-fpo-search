@@ -4,4 +4,4 @@ lingua-language-detector==2.0.2
 numpy==1.26.4
 sentence-transformers==3.4.1
 toml==0.10.2
-torch==2.6.0
+torch==2.7.1
