@@ -83,11 +83,7 @@ test-local:
 		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
 
 test-provision:
-	docker run amazonlinux:2 \
-		-ti \
-		-e "GIT_BRANCH=main" \
-		-v $(pwd)/.packer/provision:/provision \
-		./provision
+	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2 ./provision
 
 benchmark-goods-descriptions:
 	${PYTHON} benchmark.py \
