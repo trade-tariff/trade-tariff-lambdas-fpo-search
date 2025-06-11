@@ -3,13 +3,6 @@ VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
-dev-env: install-dev .git/hooks/pre-commit
-	@echo
-	@echo "---------------------------------------------------------"
-	@echo "Development environment set up. You can activate it using"
-	@echo "    source $(VENV)/bin/activate"
-	@echo "---------------------------------------------------------"
-
 train:
 	${PYTHON} train.py --config search-config.toml
 
@@ -18,14 +11,6 @@ $(VENV)/bin/activate:
 
 .git/hooks/pre-commit:
 	$(VENV)/bin/pre-commit install
-
-install: $(VENV)/bin/activate
-	@echo ">> Installing dependencies"
-	$(PIP) install --upgrade pip
-	$(PIP) install -e .
-
-install-dev: install
-	$(PIP) install -e ".[dev]"
 
 clean:
 	rm -rf .ipynb_checkpoints
@@ -49,9 +34,6 @@ format:
 
 check:
 	$(VENV)/bin/ruff check .
-
-freeze: $(VENV)/bin/activate
-	$(PIP) freeze --exclude hmrc_fpo_categorisation_api > requirements.txt
 
 build:
 	docker build -t $(IMAGE_NAME) .
