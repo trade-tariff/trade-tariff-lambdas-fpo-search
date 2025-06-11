@@ -1,9 +1,6 @@
-FROM ubuntu:22.04
+FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-venv \
-    python3.11-dev \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -19,7 +16,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
 # Install Python dependencies
 COPY requirements_lambda.txt /tmp/
 RUN pip install --upgrade pip
-RUN pip install -r /tmp/requirements_lambda.txt --extra-index-url https://download.pytorch.org/whl
+RUN pip install -r /tmp/requirements_lambda.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY . /opt/app
 WORKDIR /opt/app
