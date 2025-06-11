@@ -1,5 +1,3 @@
-.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test lint-fix format
-
 IMAGE_NAME := trade-tariff-lambdas-fpo-search
 VENV = venv
 PYTHON = $(VENV)/bin/python3
@@ -64,11 +62,6 @@ run: build
 		--name $(IMAGE_NAME) \
 		$(IMAGE_NAME) \
 
-test-local:
-	curl http://localhost:9000/2015-03-31/functions/function/invocations \
-		--header 'Content-Type: application/json' \
-		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
-
 shell:
 	docker run \
 		--rm \
@@ -83,6 +76,18 @@ test:
 
 test-infer:
 	${PYTHON} infer.py "shoes"
+
+test-local:
+	curl http://localhost:9000/2015-03-31/functions/function/invocations \
+		--header 'Content-Type: application/json' \
+		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
+
+test-provision:
+	docker run amazonlinux:2 \
+		-ti \
+		-e "GIT_BRANCH=main" \
+		-v $(pwd)/.packer/provision:/provision \
+		./provision
 
 benchmark-goods-descriptions:
 	${PYTHON} benchmark.py \

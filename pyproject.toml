@@ -1,6 +1,7 @@
 [project]
 name = "hmrc_fpo_categorisation_api"
 description = "FPO Parcel Item Categorisation API"
+version = "0.1.0"
 dependencies = [
     "aws-lambda-powertools",
     "sentence-transformers", # Model/embedding generation
