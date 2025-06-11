@@ -1,4 +1,5 @@
 aws_lambda_powertools==3.14.0
+awslambdaric==3.1.1
 jmespath==1.0.1
 lingua-language-detector==2.1.1
 numpy==2.3.0
