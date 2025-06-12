@@ -1,16 +1,7 @@
-.PHONY: dev-env train install install-dev clean ruff check run-api freeze deploy-development deploy-staging deploy-production build test lint-fix format
-
 IMAGE_NAME := trade-tariff-lambdas-fpo-search
 VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
-
-dev-env: install-dev .git/hooks/pre-commit
-	@echo
-	@echo "---------------------------------------------------------"
-	@echo "Development environment set up. You can activate it using"
-	@echo "    source $(VENV)/bin/activate"
-	@echo "---------------------------------------------------------"
 
 train:
 	${PYTHON} train.py --config search-config.toml
@@ -20,14 +11,6 @@ $(VENV)/bin/activate:
 
 .git/hooks/pre-commit:
 	$(VENV)/bin/pre-commit install
-
-install: $(VENV)/bin/activate
-	@echo ">> Installing dependencies"
-	$(PIP) install --upgrade pip
-	$(PIP) install -e .
-
-install-dev: install
-	$(PIP) install -e ".[dev]"
 
 clean:
 	rm -rf .ipynb_checkpoints
@@ -52,9 +35,6 @@ format:
 check:
 	$(VENV)/bin/ruff check .
 
-freeze: $(VENV)/bin/activate
-	$(PIP) freeze --exclude hmrc_fpo_categorisation_api > requirements.txt
-
 build:
 	docker build -t $(IMAGE_NAME) .
 
@@ -63,11 +43,6 @@ run: build
 		--rm \
 		--name $(IMAGE_NAME) \
 		$(IMAGE_NAME) \
-
-test-local:
-	curl http://localhost:9000/2015-03-31/functions/function/invocations \
-		--header 'Content-Type: application/json' \
-		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
 
 shell:
 	docker run \
@@ -83,6 +58,14 @@ test:
 
 test-infer:
 	${PYTHON} infer.py "shoes"
+
+test-local:
+	curl http://localhost:9000/2015-03-31/functions/function/invocations \
+		--header 'Content-Type: application/json' \
+		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
+
+test-provision:
+	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2 ./provision
 
 benchmark-goods-descriptions:
 	${PYTHON} benchmark.py \

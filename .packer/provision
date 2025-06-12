@@ -6,16 +6,40 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="3.11.13"
 
-sudo yum remove openssl-devel awscli -y
-sudo yum install -y \
+if [ "$(id -u)" -eq 0 ]; then
+  SUDO=""
+else
+  SUDO="sudo"
+fi
+
+[ -f awscliv2.zip ] && {
+  rm -f awscliv2.zip
+}
+
+[ -d /usr/local/aws-cli ] && {
+  rm -rf /usr/local/aws-cli
+}
+
+[ -d ~/.pyenv ] && {
+  rm -rf ~/.pyenv
+}
+
+[ -d "$GIT_REPO" ] && {
+  rm -rf "$GIT_REPO"
+}
+
+$SUDO yum remove openssl-devel awscli -y
+$SUDO yum install -y \
   git               \
-  gcc               \
+  gcc10             \
+  gcc10-c++         \
   make              \
   patch             \
   zlib-devel        \
   zip               \
+  tar               \
   unzip             \
   bzip2             \
   bzip2-devel       \
@@ -25,11 +49,20 @@ sudo yum install -y \
   openssl11-devel   \
   tk-devel          \
   libffi-devel      \
-  xz-devel
+  xz-devel \
+  binutils
+
+$SUDO alternatives --install /usr/bin/gcc gcc /usr/bin/gcc10-gcc 50
+$SUDO alternatives --install /usr/bin/g++ g++ /usr/bin/gcc10-g++ 50
+$SUDO alternatives --set gcc /usr/bin/gcc10-gcc
+$SUDO alternatives --set g++ /usr/bin/gcc10-g++
+
+gcc --version
+g++ --version
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
-sudo ./aws/install
+$SUDO ./aws/install
 
 export PYENV_ROOT="$HOME/.pyenv"
 curl https://pyenv.run | bash
@@ -39,7 +72,6 @@ eval "$(pyenv init -)"
 pyenv install "$PYTHON_VERSION"
 pyenv global "$PYTHON_VERSION"
 
-# Configure pyenv for login/non-login shells
 echo 'export PYENV_ROOT="$HOME/.pyenv"' >> "$HOME/.bashrc"
 echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> "$HOME/.bashrc"
 echo 'eval "$(pyenv init --path)"' >> "$HOME/.bashrc"
@@ -51,8 +83,12 @@ echo "$PYTHON_VERSION" > "$GIT_REPO/.python-version"
 cd "$GIT_REPO"
 
 git fetch origin "$GIT_BRANCH:$GIT_BRANCH" && git checkout "$GIT_BRANCH"
+
 python -m venv venv
 source venv/bin/activate
-make install
+pip install "$(grep torch requirements.txt)" --index-url https://download.pytorch.org/whl/
+pip install -r requirements.txt
 
-git checkout main && git branch -D "$GIT_BRANCH"
+if [ "$GIT_BRANCH" != "main" ]; then
+  git checkout main && git branch -D "$GIT_BRANCH"
+fi

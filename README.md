@@ -17,8 +17,7 @@
 
 ### Install dependencies when the `pyproject.toml` has changed
 
-- For development: `make install-dev`
-- For production: `make install`
+- `pip install -r requirements.txt`
 
 ## Usage
 

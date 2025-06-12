@@ -14,7 +14,7 @@ if [ ! -f "$PACKER_TEMPLATE" ]; then
   exit 1
 fi
 
-if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ]; then
+if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ] || [ "$AWS_SESSION_TOKEN" = "" ]; then
   echo "AWS credentials not found."
   exit 1
 fi
