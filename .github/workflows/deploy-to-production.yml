@@ -47,9 +47,7 @@ jobs:
         with:
           ecr-url: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
           ref: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
-        env:
-          AWS_REGION: eu-west-2
-          IAM_ROLE_ARN: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
+          role-to-assume: arn:aws:iam::382373577178:role/GithubActions-Serverless-Lambda-Role
 
   deploy:
     needs: [build]
