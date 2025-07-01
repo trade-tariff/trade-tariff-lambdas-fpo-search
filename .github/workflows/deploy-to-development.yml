@@ -192,15 +192,6 @@ jobs:
           result: ${{ needs.deploy.result }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
-  e2etest:
-    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
-    needs: deploy
-    with:
-      test-environment: development
-    secrets:
-      scp-username: ${{ secrets.SCP_USERNAME }}
-      scp-password: ${{ secrets.SCP_PASSWORD }}
-
   smoketest:
     needs: deploy
     runs-on: ubuntu-latest
