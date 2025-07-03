@@ -185,20 +185,24 @@ jobs:
           DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
           FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
 
-  e2e-tests:
-    needs: deploy
-    uses: trade-tariff/trade-tariff-tools/.github/workflows/deploy-ecs.yml@main
+  start-dev-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/start-services@main
+        with:
+          service-names: dev-hub
+          environment: development
+
+  e2etest:
+    needs:
+      - start-dev-hub
+      - deploy
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     with:
-      app-name: tariff-dev-hub
-      environment: development
-      test-flavour: fpo
-      checkout-repo: trade-tariff/trade-tariff-dev-hub
-      notify: false
+      test-environment: development
     secrets:
-      scp-password: ${{ secrets.SCP_PASSWORD }}
       scp-username: ${{ secrets.SCP_USERNAME }}
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
-      ssh-key: ${{ secrets.PRIVATE_SSH_KEY }}
+      scp-password: ${{ secrets.SCP_PASSWORD }}
 
   smoketest:
     needs: deploy
