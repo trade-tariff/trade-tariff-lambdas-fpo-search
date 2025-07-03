@@ -9,6 +9,9 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  PYTHON_VERSION: 3.11
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -19,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Ruff
         run: pip install ruff==0.1.6
@@ -37,7 +40,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Dependencies
         run: |
@@ -134,7 +137,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Dependencies
         run: |
@@ -182,15 +185,24 @@ jobs:
           DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
           FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
 
-  notify:
-    needs: deploy
+  start-dev-hub:
     runs-on: ubuntu-latest
-    if: always()
     steps:
-      - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/start-services@main
         with:
-          result: ${{ needs.deploy.result }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+          service-names: dev-hub
+          environment: development
+
+  e2etest:
+    needs:
+      - start-dev-hub
+      - deploy
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
+    with:
+      test-environment: development
+    secrets:
+      scp-username: ${{ secrets.SCP_USERNAME }}
+      scp-password: ${{ secrets.SCP_PASSWORD }}
 
   smoketest:
     needs: deploy
@@ -200,6 +212,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - id: result
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
+        with:
+          result: ${{ steps.result.outputs.result }}
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
 
   merge-pr:
     needs: deploy
