@@ -10,9 +10,13 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: reference_data/*
       - id: end-of-file-fixer
+        exclude: reference_data/*
       - id: check-yaml
+        exclude: reference_data/*
       - id: check-merge-conflict
+        exclude: reference_data/*
 
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0
