@@ -126,7 +126,9 @@ filters = [
     StripExcessCharacters(),
     RemoveEmptyDescription(),
     DescriptionLower(),
-    RemoveShortDescription(min_length=2), #remove anything length 2 or less (just for benchmarks)
+    RemoveShortDescription(
+        min_length=2
+    ),  # remove anything length 2 or less (just for benchmarks)
     RemoveSubheadingsNotMatchingRegexes(regexes=["^\\d{" + str(args.digits) + "}$"]),
     RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
