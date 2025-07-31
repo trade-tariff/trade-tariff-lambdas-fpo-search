@@ -15,14 +15,8 @@ filter = PhraseRemover.build(args.phrases_to_remove_file())
 
 class TestPhraseRemover(unittest.TestCase):
     EXAMPLES: List[Tuple] = [
-        (
-            ("99999999", "gold no commercial value"),
-            ("99999999", "gold")
-        ),
-        (
-            ("99999999", "no commercial value"),
-            (None, None)
-        )
+        (("99999999", "gold no commercial value"), ("99999999", "gold")),
+        (("99999999", "no commercial value"), (None, None)),
     ]
 
     def test_filter(self):

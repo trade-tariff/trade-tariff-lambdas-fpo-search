@@ -1,13 +1,14 @@
 name: deploy-to-production
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - 'deploy-to-staging'
     types:
       - completed
-
-  workflow_dispatch:
+    branches:
+      - main
 
 permissions:
   id-token: write

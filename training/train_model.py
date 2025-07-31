@@ -110,7 +110,7 @@ class FlatClassifierModelTrainer:
             report[f"epoch_{epoch + 1}"]["accuracy"] = 100 * correct
             report[f"epoch_{epoch + 1}"]["average_loss"] = running_loss
             logger.info(
-                f"{epoch + 1} \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {running_loss:>8f} \n"
+                f"{epoch + 1} \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {running_loss:>8f} \n"
             )
 
         with open("running_losses.json", "w") as f:

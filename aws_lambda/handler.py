@@ -109,7 +109,7 @@ class LambdaHandler:
         path = event.get("path", "default")
 
         method_name = (
-            f'handle_{path.strip("/").replace("-", "_")}_{http_method.lower()}'
+            f"handle_{path.strip('/').replace('-', '_')}_{http_method.lower()}"
         )
         handler = getattr(self, method_name, self.handle_default)
 
