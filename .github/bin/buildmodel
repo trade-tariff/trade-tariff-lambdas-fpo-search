@@ -190,11 +190,11 @@ validate_connection() {
 }
 
 bring_code_inline() {
-  local branch_name
+  local commit_hash
 
-  branch_name=$(git rev-parse --abbrev-ref HEAD)
+  commit_hash=$(git log -1 --format=%H)
 
-  execute_command "$1" "cd $PROJECT && git fetch origin $branch_name:$branch_name && git checkout $branch_name"
+  execute_command "$1" "cd $PROJECT && git fetch origin $commit_hash && git checkout $commit_hash"
 }
 
 load_latest_input_data() {
