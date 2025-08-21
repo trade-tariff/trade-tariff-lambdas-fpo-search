@@ -1,9 +1,10 @@
 #!./venv/bin/python
 
-import toml
-from pathlib import Path
 import json
 import os
+from pathlib import Path
+
+import toml
 
 cwd = Path.cwd()
 
@@ -31,7 +32,18 @@ results = {
     "medium": [],
     "low": [],
     "thresholds": [],
+    "changes": {},
 }
+
+
+def is_in_top_n(predictions, correct_code, n):
+    if len(predictions) < n:
+        n = len(predictions)
+    for i in range(n):
+        if predictions[i]["code"] == correct_code:
+            return True
+    return False
+
 
 for threshold in thresholds:
     old = old_results_dir / threshold["file"]
@@ -74,19 +86,23 @@ for threshold in thresholds:
         if direction == "increase_is_good":
             if delta < threshold["changeHigh"]:
                 print(
-                    f"Threshold {threshold['name']} failed: {delta} > {threshold['changeHigh']}"
+                    f"Threshold {threshold['name']} failed: {delta} < {threshold['changeHigh']}"
                 )
                 results["high"].append(threshold["name"])
             elif delta < threshold["changeMedium"]:
                 print(
-                    f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
+                    f"Threshold {threshold['name']} warn: {delta} < {threshold['changeMedium']}"
                 )
                 results["medium"].append(threshold["name"])
-            else:
+            elif delta < threshold["changeLow"]:
                 print(
-                    f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
+                    f"Threshold {threshold['name']} passed with minor change: {delta} < {threshold['changeLow']}"
                 )
                 results["low"].append(threshold["name"])
+            else:
+                print(
+                    f"Threshold {threshold['name']} passed: {delta} >= {threshold['changeLow']}"
+                )
         else:
             if delta > threshold["changeHigh"]:
                 print(
@@ -98,11 +114,90 @@ for threshold in thresholds:
                     f"Threshold {threshold['name']} warn: {delta} > {threshold['changeMedium']}"
                 )
                 results["medium"].append(threshold["name"])
-            else:
+            elif delta > threshold["changeLow"]:
                 print(
-                    f"Threshold {threshold['name']} passed: {delta} > {threshold['changeLow']}"
+                    f"Threshold {threshold['name']} passed with minor change: {delta} > {threshold['changeLow']}"
                 )
                 results["low"].append(threshold["name"])
+            else:
+                print(
+                    f"Threshold {threshold['name']} passed: {delta} <= {threshold['changeLow']}"
+                )
+
+        if (
+            "benchmark_results_classified.json" in threshold["file"]
+            or "benchmark_results_good_goods.json" in threshold["file"]
+        ):
+            benchmark_type = (
+                "classified" if "classified" in threshold["file"] else "good_goods"
+            )
+            old_details_file = (
+                old_results_dir / f"benchmark_details_{benchmark_type}.json"
+            )
+            new_details_file = (
+                new_results_dir / f"benchmark_details_{benchmark_type}.json"
+            )
+
+            if old_details_file.exists() and new_details_file.exists():
+                old_details = json.loads(open(old_details_file).read())
+                new_details = json.loads(open(new_details_file).read())
+
+                old_dict = {item["description"]: item for item in old_details}
+                new_dict = {item["description"]: item for item in new_details}
+
+                # Common descriptions
+                common_descriptions = set(old_dict.keys()) & set(new_dict.keys())
+
+                added = []
+                removed = []
+
+                if "top 1" in threshold["name"].lower():
+                    n = 1
+                elif "top 5" in threshold["name"].lower():
+                    n = 5
+                else:
+                    continue  # Skip if not top1 or top5
+
+                for desc in common_descriptions:
+                    old_item = old_dict[desc]
+                    new_item = new_dict[desc]
+                    correct_code = old_item["correct_code"]  # Assume same
+
+                    was_in_top = is_in_top_n(old_item["predictions"], correct_code, n)
+                    now_in_top = is_in_top_n(new_item["predictions"], correct_code, n)
+
+                    if not was_in_top and now_in_top:
+                        added.append(
+                            {
+                                "description": desc,
+                                "correct_code": correct_code,
+                                "old_predictions": old_item["predictions"],
+                                "new_predictions": new_item["predictions"],
+                            }
+                        )
+                    elif was_in_top and not now_in_top:
+                        removed.append(
+                            {
+                                "description": desc,
+                                "correct_code": correct_code,
+                                "old_predictions": old_item["predictions"],
+                                "new_predictions": new_item["predictions"],
+                            }
+                        )
+
+                change_key = f"{threshold['name']}_changes"
+                results["changes"][change_key] = {
+                    "added": added,
+                    "removed": removed,
+                    "added_count": len(added),
+                    "removed_count": len(removed),
+                }
+
+                # Optionally write changes to file
+                changes_file = cwd / f"changes_{benchmark_type}_{n}.json"
+                with open(changes_file, "w") as f:
+                    json.dump(results["changes"][change_key], f, indent=4)
+                print(f"Wrote changes for {threshold['name']} to {changes_file}")
 
     else:
         print("No match")
