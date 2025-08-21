@@ -3,15 +3,17 @@ import json
 import logging
 import os
 import pickle
+from pathlib import Path
 from typing import List
+
 import tqdm
+from prettytable import PrettyTable
+from prettytable.colortable import ColorTable, Themes
 
 from data_sources.basic_csv import BasicCSVDataSource
 from data_sources.data_source import DataSource
 from inference.infer import FlatClassifier
-from pathlib import Path
-from prettytable import PrettyTable
-from prettytable.colortable import ColorTable, Themes
+from train_args import TrainScriptArgsParser
 from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
@@ -22,7 +24,6 @@ from training.cleaning_pipeline import (
     RemoveSubheadingsNotMatchingRegexes,
     StripExcessCharacters,
 )
-from train_args import TrainScriptArgsParser
 
 training_args = TrainScriptArgsParser()
 training_args.load_config_file()
@@ -186,12 +187,10 @@ def reject_paths(paths: List[str]):
 
 
 if not args.benchmark_classifieds:
-    files = filter(reject_paths(["classified", "other.csv"]), files)
+    files = list(filter(reject_paths(["classified", "other.csv"]), files))
 
 if not args.benchmark_goods_descriptions:
-    files = filter(reject_paths(["good-goods-descriptions.csv"]), files)
-
-files = list(files)
+    files = list(filter(reject_paths(["good-goods-descriptions.csv"]), files))
 
 if len(files) == 0:
     raise FileNotFoundError(f"No benchmarking data found in {benchmarking_data_dir}")
@@ -238,16 +237,16 @@ res = {
 }
 
 num = 0
-items = benchmarking_data.items()
+items = list(benchmarking_data.items())
 results = None
+details = []  # New: collect per-description details
 
 if args.number_of_items:
-    items = list(items)[: args.number_of_items]
+    items = items[: args.number_of_items]
 
-if not no_progress:
-    items = tqdm.tqdm(items)  # Use a nice progress bar if it hasn't been disabled
+progress_items = tqdm.tqdm(items) if not no_progress else items
 
-for description, code in items:
+for description, code in progress_items:
     if description in skip_descriptions:
         continue
 
@@ -255,12 +254,22 @@ for description, code in items:
 
     term_results = classifier.classify(description, 5, digits)
 
+    # New: Assume term_results is list of objects with .code and .score
+    predictions = [{"code": tr.code, "score": tr.score} for tr in term_results]
+
+    # Append to details
+    details.append(
+        {"description": description, "correct_code": code, "predictions": predictions}
+    )
+
     found = False
+    position = None
 
     for i in range(len(term_results)):
         if code == term_results[i].code:
             found = True
-            res[str(i + 1)] += 1
+            position = i + 1
+            res[str(position)] += 1
             break
 
     if not found:
@@ -303,24 +312,22 @@ if output == "text":
 
     row = [
         str(num),
-        str(res["1"]) + " (" + str(round(100 * res["1"] / num, 1)) + "%)",
-        str(res["2"]) + " (" + str(round(100 * res["2"] / num, 1)) + "%)",
-        str(res["3"]) + " (" + str(round(100 * res["3"] / num, 1)) + "%)",
-        str(res["4"]) + " (" + str(round(100 * res["4"] / num, 1)) + "%)",
-        str(res["5"]) + " (" + str(round(100 * res["5"] / num, 1)) + "%)",
-        str(top5sum) + " (" + str(round(100 * top5sum / num, 1)) + "%)",
-        str(res["NF"]) + " (" + str(round(100 * res["NF"] / num, 1)) + "%)",
-        str(res["NR"]) + " (" + str(round(100 * res["NR"] / num, 1)) + "%)",
-        str(res["chapter"]) + " (" + str(round(100 * res["chapter"] / num, 1)) + "%)",
-        str(res["heading"])
-        + (
-            " (" + str(round(100 * res["heading"] / num, 1)) + "%)"
+        f"{res['1']} ({round(100 * res['1'] / num, 1)}%)",
+        f"{res['2']} ({round(100 * res['2'] / num, 1)}%)",
+        f"{res['3']} ({round(100 * res['3'] / num, 1)}%)",
+        f"{res['4']} ({round(100 * res['4'] / num, 1)}%)",
+        f"{res['5']} ({round(100 * res['5'] / num, 1)}%)",
+        f"{top5sum} ({round(100 * top5sum / num, 1)}%)",
+        f"{res['NF']} ({round(100 * res['NF'] / num, 1)}%)",
+        f"{res['NR']} ({round(100 * res['NR'] / num, 1)}%)",
+        f"{res['chapter']} ({round(100 * res['chapter'] / num, 1)}%)",
+        (
+            f"{res['heading']} ({round(100 * res['heading'] / num, 1)}%)"
             if digits >= 4
             else "-"
         ),
-        str(res["subheading"])
-        + (
-            " (" + str(round(100 * res["subheading"] / num, 1)) + "%)"
+        (
+            f"{res['subheading']} ({round(100 * res['subheading'] / num, 1)}%)"
             if digits >= 6
             else "-"
         ),
@@ -358,7 +365,6 @@ else:  # output is json
 
     print(json.dumps(results, indent=4))
 
-
 if write_file and results:
     path = "benchmarking_data/results"
     os.makedirs(path, exist_ok=True)
@@ -373,3 +379,7 @@ if write_file and results:
         file.write(str(results))
 
     file.close()
+
+    details_file = open(f"{path}/benchmark_details_{benchmark_type}.json", "w")
+    details_file.write(json.dumps(details, indent=2))
+    details_file.close()
