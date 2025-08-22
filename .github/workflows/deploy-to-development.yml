@@ -63,6 +63,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
           fetch-depth: 0
 
       - name: Fetch main branch (for needsmodel comparison)
@@ -84,6 +85,7 @@ jobs:
       - name: Checkout Repository and fetch git history
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
           fetch-depth: 0
 
       - name: Fetch main branch (for needsmodel comparison)
