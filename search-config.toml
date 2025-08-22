@@ -5,6 +5,7 @@ max_epochs = 5
 model_batch_size = 1024
 embedding_batch_size = 250
 vague_terms_data_file = "reference_data/vague_terms.csv"
+vague_terms_regex_file = "reference_data/vague_terms_patterns.txt"
 extra_data_file = "reference_data/extra_references.csv"
 cn_data_file = "reference_data/CN2025_SelfText_EN_DE_FR.csv"
 exact_english_terms = "reference_data/exact_english_terms.txt"

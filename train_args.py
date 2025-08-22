@@ -1,8 +1,9 @@
 import argparse
-from pathlib import Path
-import torch
-import toml
 import logging
+from pathlib import Path
+
+import toml
+import torch
 
 logger = logging.getLogger("config")
 logging.basicConfig(level=logging.INFO)
@@ -85,6 +86,12 @@ class TrainScriptArgsParser:
             type=str,
             help="the path to the vague terms data file",
             default="reference_data/vague_terms.csv",
+        )
+        parser.add_argument(
+            "--vague-terms-regex-file",
+            type=str,
+            help="the path to the vague terms regex file. Add python regexes to this file, one per line that match on known vague terms.",
+            default="reference_data/vague_terms_regex.txt",
         )
         parser.add_argument(
             "--extra-references-data-file",
@@ -264,6 +271,10 @@ class TrainScriptArgsParser:
     @config_from_file
     def vague_terms_data_file(self):
         return self.parsed_args.vague_terms_data_file
+
+    @config_from_file
+    def vague_terms_regex_file(self):
+        return self.parsed_args.vague_terms_regex_file
 
     @config_from_file
     def limit(self):

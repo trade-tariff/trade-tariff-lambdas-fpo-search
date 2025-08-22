@@ -1,8 +1,8 @@
 import json
 import logging
 import unittest
-from aws_lambda.handler import LambdaHandler
 
+from aws_lambda.handler import LambdaHandler
 from inference.infer import ClassificationResult, Classifier
 
 logger = logging.getLogger()
@@ -59,6 +59,24 @@ class Test_handler_handle(unittest.TestCase):
 
     def test_it_should_handle_vague_terms(self):
         event = self._create_post_event("Bits", "6", "5")
+
+        result = handler.handle(event, {})
+        result_body = json.loads(result["body"])
+
+        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
+        self.assertEqual(
+            {"results": []},
+            result_body,
+            "Expected 1 result",
+        )
+        self.assertEqual(
+            "6b85ab53-2b60-4178-81ce-342acdec65a2",
+            result["headers"]["X-Request-Id"],
+            "Expected a request id",
+        )
+
+    def test_it_should_handle_vague_patterns(self):
+        event = self._create_post_event("[bn-00011-166w50h-banner_vy] z", "6", "5")
 
         result = handler.handle(event, {})
         result_body = json.loads(result["body"])

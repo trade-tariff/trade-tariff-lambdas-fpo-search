@@ -1,18 +1,18 @@
 if __name__ == "__main__":
-    import toml
     import logging
     import pickle
-    import torch
-
     from pathlib import Path
 
+    import toml
+    import torch
+
+    from data_sources.basic_csv import BasicCSVDataSource
     from data_sources.commodities import CommoditiesDataSource
+    from data_sources.data_source import DataSource
+    from data_sources.search_references import SearchReferencesDataSource
+    from data_sources.vague_terms import VagueTermsCSVDataSource
     from train_args import TrainScriptArgsParser
     from training.cleaners.map_2024_to_2025_codes import Map2024CodesTo2025Codes
-    from training.prepare_data import TrainingDataLoader
-    from training.train_model import FlatClassifierModelTrainer
-    from training.create_embeddings import EmbeddingsProcessor
-
     from training.cleaning_pipeline import (
         CleaningPipeline,
         DescriptionLower,
@@ -27,11 +27,9 @@ if __name__ == "__main__":
         RemoveSubheadingsNotMatchingRegexes,
         StripExcessCharacters,
     )
-
-    from data_sources.vague_terms import VagueTermsCSVDataSource
-    from data_sources.search_references import SearchReferencesDataSource
-    from data_sources.data_source import DataSource
-    from data_sources.basic_csv import BasicCSVDataSource
+    from training.create_embeddings import EmbeddingsProcessor
+    from training.prepare_data import TrainingDataLoader
+    from training.train_model import FlatClassifierModelTrainer
 
     args = TrainScriptArgsParser()
     args.print()
@@ -110,7 +108,12 @@ if __name__ == "__main__":
 
     data_sources: list[DataSource] = []
 
-    data_sources.append(VagueTermsCSVDataSource(args.vague_terms_data_file()))
+    data_sources.append(
+        VagueTermsCSVDataSource(
+            args.vague_terms_data_file(),
+            args.vague_terms_regex_file(),
+        )
+    )
 
     data_sources.append(
         BasicCSVDataSource(

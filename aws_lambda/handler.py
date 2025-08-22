@@ -1,11 +1,13 @@
 import json
+import logging
+import time
 from typing import Union
 
 import aws_lambda_powertools
 
-from inference.infer import Classifier, ClassificationResult
 from data_sources.search_references import SearchReferencesDataSource
 from data_sources.vague_terms import VagueTermsCSVDataSource
+from inference.infer import ClassificationResult, Classifier
 from train_args import TrainScriptArgsParser
 from training.cleaning_pipeline import (
     CleaningPipeline,
@@ -16,9 +18,6 @@ from training.cleaning_pipeline import (
     RemoveShortDescription,
     StripExcessCharacters,
 )
-
-import logging
-import time
 
 with open("REVISION", "r") as f:
     REVISION = f.read().strip()
@@ -92,7 +91,10 @@ class LambdaHandler:
         self._classifier = classifier
         self._logger = logger
         self._search_references = SearchReferencesDataSource.build_from_json()
-        self._vague_terms = VagueTermsCSVDataSource(args.vague_terms_data_file())
+        self._vague_terms = VagueTermsCSVDataSource(
+            args.vague_terms_data_file(),
+            args.vague_terms_regex_file(),
+        )
 
     def handle(self, event, _context):
         if isinstance(self._logger, aws_lambda_powertools.Logger):
