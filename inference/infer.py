@@ -139,7 +139,7 @@ class FlatClassifier(Classifier):
         cumulative_score = 0
 
         for i in softmax_results:
-            classification = ClassificationResult(i[0], i[1])
+            classification = ClassificationResult(i[0], float(i[1]))
             # If the score is less than the cutoff then stop iterating through
             if classification.score < score_cutoff:
                 break
