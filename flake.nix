@@ -80,10 +80,12 @@
 
             buildInputs = [
               pkgs.python311
+              pkgs.python311Packages.pandas
               pkgs.python311Packages.pip
               pkgs.nodejs_latest
               pkgs.yarn
               pkgs.ruff
+              pkgs.zlib
             ];
           };
         };
