@@ -56,7 +56,7 @@
             markdownlint = {
               enable = true;
               package = pkgs.markdownlint-cli;
-              entry = "${pkgs.markdownlint-cli}/bin/mdl --fix";
+              entry = "${pkgs.markdownlint-cli}/bin/markdownlint --fix";
             };
             trufflehog = {
               enable = true;
