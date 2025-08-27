@@ -70,25 +70,65 @@ function mark_model_passed() {
 
 function handle_result() {
   aws s3 cp check_result.json "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
-  any_highs=$(cat check_result.json | jq '.high | any')
-  any_mediums=$(cat check_result.json | jq '.medium | any')
+  any_highs=$(jq '.high | length > 0' < check_result.json)
+  any_mediums=$(jq '.medium | length > 0' < check_result.json)
 
+  old_model=$(jq -r '.old_model' < check_result.json)
+  new_model=$(jq -r '.new_model' < check_result.json)
+
+  # Overall status
   if [[ "$any_highs" == true ]]; then
-    echo "High threshold breaches detected"
-    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.value)") | join("\n")')" danger
+    status_emoji="❌"
+    status="High threshold breaches detected - Model FAILED"
+    color="danger"
     mark_model_failed
-    exit 1
   elif [[ "$any_mediums" == true ]]; then
-    echo "Medium threshold breaches detected"
-    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.value)") | join("\n")')" warning
+    status_emoji="⚠️"
+    status="Medium threshold breaches detected - Model PASSED with warnings"
+    color="warning"
     mark_model_passed
-    exit 0
   else
-    echo "No threshold breaches detected"
+    status_emoji="✅"
+    status="No threshold breaches - Model PASSED"
+    color="good"
     mark_model_passed
-    notify_slack "No threshold breaches detected" "All benchmarks are within thresholds" good
-    exit 0
   fi
+
+  summary="*Overall Summary*:\n- Old Model: $old_model\n- New Model: $new_model\n- High Breaches: $(jq '.high | length' < check_result.json)\n- Medium Breaches: $(jq '.medium | length' < check_result.json)\n- Low Changes: $(jq '.low | length' < check_result.json)\n"
+
+  thresholds=$(jq -r '.thresholds[] | "*\(.name)*: Delta \(.delta) (\(.direction)) - Old: \(.old), New: \(.new)"' < check_result.json | paste -sd $'\n' -)
+  thresholds_section="\n*Threshold Details*:\n$thresholds"
+
+  changes_section="\n*Changes Leading to Breaches/Improvements*:\n"
+  changes_keys=$(jq -r '.changes | keys[]' < check_result.json)
+  for key in $changes_keys; do
+    unavailable=$(jq -r ".changes[\"$key\"].unavailable // empty" < check_result.json)
+    if [[ -n "$unavailable" ]]; then
+      changes_section+="- *$key*: Changes unavailable: $unavailable\n"
+      continue
+    fi
+
+    added_count=$(jq ".changes[\"$key\"].added_count" < check_result.json)
+    removed_count=$(jq ".changes[\"$key\"].removed_count" < check_result.json)
+    changes_section+="- *$key*:\n  - Improvements: $added_count added to top-N ✅\n  - Regressions: $removed_count removed from top-N ❌\n"
+
+    if [[ $added_count -gt 0 ]]; then
+      added_examples=$(jq -r ".changes[\"$key\"].added[0:5][] | \"  - \(.description) (code: \(.correct_code), score delta: \(.score_delta))\"" < check_result.json | paste -sd $'\n' -)
+      changes_section+="  *Top Added Examples*:\n$added_examples\n  (see full list in check_result.json)\n"
+    fi
+    if [[ $removed_count -gt 0 ]]; then
+      removed_examples=$(jq -r ".changes[\"$key\"].removed[0:5][] | \"  - \(.description) (code: \(.correct_code), score delta: \(.score_delta))\"" < check_result.json | paste -sd $'\n' -)
+      changes_section+="  *Top Removed Examples*:\n$removed_examples\n  (see full list in check_result.json)\n"
+    fi
+  done
+
+  if [[ -z "$changes_keys" ]]; then
+    changes_section+="No changes detected (check logs for details).\n"
+  fi
+
+  message="$summary$thresholds_section$changes_section\nFull details: s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
+
+  notify_slack "$status_emoji $status" "$message" "$color"
 }
 
 check_validation

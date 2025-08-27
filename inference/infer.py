@@ -6,6 +6,7 @@ import numpy as np
 import toml
 import torch
 from aws_lambda_powertools import Logger as AWSLogger
+from scipy.special import logsumexp
 from sentence_transformers import SentenceTransformer
 
 from model.model import SimpleNN
@@ -18,16 +19,6 @@ score_cutoff = 0.01  # We won't send back any results with a score lower than th
 top_n_softmax_percent = 0.05  # We only softmax over the top 5% of results to ignore the long tail of nonsense ones
 cumulative_cutoff = 0.9
 vague_term_code = "vvvvvvvvvv"
-
-
-def logsumexp(x, axis=None, keepdims=False):
-    if len(x) == 0:
-        return np.array(-np.inf)
-    x = np.asarray(x)  # Ensure it's a NumPy array
-    max_x = np.max(x, axis=axis, keepdims=keepdims)
-    exp_shifted = np.exp(x - max_x)
-    sum_exp = np.sum(exp_shifted, axis=axis, keepdims=keepdims)
-    return np.log(sum_exp) + max_x
 
 
 class ClassificationResult:

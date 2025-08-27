@@ -8,11 +8,9 @@ import toml
 
 cwd = Path.cwd()
 
-# Load the thresholds
 with open(".github/benchmark-thresholds.toml") as f:
     thresholds = toml.load(f)["thresholds"]
 
-# Load the results
 old_results_dir = cwd / "old_benchmark"
 new_results_dir = cwd / "new_benchmark"
 
@@ -131,73 +129,117 @@ for threshold in thresholds:
             benchmark_type = (
                 "classified" if "classified" in threshold["file"] else "good_goods"
             )
+            details_subpath = Path("benchmarking_data") / "results"
             old_details_file = (
-                old_results_dir / f"benchmark_details_{benchmark_type}.json"
+                old_results_dir
+                / details_subpath
+                / f"benchmark_details_{benchmark_type}.json"
             )
             new_details_file = (
-                new_results_dir / f"benchmark_details_{benchmark_type}.json"
+                new_results_dir
+                / details_subpath
+                / f"benchmark_details_{benchmark_type}.json"
             )
 
-            if old_details_file.exists() and new_details_file.exists():
-                old_details = json.loads(open(old_details_file).read())
-                new_details = json.loads(open(new_details_file).read())
+            change_key = f"{threshold['name']}_changes"
 
-                old_dict = {item["description"]: item for item in old_details}
-                new_dict = {item["description"]: item for item in new_details}
-
-                # Common descriptions
-                common_descriptions = set(old_dict.keys()) & set(new_dict.keys())
-
-                added = []
-                removed = []
-
-                if "top 1" in threshold["name"].lower():
-                    n = 1
-                elif "top 5" in threshold["name"].lower():
-                    n = 5
-                else:
-                    continue  # Skip if not top1 or top5
-
-                for desc in common_descriptions:
-                    old_item = old_dict[desc]
-                    new_item = new_dict[desc]
-                    correct_code = old_item["correct_code"]  # Assume same
-
-                    was_in_top = is_in_top_n(old_item["predictions"], correct_code, n)
-                    now_in_top = is_in_top_n(new_item["predictions"], correct_code, n)
-
-                    if not was_in_top and now_in_top:
-                        added.append(
-                            {
-                                "description": desc,
-                                "correct_code": correct_code,
-                                "old_predictions": old_item["predictions"],
-                                "new_predictions": new_item["predictions"],
-                            }
-                        )
-                    elif was_in_top and not now_in_top:
-                        removed.append(
-                            {
-                                "description": desc,
-                                "correct_code": correct_code,
-                                "old_predictions": old_item["predictions"],
-                                "new_predictions": new_item["predictions"],
-                            }
-                        )
-
-                change_key = f"{threshold['name']}_changes"
+            if not old_details_file.exists() or not new_details_file.exists():
+                missing = "old" if not old_details_file.exists() else "new"
+                if not old_details_file.exists() and not new_details_file.exists():
+                    missing = "old and new"
+                print(
+                    f"Skipping changes for {threshold['name']}: Details files missing (old: {old_details_file} exists? {old_details_file.exists()}, new: {new_details_file} exists? {new_details_file.exists()})"
+                )
                 results["changes"][change_key] = {
-                    "added": added,
-                    "removed": removed,
-                    "added_count": len(added),
-                    "removed_count": len(removed),
+                    "unavailable": f"Details missing in {missing} model"
                 }
+                continue
 
-                # Optionally write changes to file
-                changes_file = cwd / f"changes_{benchmark_type}_{n}.json"
-                with open(changes_file, "w") as f:
-                    json.dump(results["changes"][change_key], f, indent=4)
-                print(f"Wrote changes for {threshold['name']} to {changes_file}")
+            old_details = json.loads(open(old_details_file).read())
+            new_details = json.loads(open(new_details_file).read())
+
+            old_dict = {item["description"]: item for item in old_details}
+            new_dict = {item["description"]: item for item in new_details}
+
+            common_descriptions = set(old_dict.keys()) & set(new_dict.keys())
+
+            added = []
+            removed = []
+
+            if "top 1" in threshold["name"].lower():
+                n = 1
+            elif (
+                "top 5" in threshold["name"].lower()
+                or "in top 5" in threshold["name"].lower()
+            ):
+                n = 5
+            else:
+                print(
+                    f"Skipping changes for {threshold['name']}: Not a top-1/top-5 threshold"
+                )
+                continue
+
+            for desc in common_descriptions:
+                old_item = old_dict[desc]
+                new_item = new_dict[desc]
+                correct_code = old_item["correct_code"]
+
+                was_in_top = is_in_top_n(old_item["predictions"], correct_code, n)
+                now_in_top = is_in_top_n(new_item["predictions"], correct_code, n)
+
+                old_score = next(
+                    (
+                        p["score"]
+                        for p in old_item["predictions"]
+                        if p["code"] == correct_code
+                    ),
+                    0,
+                )
+                new_score = next(
+                    (
+                        p["score"]
+                        for p in new_item["predictions"]
+                        if p["code"] == correct_code
+                    ),
+                    0,
+                )
+                score_delta = new_score - old_score
+
+                if not was_in_top and now_in_top:
+                    added.append(
+                        {
+                            "description": desc,
+                            "correct_code": correct_code,
+                            "old_predictions": old_item["predictions"],
+                            "new_predictions": new_item["predictions"],
+                            "score_delta": score_delta,
+                        }
+                    )
+                elif was_in_top and not now_in_top:
+                    removed.append(
+                        {
+                            "description": desc,
+                            "correct_code": correct_code,
+                            "old_predictions": old_item["predictions"],
+                            "new_predictions": new_item["predictions"],
+                            "score_delta": score_delta,
+                        }
+                    )
+
+            added.sort(key=lambda x: x["score_delta"], reverse=True)
+            removed.sort(key=lambda x: x["score_delta"])
+
+            results["changes"][change_key] = {
+                "added": added,
+                "removed": removed,
+                "added_count": len(added),
+                "removed_count": len(removed),
+            }
+
+            changes_file = cwd / f"changes_{benchmark_type}_{n}.json"
+            with open(changes_file, "w") as f:
+                json.dump(results["changes"][change_key], f, indent=4)
+            print(f"Wrote changes for {threshold['name']} to {changes_file}")
 
     else:
         print("No match")
