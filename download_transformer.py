@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer
+
 from train_args import TrainScriptArgsParser
 
 args = TrainScriptArgsParser()
