@@ -1,13 +1,13 @@
 # Improve Hierarchical Aggregation in FlatClassifier Using LogSumExp
 
-RFC ID: [RFC-001]
-Title: Switch to LogSumExp for Score Aggregation in FlatClassifier's Classify Method
-Authors: [Will Fish]
-Status: Draft
-Created: August 26, 2025
-Updated: August 26, 2025
-Version: 1.0
-Target Component: FlatClassifier in the classification pipeline
+- RFC ID: [RFC-001]
+- Title: Switch to LogSumExp for Score Aggregation in FlatClassifier's Classify Method
+- Authors: [Will Fish]
+- Status: Draft
+- Created: August 26, 2025
+- Updated: August 26, 2025
+- Version: 1.0
+- Target Component: FlatClassifier in the classification pipeline
 
 ## Abstract
 
@@ -56,5 +56,5 @@ Summing raw logits is mathematically inappropriate for hierarchical aggregation:
 
 See also:
 
-https://lorenlugosch.github.io/posts/2020/06/logsumexp/
-https://en.wikipedia.org/wiki/LogSumExp
+- https://lorenlugosch.github.io/posts/2020/06/logsumexp/
+- https://en.wikipedia.org/wiki/LogSumExp
