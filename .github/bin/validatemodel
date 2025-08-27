@@ -23,31 +23,76 @@ function check_validation() {
 
 function notify_slack() {
   local status=$1
-  local message=$2
   local color=${3:-good}
   local channel=${4:-#deployments}
   local emoji=${5:-":robot_face:"}
   local username=${6:-"Model Validation Bot"}
 
+  blocks=$(jq -n \
+    --arg status "$status" \
+    --arg summary "$summary" \
+    --arg thresholds_section "$thresholds_section" \
+    --arg changes_section "$changes_section" \
+    --arg full_details "Full details: s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json" \
+    '[
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: $status,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $summary
+        }
+      },
+      {
+        type: "divider"
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $thresholds_section
+        }
+      },
+      {
+        type: "divider"
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $changes_section
+        }
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: $full_details
+          }
+        ]
+      }
+    ]'
+  )
+
   payload=$(
     jq -n \
       --arg channel "$channel" \
-      --arg text "$status" \
-      --arg color "$color" \
-      --arg message "$message" \
       --arg username "$username" \
       --arg emoji "$emoji" \
+      --argjson blocks "$blocks" \
       '{
         channel: $channel,
         username: $username,
-        text: $text,
         icon_emoji: $emoji,
-        attachments: [
-          {
-            color: $color,
-            text: $message
-          }
-        ]
+        blocks: $blocks
       }'
   )
   echo "$payload"
@@ -93,41 +138,39 @@ function handle_result() {
     mark_model_passed
   fi
 
-  summary="*Overall Summary*:\n- Old Model: $old_model\n- New Model: $new_model\n- High Breaches: $(jq '.high | length' < check_result.json)\n- Medium Breaches: $(jq '.medium | length' < check_result.json)\n- Low Changes: $(jq '.low | length' < check_result.json)\n"
+  summary=$'*Overall Summary*:\n- Old Model: '"$old_model"$'\n- New Model: '"$new_model"$'\n- High Breaches: '"$(jq '.high | length' < check_result.json)"$'\n- Medium Breaches: '"$(jq '.medium | length' < check_result.json)"$'\n- Low Changes: '"$(jq '.low | length' < check_result.json)"$'\n'
 
-  thresholds=$(jq -r '.thresholds[] | "*\(.name)*: Delta \(.delta) (\(.direction)) - Old: \(.old), New: \(.new)"' < check_result.json | paste -sd $'\n' -)
-  thresholds_section="\n*Threshold Details*:\n$thresholds"
+  thresholds_section=$'\n*Threshold Details*:\n'
+  while IFS= read -r thresh; do
+    presented_name=$(echo "$thresh" | jq -r '.presented_name // .name')
+    delta=$(echo "$thresh" | jq -r '.delta' | awk '{printf "%.2f", $1}')
+    old=$(echo "$thresh" | jq -r '.old' | awk '{printf "%.2f", $1}')
+    new=$(echo "$thresh" | jq -r '.new' | awk '{printf "%.2f", $1}')
 
-  changes_section="\n*Changes Summary*:\n"
+    thresholds_section+=$'- *'"$presented_name"'*: Change '"$delta"' (Old: '"$old"', New: '"$new"')'$'\n'
+    # thresholds_section+=$'- *'"$presented_name"'*: Change '"$delta"' (Old: '"$old"', New: '"$new"') \n'
+  done < <(jq -c '.thresholds[]' < check_result.json)
+
+  changes_section=$'\n*Changes Summary*:\n'
   while IFS= read -r key; do
     unavailable=$(jq -r ".changes[\"$key\"].unavailable // empty" < check_result.json)
     if [[ -n "$unavailable" ]]; then
-      changes_section+="- *$key*: Changes unavailable: $unavailable\n"
+      changes_section+=$'- *'"$key"'*: Changes unavailable: '"$unavailable"''$'\n'
       continue
     fi
 
     added_count=$(jq ".changes[\"$key\"].added_count // 0" < check_result.json)
     removed_count=$(jq ".changes[\"$key\"].removed_count // 0" < check_result.json)
 
-    if [[ "$key" == *"top 1"* ]]; then
-      top_label="top-1"
-    elif [[ "$key" == *"top 5"* ]] || [[ "$key" == *"in top 5"* ]]; then
-      top_label="top-5"
-    else
-      top_label="top-N"
-    fi
-
-    changes_section+="- *$key*:\n  - Improvements: $added_count added to $top_label ✅\n  - Regressions: $removed_count removed from $top_label ❌\n"
+    changes_section+=$'- *'"$key"'*:'$' - Additions: '"$added_count"''$' - Removals: '"$removed_count"''$'\n'
   done < <(jq -r '.changes | keys[]' < check_result.json)
 
+  # If no changes keys at all, note why
   if ! jq -e '.changes | keys | length > 0' < check_result.json > /dev/null; then
-    changes_section+="No changes detected (check logs for details).\n"
+    changes_section+=$'No changes detected (check logs for details).\n'
   fi
 
-  # Full message
-  message="$summary$thresholds_section$changes_section\nFull details: s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
-
-  notify_slack "$status_emoji $status" "$message" "$color"
+  notify_slack "$status_emoji $status" "" "$color"
 }
 
 check_validation

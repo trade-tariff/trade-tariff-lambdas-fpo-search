@@ -74,6 +74,7 @@ for threshold in thresholds:
         results["thresholds"].append(
             {
                 "name": threshold["name"],
+                "presented_name": threshold.get("presented_name", threshold["name"]),
                 "old": old_result_value,
                 "new": new_result_value,
                 "delta": delta,
@@ -141,7 +142,7 @@ for threshold in thresholds:
                 / f"benchmark_details_{benchmark_type}.json"
             )
 
-            change_key = f"{threshold['name']}_changes"
+            change_key = threshold.get("presented_name", threshold["name"])
 
             if not old_details_file.exists() or not new_details_file.exists():
                 missing = "old" if not old_details_file.exists() else "new"
