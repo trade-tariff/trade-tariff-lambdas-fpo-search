@@ -33,7 +33,7 @@ def load_model():
 # This will quantize the weights of Linear layers to int8 significantly reducing the model size whilst maintaining accuracy
 def quantize_model(model):
     quantized_model = quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
-    torch.save(quantized_model, args.target_dir() / "model.pt")
+    torch.save(quantized_model, args.target_dir() / "model_quantized.pt")
 
 
 if __name__ == "__main__":

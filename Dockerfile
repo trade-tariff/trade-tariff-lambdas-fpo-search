@@ -17,7 +17,8 @@ RUN pip install --upgrade pip --no-cache-dir && \
 
 COPY . .
 
-RUN python quantize_model.py
+RUN python quantize_model.py && \
+    rm -rf /opt/app/target/model.pt
 
 FROM python:3.12-slim AS production
 
