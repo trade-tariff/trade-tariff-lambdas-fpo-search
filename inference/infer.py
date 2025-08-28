@@ -3,7 +3,6 @@ from logging import Logger
 from math import floor
 
 import numpy as np
-import toml
 import torch
 from aws_lambda_powertools import Logger as AWSLogger
 from scipy.special import logsumexp
@@ -152,21 +151,17 @@ class FlatClassifier(Classifier):
         return result
 
     def load_model(self):
+        torch.serialization.add_safe_globals([SimpleNN])
         model_file = args.target_dir() / "model.pt"
-        model_config = toml.load(args.target_dir() / "model.toml")
 
         self._logger.info(f"💾⇨ Loading model file: {model_file}")
 
-        model = SimpleNN(
-            model_config["input_size"],
-            model_config["hidden_size"],
-            model_config["output_size"],
-            model_config["dropout_layer_1_percentage"],
-            model_config["dropout_layer_2_percentage"],
-        )
-
         try:
-            model.load_state_dict(torch.load(model_file, map_location=self._device))
+            model = torch.load(
+                model_file,
+                map_location=self._device,
+                weights_only=False,
+            )
         except Exception as e:
             self._logger.error(f"Failed to load the model: {e}")
             raise e
