@@ -30,9 +30,6 @@ def load_model():
     return model
 
 
-# NOTE: Apply dynamic quantization to the model
-
-
 # This will quantize the weights of Linear layers to int8 significantly reducing the model size whilst maintaining accuracy
 def quantize_model(model):
     quantized_model = quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
