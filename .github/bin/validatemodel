@@ -23,31 +23,76 @@ function check_validation() {
 
 function notify_slack() {
   local status=$1
-  local message=$2
   local color=${3:-good}
   local channel=${4:-#deployments}
   local emoji=${5:-":robot_face:"}
   local username=${6:-"Model Validation Bot"}
 
+  blocks=$(jq -n \
+    --arg status "$status" \
+    --arg summary "$summary" \
+    --arg thresholds_section "$thresholds_section" \
+    --arg changes_section "$changes_section" \
+    --arg full_details "Full details: s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json" \
+    '[
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: $status,
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $summary
+        }
+      },
+      {
+        type: "divider"
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $thresholds_section
+        }
+      },
+      {
+        type: "divider"
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: $changes_section
+        }
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: $full_details
+          }
+        ]
+      }
+    ]'
+  )
+
   payload=$(
     jq -n \
       --arg channel "$channel" \
-      --arg text "$status" \
-      --arg color "$color" \
-      --arg message "$message" \
       --arg username "$username" \
       --arg emoji "$emoji" \
+      --argjson blocks "$blocks" \
       '{
         channel: $channel,
         username: $username,
-        text: $text,
         icon_emoji: $emoji,
-        attachments: [
-          {
-            color: $color,
-            text: $message
-          }
-        ]
+        blocks: $blocks
       }'
   )
   echo "$payload"
@@ -70,25 +115,62 @@ function mark_model_passed() {
 
 function handle_result() {
   aws s3 cp check_result.json "s3://$MODEL_BUCKET_NAME/$VERSION_PREFIX/check_result.json"
-  any_highs=$(cat check_result.json | jq '.high | any')
-  any_mediums=$(cat check_result.json | jq '.medium | any')
+  any_highs=$(jq '.high | length > 0' < check_result.json)
+  any_mediums=$(jq '.medium | length > 0' < check_result.json)
+
+  old_model=$(jq -r '.old_model' < check_result.json)
+  new_model=$(jq -r '.new_model' < check_result.json)
 
   if [[ "$any_highs" == true ]]; then
-    echo "High threshold breaches detected"
-    notify_slack "High threshold breaches detected" "$(cat check_result.json | jq '.high | to_entries | map("\(.value)") | join("\n")')" danger
+    status_emoji="❌"
+    status="High threshold breaches detected - Model FAILED"
+    color="danger"
     mark_model_failed
-    exit 1
   elif [[ "$any_mediums" == true ]]; then
-    echo "Medium threshold breaches detected"
-    notify_slack "Medium threshold breaches detected" "$(cat check_result.json | jq '.medium | to_entries | map("\(.value)") | join("\n")')" warning
+    status_emoji="⚠️"
+    status="Medium threshold breaches detected - Model PASSED with warnings"
+    color="warning"
     mark_model_passed
-    exit 0
   else
-    echo "No threshold breaches detected"
+    status_emoji="✅"
+    status="No threshold breaches - Model PASSED"
+    color="good"
     mark_model_passed
-    notify_slack "No threshold breaches detected" "All benchmarks are within thresholds" good
-    exit 0
   fi
+
+  summary=$'*Overall Summary*:\n- Old Model: '"$old_model"$'\n- New Model: '"$new_model"$'\n- High Breaches: '"$(jq '.high | length' < check_result.json)"$'\n- Medium Breaches: '"$(jq '.medium | length' < check_result.json)"$'\n- Low Changes: '"$(jq '.low | length' < check_result.json)"$'\n'
+
+  thresholds_section=$'\n*Threshold Details*:\n'
+  while IFS= read -r thresh; do
+    presented_name=$(echo "$thresh" | jq -r '.presented_name // .name')
+    delta=$(echo "$thresh" | jq -r '.delta' | awk '{printf "%.2f", $1}')
+    old=$(echo "$thresh" | jq -r '.old' | awk '{printf "%.2f", $1}')
+    new=$(echo "$thresh" | jq -r '.new' | awk '{printf "%.2f", $1}')
+
+    thresholds_section+=$'- *'"$presented_name"'*: Change '"$delta"' (Old: '"$old"', New: '"$new"')'$'\n'
+    # thresholds_section+=$'- *'"$presented_name"'*: Change '"$delta"' (Old: '"$old"', New: '"$new"') \n'
+  done < <(jq -c '.thresholds[]' < check_result.json)
+
+  changes_section=$'\n*Changes Summary*:\n'
+  while IFS= read -r key; do
+    unavailable=$(jq -r ".changes[\"$key\"].unavailable // empty" < check_result.json)
+    if [[ -n "$unavailable" ]]; then
+      changes_section+=$'- *'"$key"'*: Changes unavailable: '"$unavailable"''$'\n'
+      continue
+    fi
+
+    added_count=$(jq ".changes[\"$key\"].added_count // 0" < check_result.json)
+    removed_count=$(jq ".changes[\"$key\"].removed_count // 0" < check_result.json)
+
+    changes_section+=$'- *'"$key"'*:'$' - Additions: '"$added_count"''$' - Removals: '"$removed_count"''$'\n'
+  done < <(jq -r '.changes | keys[]' < check_result.json)
+
+  # If no changes keys at all, note why
+  if ! jq -e '.changes | keys | length > 0' < check_result.json > /dev/null; then
+    changes_section+=$'No changes detected (check logs for details).\n'
+  fi
+
+  notify_slack "$status_emoji $status" "" "$color"
 }
 
 check_validation

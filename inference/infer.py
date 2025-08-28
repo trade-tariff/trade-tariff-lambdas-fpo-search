@@ -1,15 +1,15 @@
-from logging import Logger
 import logging
+from logging import Logger
 from math import floor
 
-import toml
-from aws_lambda_powertools import Logger as AWSLogger
-
 import numpy as np
+import toml
 import torch
+from aws_lambda_powertools import Logger as AWSLogger
+from scipy.special import logsumexp
 from sentence_transformers import SentenceTransformer
-from model.model import SimpleNN
 
+from model.model import SimpleNN
 from train_args import TrainScriptArgsParser
 
 args = TrainScriptArgsParser()
@@ -81,20 +81,23 @@ class FlatClassifier(Classifier):
             normalize_embeddings=True,
         )
 
-        # Run it through the model to get the predictions
-        results = self._model(new_embeddings)
+        # Run it through the model to get the predictions (with no_grad for inference efficiency)
+        with torch.no_grad():
+            results = self._model(new_embeddings).detach().numpy()
 
-        predictions_to_digits = {}
+        logits = results[0]  # 1D NumPy array of logits for the single input
 
-        for i, prediction in enumerate(results[0]):
+        groups = {}
+
+        for i, logit in enumerate(logits):
             code = str(self._subheadings[i])[:digits]
-            score = prediction.item()
+            if code not in groups:
+                groups[code] = []
+            groups[code].append(logit)
 
-            if code in predictions_to_digits:
-                predictions_to_digits[code] += score
-            else:
-                predictions_to_digits[code] = score
-
+        predictions_to_digits = {
+            code: logsumexp(group_logits) for code, group_logits in groups.items()
+        }
         top_results = sorted(
             predictions_to_digits.items(), key=lambda x: x[1], reverse=True
         )
@@ -110,14 +113,14 @@ class FlatClassifier(Classifier):
         )  # Subtract max for numerical stability
         softmax_values = exp_values / np.sum(exp_values)
 
-        max = np.max(softmax_values)
+        max_val = np.max(softmax_values)
         min_confidence = 0.05
 
         # Cutoff everything below confidence level of the top result
         softmax_results = [
             (category, softmax)
             for (category, _), softmax in zip(top_results, softmax_values)
-            if max * min_confidence <= softmax
+            if max_val * min_confidence <= softmax
         ]
 
         result = []
@@ -127,7 +130,7 @@ class FlatClassifier(Classifier):
         cumulative_score = 0
 
         for i in softmax_results:
-            classification = ClassificationResult(i[0], i[1])
+            classification = ClassificationResult(i[0], float(i[1]))
             # If the score is less than the cutoff then stop iterating through
             if classification.score < score_cutoff:
                 break

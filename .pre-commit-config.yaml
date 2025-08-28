@@ -1,31 +1,31 @@
 ---
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.6
+    rev: v0.12.10
     hooks:
-      - id: ruff
+      - id: ruff-check
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: reference_data/*
+        exclude: reference_data\/.*
       - id: end-of-file-fixer
-        exclude: reference_data/*
+        exclude: reference_data\/.*
       - id: check-yaml
-        exclude: reference_data/*
+        exclude: reference_data\/.*
       - id: check-merge-conflict
-        exclude: reference_data/*
+        exclude: reference_data\/.*
 
   - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.10.0
+    rev: v0.11.0
     hooks:
       - id: shellcheck
         args: ["--severity=warning"]
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.44.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint-docker
         args:
@@ -34,7 +34,7 @@ repos:
           - terraform
 
   - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.88.25
+    rev: v3.90.5
     hooks:
       - id: trufflehog
 

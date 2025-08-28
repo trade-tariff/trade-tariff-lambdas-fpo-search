@@ -5,6 +5,7 @@
 
 [[thresholds]]
 name = "RIS Classified thresholds top 1"
+presented_name = "RIS Top 1%"
 file = "benchmarking_data/results/benchmark_results_classified.json"
 key = "result1Percent"
 changeHigh = -3.0
@@ -14,6 +15,7 @@ direction = "increase_is_good"
 
 [[thresholds]]
 name = "RIS Classified thresholds in top 5"
+presented_name = "RIS Top 5%"
 file = "benchmarking_data/results/benchmark_results_classified.json"
 key = "inTop5Percent"
 changeHigh = -3.0
@@ -23,6 +25,7 @@ direction = "increase_is_good"
 
 [[thresholds]]
 name = "HMRC Good Goods Descriptions top 1"
+presented_name = "HMRC Top 1%"
 file = "benchmarking_data/results/benchmark_results_good_goods.json"
 key = "result1Percent"
 changeHigh = -3.0
@@ -32,6 +35,7 @@ direction = "increase_is_good"
 
 [[thresholds]]
 name = "HMRC Good Goods Descriptions in top 5"
+presented_name = "HMRC Top 5%"
 file = "benchmarking_data/results/benchmark_results_good_goods.json"
 key = "inTop5Percent"
 changeHigh = -3.0
@@ -41,6 +45,7 @@ direction = "increase_is_good"
 
 [[thresholds]]
 name = "Accuracy percentage"
+presented_name = "Accuracy %"
 file = "benchmarking_data/results/running_losses.json"
 key = "accuracy"
 interested_in = -1 # The last epoch only
@@ -51,6 +56,7 @@ direction = "increase_is_good"
 
 [[thresholds]]
 name = "Mean average Loss"
+presented_name = "Mean Average Loss"
 file = "benchmarking_data/results/running_losses.json"
 key = "average_loss"
 interested_in = -1 # The last epoch only

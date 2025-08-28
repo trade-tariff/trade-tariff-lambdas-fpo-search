@@ -57,7 +57,7 @@ test:
 	${PYTHON} -m unittest -v -b
 
 test-infer:
-	${PYTHON} infer.py "shoes"
+	${PYTHON} infer.py "trousers"
 
 test-local:
 	curl http://localhost:9000/2015-03-31/functions/function/invocations \
