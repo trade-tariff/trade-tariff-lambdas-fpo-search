@@ -10,6 +10,7 @@ from scipy.special import logsumexp
 from sentence_transformers import SentenceTransformer
 
 from model.model import SimpleNN
+from quantize_model import load_model, quantize_model
 from train_args import TrainScriptArgsParser
 
 args = TrainScriptArgsParser()
@@ -46,6 +47,7 @@ class FlatClassifier(Classifier):
         subheadings: list[str],
         device: str,
         offline: bool = False,
+        model: SimpleNN | None = None,
         logger: Logger | AWSLogger = logging.getLogger("inference"),
     ) -> None:
         super().__init__()
@@ -55,7 +57,7 @@ class FlatClassifier(Classifier):
         self._logger = logger
 
         # Load the model from disk
-        self._model = self.load_model().to(self._device)
+        self._model = self.load_model().to(self._device) if model is None else model
 
         logger.info(
             f"💾⇨ Sentence Transformers running in {'Offline' if offline else 'Online'} mode"
@@ -153,26 +155,40 @@ class FlatClassifier(Classifier):
 
     def load_model(self):
         model_file = args.target_dir() / "model.pt"
-        model_config = toml.load(args.target_dir() / "model.toml")
+        model_qauntized_file = args.target_dir() / "model_quantized.pt"
+        model_config_file = args.target_dir() / "model.toml"
 
-        self._logger.info(f"💾⇨ Loading model file: {model_file}")
+        if args.uses_quantized_model():
+            self._logger.info(f"💾⇨ Loading model file: {model_qauntized_file}")
+            if not model_qauntized_file.exists():
+                model = load_model()
+                quantize_model(model)
 
-        model = SimpleNN(
-            model_config["input_size"],
-            model_config["hidden_size"],
-            model_config["output_size"],
-            model_config["dropout_layer_1_percentage"],
-            model_config["dropout_layer_2_percentage"],
-        )
+            torch.serialization.add_safe_globals([SimpleNN])
+            try:
+                model = torch.load(
+                    model_qauntized_file,
+                    map_location=self._device,
+                    weights_only=False,
+                )
+            except Exception as e:
+                self._logger.error(f"Failed to load the model: {e}")
+                raise e
+        else:
+            self._logger.info(f"💾⇨ Loading model file: {model_file}")
+            model_config = toml.load(model_config_file)
 
-        try:
+            model = SimpleNN(
+                model_config["input_size"],
+                model_config["hidden_size"],
+                model_config["output_size"],
+                model_config["dropout_layer_1_percentage"],
+                model_config["dropout_layer_2_percentage"],
+            )
+
             model.load_state_dict(torch.load(model_file, map_location=self._device))
-        except Exception as e:
-            self._logger.error(f"Failed to load the model: {e}")
-            raise e
 
         model.eval()
-
         self._logger.info("🧠⚡ Model loaded")
 
         return model

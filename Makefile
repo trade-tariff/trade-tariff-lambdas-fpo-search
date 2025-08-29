@@ -60,7 +60,7 @@ test-infer:
 	${PYTHON} infer.py "trousers"
 
 test-local:
-	curl http://localhost:9000/2015-03-31/functions/function/invocations \
+	curl --silent http://localhost:9000/2015-03-31/functions/function/invocations \
 		--header 'Content-Type: application/json' \
 		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
 

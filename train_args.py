@@ -187,6 +187,12 @@ class TrainScriptArgsParser:
             help="the percentage of dropout to use in the second dropout layer",
             default=0.3,
         )
+        parser.add_argument(
+            "--uses-quantized-model",
+            action="store_true",
+            help="whether to use a quantized model. This is much faster, but may be less accurate.",
+            default=True,
+        )
 
         self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
@@ -221,6 +227,13 @@ class TrainScriptArgsParser:
         logger.info(f"  preferred_languages: {self.preferred_languages()}")
         logger.info(f"  detected_languages: {self.detected_languages()}")
         logger.info(f"  minimum_relative_distance: {self.minimum_relative_distance()}")
+        logger.info(
+            f"  model_dropout_layer_1_percentage: {self.model_dropout_layer_1_percentage()}"
+        )
+        logger.info(
+            f"  model_dropout_layer_2_percentage: {self.model_dropout_layer_2_percentage()}"
+        )
+        logger.info(f"  uses_quantized_model: {self.uses_quantized_model()}")
 
     def torch_device(self):
         arg_device = self.device()
@@ -361,6 +374,10 @@ class TrainScriptArgsParser:
     @config_from_file
     def model_dropout_layer_2_percentage(self):
         return self.parsed_args.model_dropout_layer_2_percentage
+
+    @config_from_file
+    def uses_quantized_model(self):
+        return self.parsed_args.uses_quantized_model
 
     def load_config_file(self):
         self.parsed_config = toml.load("search-config.toml")
