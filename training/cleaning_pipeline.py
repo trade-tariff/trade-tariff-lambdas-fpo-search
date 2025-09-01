@@ -1,10 +1,11 @@
-import re
-import logging
 import csv
+import logging
+import re
+from typing import Dict, List
 
 from lingua import Language, LanguageDetectorBuilder
+
 from train_args import TrainScriptArgsParser
-from typing import Dict, List
 
 training_args = TrainScriptArgsParser()
 logger = logging.getLogger("cleaning_pipeline")
@@ -395,7 +396,7 @@ class NegationCleaning(Cleaner):
         self._full_negation_regex = re.compile(
             rf"(,|-)?\s*({'|'.join(negation_terms)})\s+((?!-).)*"
         )
-        self._non_breaking_space = "\u00A0"
+        self._non_breaking_space = "\u00a0"
 
     @classmethod
     def build(cls) -> "NegationCleaning":
@@ -461,3 +462,30 @@ class PhraseRemover(Cleaner):
             return (None, None, {"reason": "Empty description"})
 
         return (subheading, description, {})
+
+
+class PadCodes(Cleaner):
+    """
+    Pads any matched codes to 8 digits with trailing zeros.
+
+    This is useful for valid 6 digit subheading codes that come in that currently get filtered out without this cleaner.
+    """
+
+    def __init__(self, code_regex: str) -> None:
+        self._code_regex = re.compile(code_regex)
+
+    @classmethod
+    def build(cls) -> "PadCodes":
+        code_regex = "\\d{6}"
+
+        return cls(code_regex)
+
+    @debug
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        if re.fullmatch(self._code_regex, subheading):
+            subheading = subheading.ljust(8, "0")
+            return (subheading, description, {"padded": True})
+
+        return (subheading, description, {"padded": False})

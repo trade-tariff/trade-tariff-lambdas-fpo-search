@@ -19,6 +19,7 @@ if __name__ == "__main__":
         IncorrectPairsRemover,
         LanguageCleaning,
         NegationCleaning,
+        PadCodes,
         PhraseRemover,
         PluralCleaning,
         RemoveDescriptionsMatchingRegexes,
@@ -70,6 +71,7 @@ if __name__ == "__main__":
         StripExcessCharacters(),
         RemoveEmptyDescription(),
         RemoveShortDescription(min_length=1),
+        PadCodes.build(),
         RemoveSubheadingsNotMatchingRegexes(
             regexes=[
                 "^\\d{" + str(args.digits()) + "}$",
