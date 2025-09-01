@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.11.13"
+PYTHON_VERSION="3.13.6"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
