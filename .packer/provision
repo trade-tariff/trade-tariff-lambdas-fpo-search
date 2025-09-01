@@ -6,21 +6,13 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.13.6"
+PYTHON_VERSION="3.12.11"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
 else
   SUDO="sudo"
 fi
-
-[ -f awscliv2.zip ] && {
-  rm -f awscliv2.zip
-}
-
-[ -d /usr/local/aws-cli ] && {
-  rm -rf /usr/local/aws-cli
-}
 
 [ -d ~/.pyenv ] && {
   rm -rf ~/.pyenv
@@ -30,7 +22,7 @@ fi
   rm -rf "$GIT_REPO"
 }
 
-$SUDO yum remove openssl-devel awscli -y
+$SUDO yum remove openssl-devel -y
 $SUDO yum install -y \
   git               \
   gcc10             \
@@ -56,13 +48,16 @@ $SUDO alternatives --install /usr/bin/gcc gcc /usr/bin/gcc10-gcc 50
 $SUDO alternatives --install /usr/bin/g++ g++ /usr/bin/gcc10-g++ 50
 $SUDO alternatives --set gcc /usr/bin/gcc10-gcc
 $SUDO alternatives --set g++ /usr/bin/gcc10-g++
+$SUDO alternatives --install /usr/bin/cc cc /usr/bin/gcc10-gcc 50
+$SUDO alternatives --install /usr/bin/c++ c++ /usr/bin/gcc10-g++ 50
+$SUDO alternatives --set cc /usr/bin/gcc10-gcc
+$SUDO alternatives --set c++ /usr/bin/gcc10-g++
+
+export CC=cc
+export CXX=c++
 
 gcc --version
 g++ --version
-
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-$SUDO ./aws/install
 
 export PYENV_ROOT="$HOME/.pyenv"
 curl https://pyenv.run | bash
@@ -86,8 +81,7 @@ git fetch origin "$GIT_BRANCH:$GIT_BRANCH" && git checkout "$GIT_BRANCH"
 
 python -m venv venv
 source venv/bin/activate
-pip install "$(grep torch requirements.txt)" --index-url https://download.pytorch.org/whl/
-pip install -r requirements.txt
+pip install --extra-index-url https://download.pytorch.org/whl/ -r requirements.txt
 
 if [ "$GIT_BRANCH" != "main" ]; then
   git checkout main && git branch -D "$GIT_BRANCH"
