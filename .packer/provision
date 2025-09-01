@@ -22,7 +22,7 @@ fi
   rm -rf "$GIT_REPO"
 }
 
-$SUDO yum remove openssl-devel -y
+$SUDO yum remove openssl-devel gcc-c++ binutils -y
 $SUDO yum install -y \
   git               \
   gcc10             \
@@ -41,8 +41,8 @@ $SUDO yum install -y \
   openssl11-devel   \
   tk-devel          \
   libffi-devel      \
-  xz-devel \
-  binutils
+  xz-devel          \
+  gcc10-binutils
 
 $SUDO alternatives --install /usr/bin/gcc gcc /usr/bin/gcc10-gcc 50
 $SUDO alternatives --install /usr/bin/g++ g++ /usr/bin/gcc10-g++ 50
@@ -52,7 +52,13 @@ $SUDO alternatives --install /usr/bin/cc cc /usr/bin/gcc10-gcc 50
 $SUDO alternatives --install /usr/bin/c++ c++ /usr/bin/gcc10-g++ 50
 $SUDO alternatives --set cc /usr/bin/gcc10-gcc
 $SUDO alternatives --set c++ /usr/bin/gcc10-g++
+$SUDO alternatives --install /usr/bin/as as /usr/bin/gcc10-as 50
+$SUDO alternatives --install /usr/bin/ld ld /usr/bin/gcc10-ld 50
+$SUDO alternatives --set as /usr/bin/gcc10-as
+$SUDO alternatives --set ld /usr/bin/gcc10-ld
 
+export AS=as
+export LD=ld
 export CC=cc
 export CXX=c++
 
