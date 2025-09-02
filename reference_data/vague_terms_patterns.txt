@@ -1,2 +1,3 @@
 # This pattern matches the following vague term but also all other variations that follow the same scheme '[bn-00011-166w50h-banner_vy] p'
 ^\[bn-\d+-\d+w\d+h-banner_[a-z]{2}\] [a-z]$
+^CONSOLIDATED COLLI .*$
