@@ -15,7 +15,6 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        stdenv = pkgs.stdenv;
         pkgs = import nixpkgs {
           system = system;
           config.allowUnfree = true;
@@ -34,6 +33,7 @@
               ];
               require_serial = true;
             };
+
             ruff-format = {
               enable = true;
               entry = "${pkgs.ruff}/bin/ruff format --force-exclude";
@@ -74,18 +74,45 @@
       {
         devShells = {
           default = pkgs.mkShell {
-            inherit (pre-commit-check) shellHook;
+            CUDA_HOME = "${pkgs.cudaPackages_12_8.cudatoolkit}";
+            PATH = "${pkgs.cudaPackages_12_8.cudatoolkit}/bin:$PATH";
 
-            LD_LIBRARY_PATH = "${stdenv.cc.cc.lib}/lib/";
+            shellHook = ''
+              ${pre-commit-check.shellHook}
+
+              export LD_LIBRARY_PATH="${
+                pkgs.lib.makeLibraryPath [
+                  pkgs.stdenv.cc.cc
+                  pkgs.cudaPackages_12_8.cudatoolkit
+                  pkgs.cudaPackages_12_8.cudnn
+                  pkgs.cudaPackages_12_8.libcublas
+                  pkgs.cudaPackages_12_8.libcufft
+                  pkgs.cudaPackages_12_8.libnvjitlink
+                ]
+              }:/run/opengl-driver/lib:$LD_LIBRARY_PATH";
+
+              if [ ! -d "venv" ]; then
+                ${pkgs.python313}/bin/python -m venv venv
+                source venv/bin/activate
+                pip install --upgrade pip
+                pip install --extra-index-url https://download.pytorch.org/whl/cu128 -r requirements.txt
+              fi
+              source .venv/bin/activate
+            '';
 
             buildInputs = [
-              pkgs.python311
-              pkgs.python311Packages.pandas
-              pkgs.python311Packages.pip
+              pkgs.python313
+              pkgs.python313Packages.pandas
+              pkgs.python313Packages.pip
               pkgs.nodejs_latest
               pkgs.yarn
               pkgs.ruff
               pkgs.zlib
+              pkgs.cudaPackages_12_8.cudatoolkit
+              pkgs.cudaPackages_12_8.cudnn
+              pkgs.cudaPackages_12_8.libcublas
+              pkgs.cudaPackages_12_8.libcufft
+              pkgs.cudaPackages_12_8.libnvjitlink
             ];
           };
         };

@@ -67,6 +67,9 @@ test-local:
 test-provision:
 	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2 ./provision
 
+shell-provision:
+	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2 /bin/bash
+
 benchmark-goods-descriptions:
 	${PYTHON} benchmark.py \
 		--output json \
