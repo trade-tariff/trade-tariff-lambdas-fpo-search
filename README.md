@@ -1,21 +1,16 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main.svg?style=svg&circle-token=e0c6d3b2325ad0861a88adbf841eb44ff7b4267a)](https://dl.circleci.com/status-badge/redirect/gh/trade-tariff/trade-tariff-lambdas-fpo-search/tree/main)
-
 # FPO Parcel Item Categorisation API
 
 ## Create your development environment
 
 > Make sure you install and enable all pre-commit hooks https://pre-commit.com/
 
-### Initial development environment setup (one-time setup)
-
-- Set up a developer environment: `make dev-env`
-
 ### Activate the virtual environment (each time the tool is used)
 
+- Create the virtual environment: `python -m venv venv`
 - On MacOS or Linux: `source venv/bin/activate`
 - On Windows: `.\venv\Scripts\activate`
 
-### Install dependencies when the `pyproject.toml` has changed
+### Install dependencies
 
 - `pip install -r requirements.txt`
 
@@ -33,37 +28,13 @@ project root named `raw_source_data`.
 Once you have the data you can run the training:
 
 ```
-python train.py
+make train
 ```
 
 To get usage instructions you can run:
 
 ```
 python train.py --help
-```
-
-```
-usage: train.py [-h] [--digits DIGITS] [--limit LIMIT] [--learning-rate LEARNING_RATE] [--max-epochs MAX_EPOCHS] [--batch-size BATCH_SIZE] [--device {auto,cpu,mps,cuda}]
-                [--embedding-batch-size EMBEDDING_BATCH_SIZE] [--embedding-cache-checkpoint EMBEDDING_CACHE_CHECKPOINT]
-
-Train an FPO classification model.
-
-options:
-  -h, --help            show this help message and exit
-  --digits DIGITS       how many digits to train the model to
-  --limit LIMIT         limit the training data to this many entries to speed up development testing
-  --learning-rate LEARNING_RATE
-                        the learning rate to train the network with
-  --max-epochs MAX_EPOCHS
-                        the maximum number of epochs to train the network for
-  --batch-size BATCH_SIZE
-                        the size of the batches to use when training the model. You should increase this if your GPU has tonnes of RAM!
-  --device {auto,cpu,mps,cuda}
-                        the torch device to use for training. 'auto' will try to select the best device available.
-  --embedding-batch-size EMBEDDING_BATCH_SIZE
-                        the size of the batches to use when calculating embeddings. You should increase this if your GPU has tonnes of RAM!
-  --embedding-cache-checkpoint EMBEDDING_CACHE_CHECKPOINT
-                        how often to update the cached embeddings.
 ```
 
 #### Notes on data sources
@@ -98,9 +69,8 @@ Once you have trained the model, you can benchmark its performance against some
 benchmarking data. You can get some example benchmarking data by contacting the
 OTT lead.
 
-These should be `csv` files, with the first column as the first column as the
-Goods Description and the second column as the Commodity Code. The first row
-should be the header and will be skipped.
+These should be `csv` files, with the first column as the Goods Description and
+the second column as the Commodity Code. The first row should be the header and will be skipped.
 
 Once you have obtained the source data for testing, put it in a directory in the
 project root named `benchmarking_data`.
@@ -108,7 +78,7 @@ project root named `benchmarking_data`.
 Once you have the data you can run the training:
 
 ```
-python benchmark.py
+make benchmark
 ```
 
 To get usage instructions you can run:
@@ -117,29 +87,17 @@ To get usage instructions you can run:
 python benchmark.py --help
 ```
 
-```
-usage: benchmark.py [-h] [--digits {2,4,6,8}] [--output {text,json}] [--no-progress] [--colour]
-
-Benchmark an FPO classification model.
-
-options:
-  -h, --help            show this help message and exit
-  --digits {2,4,6,8}    how many digits to classify the answer to
-  --output {text,json}  choose how you want the results outputted
-  --no-progress         don't show a progress bar
-  --colour              enable ANSI colour for the 'text' output type
-```
-
 ### Inference
 
 Once you have the model built you can run inference against it to classify
 items. By default the inference script requires the following files to be
 present:
 
-- `target/subheading.pkl` which is a pcikle file of a list of subheadings. This
+- `target/subheading.pkl` which is a pickle file of a list of subheadings. This
   is used to convert the classification from the model back into the eight digit
   code.
 - `target/model.pt` which is the PyTorch model
+- `target/model_quantized.pt` which is the a much smaller quantized version of the PyTorch model
 
 You can either use the training to create fresh versions of these files, or you
 can use the pre-built ones. Contact the team lead to get access to them.
@@ -152,28 +110,42 @@ To get usage instructions you can run:
 python infer.py --help
 ```
 
-```
-usage: infer.py [-h] [--limit LIMIT] query
-
-Query an FPO classification model.
-
-positional arguments:
-  query          the query string
-
-options:
-  -h, --help     show this help message and exit
-  --limit LIMIT  limit the number of responses
-  --digits {2,4,6,8}  how many digits to classify the answer to
-```
-
 For example:
 
 ```
-python infer.py --limit 10 --digits 8 'smelly socks'
+python infer.py \
+        --query "trousers:62046239" \
+        --query "lipstick:33041000" \
+        --query "water cup:39241000" \
+        --query "towel:63026000" \
+        --query "Plenty kitchen towels:48030090" \
+        --query "Kingsmill bread:19059030" \
+        --digits 8
 ```
 
+Produces:
+
 ```
+Query: trousers -> Expected: 62046239 -> Match: True -> Result: [62046239 = 976.44]
+Query: lipstick -> Expected: 33041000 -> Match: True -> Result: [33041000 = 913.57]
+Query: water cup -> Expected: 39241000 -> Match: True -> Result: [39241000 = 386.11, 39269097 = 54.34, 39249000 = 45.77, 73239300 = 37.19, 96170000 = 36.95]
+Query: towel -> Expected: 63026000 -> Match: True -> Result: [63026000 = 896.32]
+Query: Plenty kitchen towels -> Expected: 48030090 -> Match: True -> Result: [63026000 = 247.76, 63029100 = 95.38, 63029990 = 54.03, 63029910 = 52.20, 48030090 = 44.81]
+Query: Kingsmill bread -> Expected: 19059030 -> Match: True -> Result: [19059030 = 718.73, 19059080 = 116.50]
 [61159500 = 225.24, 61159699 = 181.72, 61159900 = 119.44, 61159400 = 71.33]
+```
+
+You can forego the expected value by omitting the colon and everything after it:
+
+```
+python infer.py \
+        --query "trousers" \
+        --query "lipstick" \
+        --query "water cup" \
+        --query "towel" \
+        --query "Plenty kitchen towels" \
+        --query "Kingsmill bread" \
+        --digits 8
 ```
 
 ## Licence
