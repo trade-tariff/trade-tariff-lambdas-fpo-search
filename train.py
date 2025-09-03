@@ -71,7 +71,6 @@ if __name__ == "__main__":
         StripExcessCharacters(),
         RemoveEmptyDescription(),
         RemoveShortDescription(min_length=1),
-        PadCodes.build(),
         RemoveSubheadingsNotMatchingRegexes(
             regexes=[
                 "^\\d{" + str(args.digits()) + "}$",
@@ -79,6 +78,7 @@ if __name__ == "__main__":
         ),
         Map2024CodesTo2025Codes(),
     ]
+    brands_filters = [PadCodes.build()] + basic_filters
     tradestats_filters = [
         DescriptionLower(),
         PhraseRemover.build(args.phrases_to_remove_file()),
@@ -105,6 +105,7 @@ if __name__ == "__main__":
     self_texts_filters = basic_filters + [NegationCleaning.build()]
 
     basic_pipeline = CleaningPipeline(basic_filters)
+    brands_pipeline = CleaningPipeline(brands_filters)
     tradestats_pipeline = CleaningPipeline(tradestats_filters)
     self_texts_pipeline = CleaningPipeline(self_texts_filters)
 
@@ -146,8 +147,8 @@ if __name__ == "__main__":
             args.brands_data_file(),
             code_col=0,
             description_col=1,
-            cleaning_pipeline=basic_pipeline,
-            multiplier=3,
+            cleaning_pipeline=brands_pipeline,
+            multiplier=5,
             authoritative=True,
             creates_codes=False,
         )

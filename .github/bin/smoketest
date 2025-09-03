@@ -57,6 +57,22 @@ if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
   exit 1
 fi
 
+# Ensure it handles extra references
+HAS_CORRECT_CODE=$(has_correct_code "lipstick" "330410")
+
+if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
+  echo "ERROR: Expected extra reference example to have a code but not found" >&2
+  exit 1
+fi
+
+# Ensure it handles brand references
+HAS_CORRECT_CODE=$(has_correct_code "Plenty kitchen towels" "480300")
+
+if [[ "$HAS_CORRECT_CODE" != "true" ]] ; then
+  echo "ERROR: Expected brand code example to have a code but not found" >&2
+  exit 1
+fi
+
 # Ensure it handles vague terms
 HAS_NO_RESULTS=$(has_no_results "bits")
 
