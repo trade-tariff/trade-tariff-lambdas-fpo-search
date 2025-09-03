@@ -1,7 +1,7 @@
 import argparse
 import logging
-from pathlib import Path
 import pickle
+from pathlib import Path
 
 from inference.infer import FlatClassifier
 
@@ -12,7 +12,7 @@ cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
 
 parser = argparse.ArgumentParser(description="Query an FPO classification model.")
-parser.add_argument("query", help="the query string")
+parser.add_argument("--query", help="the query string", action="append", required=True)
 parser.add_argument(
     "--limit",
     type=int,
@@ -46,4 +46,14 @@ with open(subheadings_file, "rb") as fp:
 
 classifier = FlatClassifier(subheadings, device)
 
-print(classifier.classify(search_text=query, limit=limit, digits=digits))
+for query in args.query:
+    query, expected = query.split(":") if ":" in query else (query, None)
+    result = classifier.classify(search_text=query, limit=limit, digits=digits)
+
+    if expected:
+        match = any(expected in r.code for r in result)
+        print(
+            f"Query: {query} -> Expected: {expected} -> Match: {match} -> Result: {result}"
+        )
+    else:
+        print(f"Query: {query} -> Result: {result}")

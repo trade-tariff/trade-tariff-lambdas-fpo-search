@@ -57,7 +57,15 @@ test:
 	${PYTHON} -m unittest -v -b
 
 test-infer:
-	${PYTHON} infer.py "trousers"
+	${PYTHON} infer.py \
+		--query "trousers:620462" \
+		--query "lipstick:330410" \
+		--query "water cup:392410" \
+		--query "towel:630260" \
+		--query "Plenty kitchen towels:480300" \
+		--query "Kingsmill bread:190590" \
+		--digits 6 \
+		--limit 10
 
 test-local:
 	curl --silent http://localhost:9000/2015-03-31/functions/function/invocations \
