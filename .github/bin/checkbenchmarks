@@ -169,10 +169,7 @@ for threshold in thresholds:
 
             if "top 1" in threshold["name"].lower():
                 n = 1
-            elif (
-                "top 5" in threshold["name"].lower()
-                or "in top 5" in threshold["name"].lower()
-            ):
+            elif "top 5" in threshold["name"].lower():
                 n = 5
             else:
                 print(
