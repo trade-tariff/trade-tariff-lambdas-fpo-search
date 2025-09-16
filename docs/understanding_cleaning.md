@@ -23,7 +23,51 @@ Cleaning takes two forms:
 
 We typically process millions of descriptions and codes from different sources in every training run so most of our focus will be on cleaning during this stage of the FPO tool's lifecycle.
 
-## Cleaning process
+## Custom cleaners
+
+| Cleaner Name | Description | Used in Training | Used in Inference |
+|--------------|-------------|------------------|-------------------|
+| **StripExcessCharacters** | Strips leading/trailing whitespace, newlines, tabs, carriage returns, periods, and commas from subheadings and descriptions. Normalizes multiple spaces in descriptions to single spaces. | Yes | Yes |
+| **PluralCleaning** | Converts odd plural forms in descriptions (e.g., "women s" to "womens") while preserving specific forms like "size s". | Yes | No |
+| **IncorrectPairsRemover** | Removes incorrect subheading-description pairs based on a CSV file specifying descriptions, correct chapters, and codes to skip. | Yes | No |
+| **RemoveEmptyDescription** | Skips pairs where the description is empty or contains only whitespace after stripping. | Yes | Yes |
+| **RemoveShortDescription** | Skips pairs where the description length is less than or equal to a specified minimum (default 4, set to 1 in pipelines). | Yes | Yes |
+| **RemoveSubheadingsNotMatchingRegexes** | Skips pairs where the subheading doesn’t match provided regexes (e.g., all digits and must be 8 of them). Ensures valid commodity codes. | Yes | No |
+| **RemoveDescriptionsMatchingRegexes** | Skips pairs where the description matches regexes for invalid patterns (e.g., only numbers, numbers with dashes, decimals, or punctuation). | Yes | Yes |
+| **LanguageCleaning** | Filters non-English descriptions using the `lingua` library. Keeps descriptions in preferred languages (e.g., English), exact matches, or partial matches for specified terms. | Yes | Yes |
+| **NegationCleaning** | Removes negations from descriptions (e.g., "tomatoes, other than monster beef tomatoes" → "tomatoes") using regexes for terms like "not", "except". | Yes | No |
+| **DescriptionLower** | Converts descriptions to lowercase to standardize case for consistent processing. | Yes | Yes |
+| **PhraseRemover** | Removes specified phrases (loaded from a file) from descriptions. Skips pairs if the description becomes empty after removal. | Yes | No |
+| **PadCodes** | Pads 6-digit subheading codes to 8 digits by appending zeros (e.g., "123456" → "12345600"). | Yes | No |
+| **Map2024CodesTo2025Codes** | Maps 2024 commodity codes to 2025 codes. | Yes | No |
+
+## Data sources
+
+Each data source can have the following attributes:
+
+- *Authoritative* - This defines whether code answers in this data source override other data sources that precede it. This concept assumes 1 code for 1 description and subsequent matching descriptions will be ignored/skipped over if they have a different code.
+- *Creates Codes* - Our initial list of possible codes come from the data source that has this flag set to true. Our codes originate from the CN data source but can be augmented by other data sources that have this flag set to true.
+- *Cleaning pipeline* - Each data source can have a custom cleaning pipeline applied to it. This is a series of cleaners and filters that are applied in sequence to the data source to clean it up before it is used for training or inference.
+- *Reinforcement multiplier* - This defines how many times we repeat this data source during training to reinforce its importance/boost output scores for the result. For example, if a data source has a reinforcement multiplier of 5, it will be repeated 5 times during training.
+
+The following outlines the various data sources we clean with a summary of the cleaning applied to each.
+
+- Data Source - The name of the data source being cleaned.
+- Cleaners Used - The specific cleaners and filters applied to the data source using a custom cleaning pipeline.
+- Description - A brief description of the data source and its purpose.
+- Reinforcement Muliplier - How many times we repeat this data source during training to reinforce its importance/boost output scores for the result
+
+| Data Source | Cleaners Used | Description | Reinforcement Multiplier |
+|-------------|-----------------------|-------------|-------------------------|
+| Tradesets CSV | DescriptionLower, PhraseRemover, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, RemoveDescriptionsMatchingRegexes, LanguageCleaning, IncorrectPairsRemover, PluralCleaning | Very large CSV file containing trade transaction data requiring comprehensive cleaning to handle noisy, real-world data. | 1 |
+| Search References | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | API data source authored via the admin app with search-related reference mappings for commodity codes, weighted heavily to improve search-based classification accuracy. | 10 |
+| Brands CSV | PadCodes, DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with brand-specific commodity descriptions and codes  | 5 |
+| Extra References CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with additional reference data for commodity codes, providing authoritative mappings. Duplicates search references concept with less reinforcement. | 5 |
+| CN Data CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes, NegationCleaning | CSV file containing Combined Nomenclature (CN) data, a standard EU tariff classification system for training authoritative classifications. | 3 |
+| Vague Terms CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file containing vague or ambiguous commodity descriptions, likely with regex patterns to identify them, used to train the model to handle non-specific terms. | 1 |
+| Commodities | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes, NegationCleaning | Descriptions pulled from the OTT database. | 1 |
+
+## Cleaning process (trade sets example)
 
 By way of example, our largest cleaning step is to remove junk out of the descriptions in the tradeset data. These are essentially csv files with millions of rows of data. The cleaning process is as follows:
 
@@ -45,58 +89,11 @@ By way of example, our largest cleaning step is to remove junk out of the descri
 - Recombine the custom cleaned chunks into a single list
 - Run the descriptions through a sentence transformer tokenizer which:
   - Splits descriptions into words
-  - Checks to see if each word is in the model's vocabulary file of recognised words
+  - Checks to see if each word is in the model's [vocabulary file][vocab-file] of recognised words
   - Splits unrecognised words into subwords if possible using a greedy longest-match-first algorithm
   - Marks unrecognised words as [UNK] which become interesting purely for their position in the overall description but unmeaningful in themselves
 
-Central to the sentence transformer tokenisation part of this process is the vocab file which for the current sentence transformer model can be found here (https://huggingface.co/sentence-transformers/all-mpnet-base-v2/raw/main/vocab.txt). Junk inputs that aren't part of this vocab file are not understood by the model and are effectively ignored (though their position is preserved for context in the transformer layer step of embedding generation).
-
-### Custom cleaners
-
-| Cleaner Name | Description | Used in Training | Used in Inference |
-|--------------|-------------|------------------|-------------------|
-| **StripExcessCharacters** | Strips leading/trailing whitespace, newlines, tabs, carriage returns, periods, and commas from subheadings and descriptions. Normalizes multiple spaces in descriptions to single spaces. | Yes | Yes |
-| **PluralCleaning** | Converts odd plural forms in descriptions (e.g., "women s" to "womens") while preserving specific forms like "size s". | Yes | No |
-| **IncorrectPairsRemover** | Removes incorrect subheading-description pairs based on a CSV file specifying descriptions, correct chapters, and codes to skip. | Yes | No |
-| **RemoveEmptyDescription** | Skips pairs where the description is empty or contains only whitespace after stripping. | Yes | Yes |
-| **RemoveShortDescription** | Skips pairs where the description length is less than or equal to a specified minimum (default 4, set to 1 in pipelines). | Yes | Yes |
-| **RemoveSubheadingsNotMatchingRegexes** | Skips pairs where the subheading doesn’t match provided regexes (e.g., all digits and must be 8 of them). Ensures valid commodity codes. | Yes | No |
-| **RemoveDescriptionsMatchingRegexes** | Skips pairs where the description matches regexes for invalid patterns (e.g., only numbers, numbers with dashes, decimals, or punctuation). | Yes | Yes |
-| **LanguageCleaning** | Filters non-English descriptions using the `lingua` library. Keeps descriptions in preferred languages (e.g., English), exact matches, or partial matches for specified terms. | Yes | Yes |
-| **NegationCleaning** | Removes negations from descriptions (e.g., "tomatoes, other than monster beef tomatoes" → "tomatoes") using regexes for terms like "not", "except". | Yes | No |
-| **DescriptionLower** | Converts descriptions to lowercase to standardize case for consistent processing. | Yes | Yes |
-| **PhraseRemover** | Removes specified phrases (loaded from a file) from descriptions. Skips pairs if the description becomes empty after removal. | Yes | No |
-| **PadCodes** | Pads 6-digit subheading codes to 8 digits by appending zeros (e.g., "123456" → "12345600"). | Yes | No |
-| **Map2024CodesTo2025Codes** | Maps 2024 commodity codes to 2025 codes. | Yes | No |
-
-### Cleaned data sources
-
-Each data source can have the following attributes:
-
-- *Authoritative* - This defines whether code answers in this data source override other data sources that precede it. This concept assumes 1 code for 1 description and subsequent matching descriptions will be ignored/skipped over if they have a different code.
-- *Creates Codes* - Our initial list of possible codes come from the data source that has this flag set to true. Our codes originate from the CN data source but can be augmented by other data sources that have this flag set to true.
-- *Cleaning pipeline* - Each data source can have a custom cleaning pipeline applied to it. This is a series of cleaners and filters that are applied in sequence to the data source to clean it up before it is used for training or inference.
-- *Reinforcement multiplier* - This defines how many times we repeat this data source during training to reinforce its importance/boost output scores for the result. For example, if a data source has a reinforcement multiplier of 5, it will be repeated 5 times during training.
-
-The following outlines the various data sources we clean with a summary of the cleaning applied to each.
-
-- Data Source - The name of the data source being cleaned.
-- Cleaners Used - The specific cleaners and filters applied to the data source using a custom cleaning pipeline.
-- Description - A brief description of the data source and its purpose.
-- Reinforcement Muliplier - How many times we repeat this data source during training to reinforce its importance/boost output scores for the result
-
-| Data Source | Cleaners Used | Description | Reinforcement Multiplier |
-|-------------|-----------------------|-------------|-------------------------|
-| Tradesets CSV | DescriptionLower, PhraseRemover, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, RemoveDescriptionsMatchingRegexes, LanguageCleaning, IncorrectPairsRemover, PluralCleaning | Very large CSV file containing trade transaction data requiring comprehensive cleaning to handle noisy, real-world data. | 1 |
-| Search References | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | API data source authored via the admin app with search-related reference mappings for commodity codes, weighted heavily to improve search-based classification accuracy. | 10 |
-| Vague Terms CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file containing vague or ambiguous commodity descriptions, likely with regex patterns to identify them, used to train the model to handle non-specific terms. | 1 |
-| Brands CSV | PadCodes, DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with brand-specific commodity descriptions and codes  | 5 |
-| Extra References CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with additional reference data for commodity codes, providing authoritative mappings. Duplicates search references concept with less reinforcement. | 5 |
-| CN Data CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes, NegationCleaning | CSV file containing Combined Nomenclature (CN) data, a standard EU tariff classification system for training authoritative classifications. | 3 |
-| Vague Terms CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file containing vague or ambiguous commodity descriptions, likely with regex patterns to identify them, used to train the model to handle non-specific terms. | 1 |
-| Commodities | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes, NegationCleaning | Descriptions pulled from the OTT database. | 1 |
-
-### Example: Tradeset cleaning flow
+This can all be visualised as follows:
 
 ```mermaid
 %%{init: {
@@ -134,8 +131,10 @@ graph TD
     Q -->|No subwords| R[Mark as UNK]
     R --> P
     P --> S[Add special tokens <br> s, /s, padding]
-    S --> T[Output: input_ids, attention_mask]
+    S --> T[Output: cleaned token ids]
     I --> U[Excluded rows]
     classDef decision fill:#e0af68,stroke:#c0caf5,stroke-width:2px;
     class E,H,J,O,Q decision;
 ```
+
+[vocab-file]: https://huggingface.co/sentence-transformers/all-mpnet-base-v2/raw/main/vocab.txt
