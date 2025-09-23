@@ -1,8 +1,10 @@
 import csv
-import requests
 import datetime
 import logging
-from typing import Optional, Dict, Set, Tuple, List
+from typing import Dict, List, Optional, Set, Tuple
+
+import requests
+
 from data_sources.data_source import DataSource
 from training.cleaning_pipeline import CleaningPipeline
 
