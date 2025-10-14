@@ -202,9 +202,6 @@ jobs:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     with:
       test-environment: development
-    secrets:
-      scp-username: ${{ secrets.SCP_USERNAME }}
-      scp-password: ${{ secrets.SCP_PASSWORD }}
 
   smoketest:
     needs: deploy

@@ -89,9 +89,6 @@ jobs:
     needs: deploy
     with:
       test-environment: staging
-    secrets:
-      scp-username: ${{ secrets.SCP_USERNAME }}
-      scp-password: ${{ secrets.SCP_PASSWORD }}
 
   smoketest:
     needs: deploy
