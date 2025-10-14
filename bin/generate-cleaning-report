@@ -1,0 +1,339 @@
+#!/usr/bin/env python
+
+import csv
+import datetime
+import logging
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import StringIO
+from pathlib import Path
+from typing import List
+
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from data_sources.basic_csv import BasicCSVDataSource
+from train_args import TrainScriptArgsParser
+from training.cleaning_pipeline import (
+    CleaningPipeline,
+    DescriptionLower,
+    IncorrectPairsRemover,
+    LanguageCleaning,
+    PhraseRemover,
+    PluralCleaning,
+    RemoveDescriptionsMatchingRegexes,
+    RemoveEmptyDescription,
+    RemoveShortDescription,
+    RemoveSubheadingsNotMatchingRegexes,
+    StripExcessCharacters,
+)
+
+args = TrainScriptArgsParser()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(Path(__file__).stem)
+
+
+class ClassifierPipeline:
+    def __init__(self, classifier, batch_size=200, max_workers=10):
+        self.classifier = classifier
+        self.batch_size = batch_size
+        self.max_workers = max_workers
+        self.context = """You are an expert classifier that is here to manually review confidence in classifications of Tradeset files that have passed other human experts accepting goods for import into the United Kingdom.
+I need you to review all of the following descriptions/subheading classification pairs that are in a CSV format and return the same CSV rows but with two new columns for Confidence Rating and Reason.
+These are classifications trimmed to 8 digits so it is possible that the code itself isn't valid - feel free to put that where you find it.
+Surface a confidence rating for the description classification:
+1. High
+2. Medium
+3. Low
+And also a reason "i.e. This belongs in a different chapter"
+Feel free to skip confidence reasons for all but low and medium confidence classifications
+Please ensure all fields in the output CSV are properly quoted to handle commas in text. Treat the Subheading column as a string and ensure its values are quoted in the CSV output to preserve leading zeros (e.g., "01234567").
+Do not wrap the CSV output in Markdown code fences (e.g., ```csv or ```). Provide only the CSV content with all fields properly quoted.
+CSV BATCH GOES HERE"""
+
+    def process_batch(self, start, batch_num, batch_df):
+        csv_batch = batch_df[["Subheading", "Cleaned Description"]].to_csv(
+            index=False, header=True, quoting=csv.QUOTE_ALL
+        )
+        prompt = self.context.replace("CSV BATCH GOES HERE", csv_batch)
+        result = self.classifier.classify(prompt, batch_num)
+        return batch_num, batch_df, result
+
+    def classify_df(self, df, output_file="classified_report.csv"):
+        if df.empty:
+            logger.info("No data to classify.")
+            return df
+
+        classified_batches = []
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = []
+            for start in range(0, len(df), self.batch_size):
+                end = start + self.batch_size
+                batch_num = start // self.batch_size + 1
+                batch_df = df.iloc[start:end]
+                futures.append(
+                    executor.submit(self.process_batch, start, batch_num, batch_df)
+                )
+            for future in as_completed(futures):
+                batch_num, batch_df, classified_batch = future.result()
+                if classified_batch is not None:
+                    classified_batches.append(classified_batch)
+                else:
+                    fallback_batch = batch_df[
+                        ["Subheading", "Cleaned Description"]
+                    ].copy()
+                    fallback_batch["Confidence Rating"] = "Not Classified"
+                    fallback_batch["Reason"] = "Gemini CLI call failed"
+                    classified_batches.append(fallback_batch)
+                    logger.info(f"Added fallback batch for batch {batch_num}.")
+
+        if not classified_batches:
+            logger.warning("No classified batches generated.")
+            classified_df = df.copy()
+            classified_df["Confidence Rating"] = "Not Classified"
+            classified_df["Reason"] = "No batches processed"
+            output_file = f"{Path(output_file).stem}_fallback.csv"
+        else:
+            combined_classified = pd.concat(classified_batches, ignore_index=True)
+            classified_df = pd.merge(
+                df,
+                combined_classified[
+                    ["Subheading", "Cleaned Description", "Confidence Rating", "Reason"]
+                ],
+                on=["Subheading", "Cleaned Description"],
+                how="left",
+            )
+            classified_df["Confidence Rating"] = classified_df[
+                "Confidence Rating"
+            ].fillna("Not Classified")
+            classified_df["Reason"] = classified_df["Reason"].fillna("Not Classified")
+
+        classified_df.to_csv(output_file, index=False, quoting=csv.QUOTE_ALL)
+        logger.info(f"Generated report '{output_file}' with {len(classified_df)} rows.")
+        return classified_df
+
+
+class GeminiClassifier:
+    def __init__(
+        self,
+        model="gemini-2.5-flash",
+        max_retries=3,
+        backoff_factor=2,
+        validate_columns=None,
+    ):
+        self.model = model
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+        self.validate_columns = validate_columns or [
+            "Subheading",
+            "Cleaned Description",
+            "Confidence Rating",
+            "Reason",
+        ]
+
+    def classify(self, prompt, batch_num) -> pd.DataFrame | None:
+        for attempt in range(self.max_retries):
+            try:
+                start_time = datetime.datetime.now()
+                result = subprocess.run(
+                    ["gemini", "-m", self.model, "-p", prompt],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                response = result.stdout.strip()
+                end_time = datetime.datetime.now()
+                logger.info(
+                    f"Gemini CLI call for batch {batch_num} completed in {(end_time - start_time).total_seconds()} seconds."
+                )
+                batch_response_file = f"gemini_raw_response_batch_{batch_num}.txt"
+                with open(batch_response_file, "w") as f:
+                    f.write(response)
+                if response.startswith("```csv"):
+                    response = "\n".join(response.split("\n")[1:-1]).strip()
+                elif response.startswith("```"):
+                    response = "\n".join(response.split("\n")[1:-1]).strip()
+                elif response.endswith("```"):
+                    response = "\n".join(response.split("\n")[:-1]).strip()
+                classified_batch = pd.read_csv(
+                    StringIO(response),
+                    quoting=csv.QUOTE_ALL,
+                    keep_default_na=False,
+                    dtype={"Subheading": str},
+                )
+                logger.info(classified_batch.head().to_string())
+                if not all(
+                    col in classified_batch.columns for col in self.validate_columns
+                ):
+                    logger.error(
+                        f"Unexpected columns in Gemini response for batch {batch_num}. Expected: {self.validate_columns}, Got: {list(classified_batch.columns)}"
+                    )
+                    raise ValueError("Invalid CSV structure from Gemini")
+                return classified_batch
+            except (
+                subprocess.CalledProcessError,
+                pd.errors.ParserError,
+                ValueError,
+            ) as e:
+                logger.warning(
+                    f"Attempt {attempt + 1} for batch {batch_num} failed with error: {e}"
+                )
+                if attempt == self.max_retries - 1:
+                    logger.error(f"Max retries reached for batch {batch_num}.")
+                    return None
+                delay = self.backoff_factor**attempt
+                logger.info(f"Retrying after {delay} seconds.")
+                time.sleep(delay)
+
+
+data_sources: List[BasicCSVDataSource] = []
+language_skips_file = args.pwd() / args.partial_non_english_terms()
+language_keeps_file = args.pwd() / args.partial_english_terms()
+language_keeps_exact_file = args.pwd() / args.exact_english_terms()
+with open(language_skips_file, "r") as f:
+    language_skips = f.read().splitlines()
+with open(language_keeps_file, "r") as f:
+    language_keeps = f.read().splitlines()
+with open(language_keeps_exact_file, "r") as f:
+    language_keeps_exact = f.read().splitlines()
+tradestats_filters = [
+    DescriptionLower(),
+    PhraseRemover.build(args.phrases_to_remove_file()),
+    StripExcessCharacters(),
+    RemoveEmptyDescription(),
+    RemoveShortDescription(min_length=1),
+    RemoveSubheadingsNotMatchingRegexes(
+        regexes=[
+            "^\\d{" + str(args.digits()) + "}$",
+        ]
+    ),
+    RemoveDescriptionsMatchingRegexes.build(),
+    LanguageCleaning(
+        detected_languages=args.detected_languages(),
+        preferred_languages=args.preferred_languages(),
+        partial_skips=language_skips,
+        partial_keeps=language_keeps,
+        exact_keeps=language_keeps_exact,
+    ),
+    IncorrectPairsRemover.build(args.incorrect_description_pairs_file()),
+    PluralCleaning(),
+]
+tradestats_pipeline = CleaningPipeline(tradestats_filters)
+data_sources += [
+    BasicCSVDataSource(
+        filename,
+        cleaning_pipeline=tradestats_pipeline,
+        encoding="latin_1",
+    )
+    for filename in Path(args.tradesets_data_dir()).glob("*.csv")
+]
+rows = []
+header = [
+    "Subheading",
+    "Cleaned Description",
+    "Uncleaned Description",
+    "Data Source",
+    "Filtered Out",
+    "Filter Reason",
+]
+
+total_filtered = 0
+filtered = []
+for ds in data_sources:
+    for (
+        subheading,
+        cleaned_description,
+        uncleaned_subheading,
+        uncleaned_description,
+        meta,
+    ) in ds.get_codes_for_cleaning_report(args.digits()):
+        filter_reason = "None"
+        for filter, reason in meta.items():
+            if reason is not None:
+                filter_reason = f"{filter}: {reason}"
+                break
+        filtered_out = (
+            "Yes" if subheading is None or cleaned_description is None else "No"
+        )
+
+        if filtered_out == "Yes":
+            total_filtered += 1
+            filtered.append(
+                (
+                    subheading,
+                    cleaned_description,
+                    uncleaned_subheading,
+                    uncleaned_description,
+                    filter_reason,
+                )
+            )
+        subheading_val = subheading if subheading else ""
+        cleaned_val = cleaned_description if cleaned_description else ""
+        uncleaned_val = uncleaned_description if uncleaned_description else ""
+        data_source = Path(ds.filename).name
+        row = [
+            subheading_val,
+            cleaned_val,
+            uncleaned_val,
+            data_source,
+            filtered_out,
+            filter_reason,
+        ]
+        rows.append(row)
+
+logger.info(f"Total filtered out descriptions: {total_filtered}")
+logger.info(f"Total descriptions processed: {len(rows)}")
+
+filtered = pd.DataFrame(
+    filtered,
+    columns=[
+        "Subheading",
+        "Cleaned Description",
+        "Uncleaned Subheading",
+        "Uncleaned Description",
+        "Filter Reason",
+    ],
+)
+filtered.to_csv("filtered_out_descriptions.csv", index=False, quoting=csv.QUOTE_ALL)
+logger.info("Generated 'filtered_out_descriptions.csv' with filtered out descriptions.")
+
+df = pd.DataFrame(rows, columns=header)
+grouped = df.groupby("Subheading")
+sampled_dfs = []
+for name, group in grouped:
+    filtered = group[group["Filtered Out"] == "Yes"]
+    non_filtered = group[group["Filtered Out"] == "No"]
+    if not filtered.empty and not non_filtered.empty:
+        sampled = pd.concat(
+            [
+                filtered.sample(min(1, len(filtered)), random_state=42),
+                non_filtered.sample(min(1, len(non_filtered)), random_state=42),
+            ]
+        )
+    elif not filtered.empty:
+        sampled = filtered.sample(min(5, len(filtered)), random_state=42)
+    else:
+        sampled = non_filtered.sample(min(5, len(non_filtered)), random_state=42)
+    sampled_dfs.append(sampled)
+
+sampled_df = pd.concat(sampled_dfs)
+
+# Ensure at least 10 filtered descriptions if available
+filtered_count = (sampled_df["Filtered Out"] == "Yes").sum()
+if filtered_count < 10:
+    additional_needed = 10 - filtered_count
+    all_filtered = df[df["Filtered Out"] == "Yes"]
+    if not all_filtered.empty:
+        additional = all_filtered.sample(
+            min(additional_needed, len(all_filtered)), random_state=42
+        )
+        sampled_df = pd.concat([sampled_df, additional])
+        sampled_df = sampled_df.drop_duplicates()
+
+sampled_df = sampled_df.sort_values("Subheading")
+
+cleaned_df = sampled_df[sampled_df["Filtered Out"] == "No"].copy()
+classifier_pipeline = ClassifierPipeline(GeminiClassifier())
+classified_df = classifier_pipeline.classify_df(cleaned_df)

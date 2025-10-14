@@ -326,24 +326,6 @@ class TrainScriptArgsParser:
         return self.parsed_args.transformer
 
     @config_from_file
-    def model_input_size(self):
-        raise NotImplementedError(
-            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
-        )
-
-    @config_from_file
-    def model_hidden_size(self):
-        raise NotImplementedError(
-            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
-        )
-
-    @config_from_file
-    def model_output_size(self):
-        raise NotImplementedError(
-            "Have you got an up-to-date model.pt and search-config.toml? search-config.toml includes model inputs after a model is generated."
-        )
-
-    @config_from_file
     def partial_english_terms(self):
         return self.parsed_args.partial_english_terms
 
