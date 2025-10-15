@@ -518,8 +518,8 @@ class Map2024CodesTo2025Codes(Cleaner):
         return (subheading, description, {"updated": False})
 
     @classmethod
-    def build(cls) -> None:
-        cls(
+    def build(cls) -> "Map2024CodesTo2025Codes":
+        return cls(
             {
                 "85211020": "85211000",
                 "85211095": "85211000",
