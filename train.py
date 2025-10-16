@@ -163,10 +163,10 @@ if __name__ == "__main__":
         for filename in Path(args.tradesets_data_dir()).glob("*.csv")
     ]
 
-    loader = TrainingDataLoader(data_sources, args.digits())
+    loader = TrainingDataLoader()
 
-    (unique_text_values, subheadings, text_indexes, labels, cleaning_info) = (
-        loader.fetch_data()
+    (unique_text_values, subheadings, text_indexes, labels) = loader.fetch_data(
+        data_sources, args.digits()
     )
 
     logger.info(f"Found {len(unique_text_values)} unique descriptions")
@@ -189,12 +189,6 @@ if __name__ == "__main__":
 
         text_indexes = new_texts
         labels = new_labels
-
-    if args.dump_cleaning_output_only():
-        logger.info(
-            "Dumping cleaning output only, exiting and skipping training and embedding generation"
-        )
-        exit(0)
 
     # Next create the embeddings
     logger.info("Creating the embeddings")
