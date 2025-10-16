@@ -12,7 +12,7 @@ class Test_basic_csv_data_source(unittest.TestCase):
     data_source = BasicCSVDataSource(filename=sample_file_path)
 
     def test_initialization(self):
-        self.assertEqual(self.data_source._filename, self.sample_file_path)
+        self.assertEqual(self.data_source.filename, self.sample_file_path)
         self.assertEqual(self.data_source._code_col, 0)
         self.assertEqual(self.data_source._description_col, 1)
         self.assertEqual(self.data_source._encoding, "utf-8")

@@ -1,12 +1,12 @@
 import csv
-import dill
-import os
 import logging
-
-from os import PathLike
-from typing import Union, Optional, List, Set, Dict
-
+import os
 from concurrent.futures import ProcessPoolExecutor
+from os import PathLike
+from typing import Any, Dict, List, Optional, Set, Union
+
+import dill
+
 from data_sources.data_source import DataSource
 from training.cleaning_pipeline import CleaningPipeline
 
@@ -70,13 +70,13 @@ class BasicCSVDataSource(DataSource):
             multiplier=multiplier,
             cleaning_pipeline=cleaning_pipeline,
         )
-        self._filename = filename
+        self.filename = filename
         self._code_col = code_col
         self._description_col = description_col
         self._encoding = encoding
 
     def get_codes(self, digits: int) -> dict[str, set[str]]:
-        with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
+        with open(self.filename, mode="r", encoding=self._encoding) as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # skip the first line (header)
             code_data = list(csv_reader)
@@ -93,8 +93,36 @@ class BasicCSVDataSource(DataSource):
             }
         )
         logger.info(
-            f"Loaded {len(codes)} unique subheadings with {unique_descriptions} unique descriptions and {total_descriptions} total descriptions from {os.path.relpath(self._filename)}"
+            f"Loaded {len(codes)} unique subheadings with {unique_descriptions} unique descriptions and {total_descriptions} total descriptions from {os.path.relpath(self.filename)}"
         )
+
+        return codes
+
+    def get_codes_for_cleaning_report(self, digits: int) -> List[Any]:
+        with open(self.filename, mode="r", encoding=self._encoding) as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)
+            code_data = list(csv_reader)
+
+        codes = []
+        for row in code_data:
+            subheading = row[self._code_col].replace(" ", "")[:digits]
+            description = row[self._description_col].strip().lower()
+            uncleaned_subheading = row[self._code_col]
+            uncleaned_description = row[self._description_col]
+
+            if self.cleaning_pipeline:
+                subheading, description, meta = self.cleaning_pipeline.filter(
+                    subheading, description
+                )
+                result = [
+                    subheading,
+                    description,
+                    uncleaned_subheading,
+                    uncleaned_description,
+                    meta,
+                ]
+                codes.append(result)
 
         return codes
 

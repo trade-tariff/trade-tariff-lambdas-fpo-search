@@ -24,14 +24,14 @@ class VagueTermsCSVDataSource(DataSource):
             creates_codes=creates_codes,
             multiplier=multiplier,
         )
-        self._filename = filename
+        self.filename = filename
         self._patterns_file = patterns_file
         self._encoding = encoding
         self._codes: dict[str, set[str]] = {}
         self._patterns: list[re.Pattern] = []
 
     def get_codes(self, digits: int) -> dict[str, set[str]]:
-        with open(self._filename, mode="r", encoding=self._encoding) as csv_file:
+        with open(self.filename, mode="r", encoding=self._encoding) as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)
             code_data = list(csv_reader)

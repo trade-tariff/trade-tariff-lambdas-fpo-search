@@ -12,12 +12,12 @@ if __name__ == "__main__":
     from data_sources.search_references import SearchReferencesDataSource
     from data_sources.vague_terms import VagueTermsCSVDataSource
     from train_args import TrainScriptArgsParser
-    from training.cleaners.map_2024_to_2025_codes import Map2024CodesTo2025Codes
     from training.cleaning_pipeline import (
         CleaningPipeline,
         DescriptionLower,
         IncorrectPairsRemover,
         LanguageCleaning,
+        Map2024CodesTo2025Codes,
         NegationCleaning,
         PadCodes,
         PhraseRemover,
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     args.reference_dir().mkdir(parents=True, exist_ok=True)
 
     # First load in the training data
-    print("💾⇨ Loading training data")
+    logger.info("💾⇨ Loading training data")
 
     subheadings_file = target_dir / "subheadings.pkl"
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                 "^\\d{" + str(args.digits()) + "}$",
             ]
         ),
-        Map2024CodesTo2025Codes(),
+        Map2024CodesTo2025Codes.build(),
     ]
     brands_filters = [PadCodes.build()] + basic_filters
     tradestats_filters = [
@@ -163,18 +163,15 @@ if __name__ == "__main__":
         for filename in Path(args.tradesets_data_dir()).glob("*.csv")
     ]
 
-    training_data_loader = TrainingDataLoader()
+    loader = TrainingDataLoader()
 
-    (
-        unique_text_values,
-        subheadings,
-        text_indexes,
-        labels,
-    ) = training_data_loader.fetch_data(data_sources, args.digits())
+    (unique_text_values, subheadings, text_indexes, labels) = loader.fetch_data(
+        data_sources, args.digits()
+    )
 
-    print(f"Found {len(unique_text_values)} unique descriptions")
+    logger.info(f"Found {len(unique_text_values)} unique descriptions")
 
-    print("💾⇦ Saving subheadings")
+    logger.info("💾⇦ Saving subheadings")
     with open(subheadings_file, "wb") as fp:
         pickle.dump(subheadings, fp)
 
@@ -194,7 +191,7 @@ if __name__ == "__main__":
         labels = new_labels
 
     # Next create the embeddings
-    print("Creating the embeddings")
+    logger.info("Creating the embeddings")
 
     embeddings_processor = EmbeddingsProcessor(
         transformer_model=args.transformer(),
@@ -216,7 +213,7 @@ if __name__ == "__main__":
         embeddings, labels, len(subheadings)
     )
 
-    print("💾⇦ Saving model")
+    logger.info("💾⇦ Saving model")
 
     model_file = target_dir / "model.pt"
     torch.save(state_dict, model_file)
@@ -232,4 +229,4 @@ if __name__ == "__main__":
     with open("target/model.toml", "w") as f:
         toml.dump(model_config, f)
 
-    print("✅ Training complete. Enjoy your model!")
+    logger.info("✅ Training complete. Enjoy your model!")
