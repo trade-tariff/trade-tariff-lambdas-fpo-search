@@ -12,6 +12,22 @@ provider:
   timeout: 29
   memorySize: 3072
 
+  logs:
+    restApi:
+      accessLogging: true
+      executionLogging: false
+      fullExecutionData: false
+      format:
+        '{
+          "requestId":"$context.requestId",
+          "ip": "$context.identity.sourceIp",
+          "requestTime": "$context.requestTime",
+          "httpMethod": "$context.httpMethod",
+          "resourcePath": "$context.resourcePath",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength"
+        }'
+
   deploymentBucket:
     name: "trade-tariff-lambda-deployment-${aws:accountId}"
 
