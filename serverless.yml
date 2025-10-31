@@ -73,6 +73,10 @@ custom:
     securityPolicy: tls_1_2
     apiType: rest
     autoDomain: true
+  logRetentionInDays:
+    development: 7
+    staging: 14
+    production: 30
 
 resources:
   Resources:
@@ -117,3 +121,15 @@ resources:
         AlarmActions:
           - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
         TreatMissingData: notBreaching
+
+    ApiGatewayLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /aws/api-gateway/${self:service}-${env:STAGE}
+        RetentionInDays: ${self:custom.logRetentionInDays.${env:STAGE}, 14}
+
+    FpoUnderscoresearchLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /aws/lambda/${self:service}-${env:STAGE}-fpo_search
+        RetentionInDays: ${self:custom.logRetentionInDays.${env:STAGE}, 14}
