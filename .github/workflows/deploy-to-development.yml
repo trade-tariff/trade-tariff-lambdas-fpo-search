@@ -187,17 +187,17 @@ jobs:
           DOCKER_TAG: ${{ steps.docker-tag.outputs.DOCKER_TAG }}
           FPO_SEARCH_ECR_URL: 382373577178.dkr.ecr.eu-west-2.amazonaws.com/tariff-fpo-search-production
 
-  start-dev-hub:
+  start-services:
     runs-on: ubuntu-latest
     steps:
       - uses: trade-tariff/trade-tariff-tools/.github/actions/start-services@main
         with:
-          service-names: dev-hub
+          service-names: dev-hub identity
           environment: development
 
   e2etest:
     needs:
-      - start-dev-hub
+      - start-services
       - deploy
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     with:
