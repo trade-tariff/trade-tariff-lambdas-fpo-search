@@ -4,7 +4,6 @@
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
   };
-
   outputs =
     {
       self,
@@ -33,7 +32,6 @@
               ];
               require_serial = true;
             };
-
             ruff-format = {
               enable = true;
               entry = "${pkgs.ruff}/bin/ruff format --force-exclude";
@@ -44,7 +42,6 @@
               ];
               require_serial = true;
             };
-
             trim-trailing-whitespace.enable = true;
             end-of-file-fixer.enable = true;
             check-yaml.enable = true;
@@ -70,16 +67,38 @@
             };
           };
         };
+
+        baseInputs = [
+          pkgs.python313
+          pkgs.python313Packages.pandas
+          pkgs.python313Packages.pip
+          pkgs.nodejs_latest
+          pkgs.yarn
+          pkgs.ruff
+          pkgs.zlib
+        ];
+
+        baseShellHook = ''
+          ${pre-commit-check.shellHook}
+          if [ ! -d "venv" ]; then
+            ${pkgs.python313}/bin/python -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt  # CPU-only install here
+          fi
+          source venv/bin/activate
+        '';
       in
       {
         devShells = {
           default = pkgs.mkShell {
+            inherit baseShellHook;
+            buildInputs = baseInputs;
+          };
+          cuda = pkgs.mkShell {
             CUDA_HOME = "${pkgs.cudaPackages_12_8.cudatoolkit}";
             PATH = "${pkgs.cudaPackages_12_8.cudatoolkit}/bin:$PATH";
-
             shellHook = ''
-              ${pre-commit-check.shellHook}
-
               export LD_LIBRARY_PATH="${
                 pkgs.lib.makeLibraryPath [
                   pkgs.stdenv.cc.cc
@@ -89,25 +108,17 @@
                   pkgs.cudaPackages_12_8.libcufft
                   pkgs.cudaPackages_12_8.libnvjitlink
                 ]
-              }:/run/opengl-driver/lib:$LD_LIBRARY_PATH";
-
+              }:/run/opengl-driver/lib:$LD_LIBRARY_PATH"
+              ${pre-commit-check.shellHook}
               if [ ! -d "venv" ]; then
                 ${pkgs.python313}/bin/python -m venv venv
                 source venv/bin/activate
                 pip install --upgrade pip
                 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -r requirements.txt
               fi
-              source .venv/bin/activate
+              source venv/bin/activate
             '';
-
-            buildInputs = [
-              pkgs.python313
-              pkgs.python313Packages.pandas
-              pkgs.python313Packages.pip
-              pkgs.nodejs_latest
-              pkgs.yarn
-              pkgs.ruff
-              pkgs.zlib
+            buildInputs = baseInputs ++ [
               pkgs.cudaPackages_12_8.cudatoolkit
               pkgs.cudaPackages_12_8.cudnn
               pkgs.cudaPackages_12_8.libcublas
