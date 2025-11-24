@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+URL=http://localhost:9000/2015-03-31/functions/function/invocations
+REQUEST_COUNT=20
+
+ELAPSED_TIMES=()
+
+function make_request() {
+    local description="$1"
+    local result
+
+    start_time=$(date +%s%N)
+    result=$(curl --silent "$URL" \
+        --data "{\"path\": \"/fpo-code-search\", \"httpMethod\": \"POST\", \"body\": \"{\\\"description\\\": \\\"$description\\\"}\"}")
+    end_time=$(date +%s%N)
+    elapsed=$((end_time - start_time))
+    elapsed_ms=$((elapsed / 1000000))
+    result=$(echo "$result" |
+        jq --arg desc "$description" --arg elapsed "$elapsed_ms" '.body | fromjson | .results[0] | {code, score, description: $desc, elapsed_ms: ($elapsed + " ms")}')
+    ELAPSED_TIMES+=("$elapsed_ms")
+    echo "$result"
+}
+
+
+IFS=$'\n'
+for item in $(cat benchmarking_data/good-goods-descriptions.csv | shuf | head -"${REQUEST_COUNT}"); do
+    description=$(echo "$item" | awk -F, '{print $1}')
+
+    make_request "$description"
+    echo "----------------------------------------"
+done
+
+sum=0
+for t in "${ELAPSED_TIMES[@]}"; do
+  ((sum += t))
+done
+echo "Mean average time: $((sum / ${#ELAPSED_TIMES[@]})) ms"
