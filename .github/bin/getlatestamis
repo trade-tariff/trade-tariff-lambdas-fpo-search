@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 
+# NOTE: This finds the "Deep Learning Base AMI with Single CUDA"
+# It is a lightweight successor to the old AL2 DLAMI.
+# It includes: NVIDIA Drivers + CUDA + cuDNN + EFA Support.
+
 [[ "$TRACE" ]] && set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o noclobber
 
-VERSION="${1:-74}"
+echo "Searching for latest Deep Learning Base AMI (AL2023) in us-east-1..."
 
-if ! [ -x "$(command -v aws)" ]; then
-  echo "Error: aws cli is not installed." >&2
-  exit 1
-fi
-
-echo "Deep Learning AMI (Amazon Linux 2) Version ${VERSION} images in us-east-1"
 aws ec2 describe-images \
   --region us-east-1 \
-  --filters "Name=name,Values=Deep Learning AMI (Amazon Linux 2) Version ${VERSION}*" "Name=owner-alias,Values=amazon" \
-  --query 'reverse(sort_by(Images, &CreationDate))[:10][ImageId,Name,Architecture,CreationDate,OwnerId]' \
+  --owners amazon \
+  --filters "Name=name,Values=Deep Learning Base AMI with Single CUDA (Amazon Linux 2023)*" \
+  --query 'reverse(sort_by(Images, &CreationDate))[:5].[ImageId, Name, CreationDate]' \
   --output table

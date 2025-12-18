@@ -96,17 +96,17 @@
             buildInputs = baseInputs;
           };
           cuda = pkgs.mkShell {
-            CUDA_HOME = "${pkgs.cudaPackages_12_8.cudatoolkit}";
-            PATH = "${pkgs.cudaPackages_12_8.cudatoolkit}/bin:$PATH";
+            CUDA_HOME = "${pkgs.cudaPackages.cudatoolkit}";
+            PATH = "${pkgs.cudaPackages.cudatoolkit}/bin:$PATH";
             shellHook = ''
               export LD_LIBRARY_PATH="${
                 pkgs.lib.makeLibraryPath [
                   pkgs.stdenv.cc.cc
-                  pkgs.cudaPackages_12_8.cudatoolkit
-                  pkgs.cudaPackages_12_8.cudnn
-                  pkgs.cudaPackages_12_8.libcublas
-                  pkgs.cudaPackages_12_8.libcufft
-                  pkgs.cudaPackages_12_8.libnvjitlink
+                  pkgs.cudaPackages.cudatoolkit
+                  pkgs.cudaPackages.cudnn
+                  pkgs.cudaPackages.libcublas
+                  pkgs.cudaPackages.libcufft
+                  pkgs.cudaPackages.libnvjitlink
                 ]
               }:/run/opengl-driver/lib:$LD_LIBRARY_PATH"
               ${pre-commit-check.shellHook}
@@ -118,12 +118,13 @@
               fi
               source venv/bin/activate
             '';
+
             buildInputs = baseInputs ++ [
-              pkgs.cudaPackages_12_8.cudatoolkit
-              pkgs.cudaPackages_12_8.cudnn
-              pkgs.cudaPackages_12_8.libcublas
-              pkgs.cudaPackages_12_8.libcufft
-              pkgs.cudaPackages_12_8.libnvjitlink
+              pkgs.cudaPackages.cudatoolkit
+              pkgs.cudaPackages.cudnn
+              pkgs.cudaPackages.libcublas
+              pkgs.cudaPackages.libcufft
+              pkgs.cudaPackages.libnvjitlink
             ];
           };
         };
