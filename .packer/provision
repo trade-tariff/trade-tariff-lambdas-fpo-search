@@ -87,7 +87,7 @@ git fetch origin "$GIT_BRANCH:$GIT_BRANCH" && git checkout "$GIT_BRANCH"
 python -m venv venv
 source venv/bin/activate
 pip install "$(grep torch requirements.txt)" \
-  --index-url https://download.pytorch.org/whl/cu121 \
+  --index-url https://download.pytorch.org/whl/cu128 \
   --no-cache-dir
 pip install -r requirements.txt
 pip install tqdm prettytable
