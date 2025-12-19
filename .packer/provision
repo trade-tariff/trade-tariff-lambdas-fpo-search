@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.14.0"
+PYTHON_VERSION="3.13.11"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
@@ -88,6 +88,7 @@ python -m venv venv
 source venv/bin/activate
 pip install "$(grep torch requirements.txt)" --index-url https://download.pytorch.org/whl/
 pip install -r requirements.txt
+pip install tqdm prettytable
 
 if [ "$GIT_BRANCH" != "main" ]; then
   git checkout main && git branch -D "$GIT_BRANCH"
