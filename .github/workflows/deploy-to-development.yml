@@ -70,6 +70,8 @@ jobs:
         run: git fetch origin main:refs/remotes/origin/main
 
       - name: Run the scripts
+        env:
+          GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: .github/bin/buildami
 
   build-model:
