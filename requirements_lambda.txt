@@ -1,8 +1,8 @@
-aws_lambda_powertools==3.14.0
+aws_lambda_powertools==3.23.0
 awslambdaric==3.1.1
 jmespath==1.0.1
 lingua-language-detector==2.1.1
-numpy==2.3.0
-sentence-transformers==4.1.0
+numpy==2.3.5
+sentence-transformers==5.2.0
 toml==0.10.2
-torch==2.7.1
+torch==2.9.1
