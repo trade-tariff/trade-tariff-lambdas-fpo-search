@@ -535,3 +535,51 @@ class Map2024CodesTo2025Codes(Cleaner):
                 "85299097": "85299096",
             }
         )
+
+
+class Map2025CodesTo2026Codes(Cleaner):
+    """
+    This cleaner is responsible for mapping training data using 2025 CN codes to 2026 ones
+    """
+
+    def __init__(self, code_mappings: dict[str, str], digits=8) -> None:
+        super().__init__()
+        self._code_mappings = code_mappings
+        self._digits = digits
+
+        # quickly check that all the keys are the expected length
+        for key in code_mappings.keys():
+            if len(key) != digits:
+                raise Exception(f"Map key '{key}' is not of length {digits}")
+
+    @debug
+    def filter(
+        self, subheading: str, description: str
+    ) -> tuple[str | None, str | None, dict]:
+        truncated_code = subheading[: self._digits]
+
+        if truncated_code in self._code_mappings:
+            return (self._code_mappings[truncated_code], description, {"updated": True})
+
+        return (subheading, description, {"updated": False})
+
+    @classmethod
+    def build(cls) -> "Map2025CodesTo2026Codes":
+        return cls(
+            {
+                "28419085": "28419040",
+                "28429080": "28429020",
+                "29093038": "29093037",
+                "29159070": "29159015",
+                "38011000": "38011010",
+                "38180010": "38180011",
+                "73082000": "73082010",
+                "84109000": "84109010",
+                "84129080": "84129060",
+                "85013300": "85013310",
+                "85044085": "85044084",
+                "85044086": "85044084",
+                "85079030": "85079031",
+                "85439000": "85439010",
+            }
+        )

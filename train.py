@@ -18,6 +18,7 @@ if __name__ == "__main__":
         IncorrectPairsRemover,
         LanguageCleaning,
         Map2024CodesTo2025Codes,
+        Map2025CodesTo2026Codes,
         NegationCleaning,
         PadCodes,
         PhraseRemover,
@@ -77,6 +78,7 @@ if __name__ == "__main__":
             ]
         ),
         Map2024CodesTo2025Codes.build(),
+        Map2025CodesTo2026Codes.build(),
     ]
     brands_filters = [PadCodes.build()] + basic_filters
     tradestats_filters = [
