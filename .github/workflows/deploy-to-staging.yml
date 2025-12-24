@@ -89,6 +89,9 @@ jobs:
     needs: deploy
     with:
       test-environment: staging
+    secrets:
+      NON_ADMIN_BYPASS_PASSWORD: "${{ secrets.NON_ADMIN_BYPASS_PASSWORD }}"
+      ADMIN_BYPASS_PASSWORD: "${{ secrets.ADMIN_BYPASS_PASSWORD }}"
 
   smoketest:
     needs: deploy
