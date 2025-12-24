@@ -26,11 +26,17 @@ source "amazon-ebs" "source" {
     "451934005581"
   ]
 
-  instance_type = "p2.xlarge"
+  instance_type = "g4dn.xlarge"
   ssh_username  = "ec2-user"
   region        = "us-east-1"
 
-  source_ami = "ami-0b0307e6a5c41a255"
+  source_ami = "ami-09f5f5e0999e6246c"
+
+  launch_block_device_mappings {
+    device_name = "/dev/xvda"
+    volume_size = 100
+    volume_type = "gp3"
+  }
 }
 
 build {
