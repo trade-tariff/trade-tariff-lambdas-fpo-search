@@ -199,7 +199,7 @@ jobs:
     needs:
       - start-services
       - deploy
-    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@BAU-fixes-casing
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
     with:
       test-environment: development
     secrets:
