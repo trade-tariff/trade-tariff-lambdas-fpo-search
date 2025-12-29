@@ -199,12 +199,12 @@ jobs:
     needs:
       - start-services
       - deploy
-    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
+    uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@BAU-fixes-casing
     with:
       test-environment: development
     secrets:
-      NON_ADMIN_BYPASS_PASSWORD: "${{ secrets.NON_ADMIN_BYPASS_PASSWORD }}"
-      ADMIN_BYPASS_PASSWORD: "${{ secrets.ADMIN_BYPASS_PASSWORD }}"
+      non_admin_bypass_password: "${{ secrets.NON_ADMIN_BYPASS_PASSWORD }}"
+      admin_bypass_password: "${{ secrets.ADMIN_BYPASS_PASSWORD }}"
 
   smoketest:
     needs: deploy
