@@ -20,7 +20,7 @@ if [ "$AWS_ACCESS_KEY_ID" = "" ] || [ "$AWS_SECRET_ACCESS_KEY" = "" ] || [ "$AWS
 fi
 
 AMI_VERSION=$(cat .packer/ami-version.txt)
-GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GIT_BRANCH="${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 
 docker build .packer/ -t "$IMAGE_NAME"
 
