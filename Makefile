@@ -73,7 +73,7 @@ test-local:
 		--data '{"path": "/fpo-code-search", "httpMethod": "POST", "body": "{\"description\": \"toothbrushes\"}"}'
 
 test-provision:
-	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2023 ./provision && /bin/bash
+	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2023 ./provision
 
 shell-provision:
 	docker run -ti -e "GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)" -v $(CURDIR)/.packer/provision:/provision amazonlinux:2023 /bin/bash
