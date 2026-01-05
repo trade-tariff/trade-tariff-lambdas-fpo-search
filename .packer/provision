@@ -6,7 +6,7 @@ set -o nounset
 set -o pipefail
 
 GIT_REPO="trade-tariff-lambdas-fpo-search"
-PYTHON_VERSION="3.11.13"
+PYTHON_VERSION="3.14.0"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
@@ -19,7 +19,7 @@ fi
 }
 
 [ -d /usr/local/aws-cli ] && {
-  rm -rf /usr/local/aws-cli
+  $SUDO rm -rf /usr/local/aws-cli
 }
 
 [ -d ~/.pyenv ] && {
@@ -33,8 +33,8 @@ fi
 $SUDO yum remove openssl-devel awscli -y
 $SUDO yum install -y \
   git               \
-  gcc10             \
-  gcc10-c++         \
+  gcc14             \
+  gcc14-c++         \
   make              \
   patch             \
   zlib-devel        \
@@ -46,16 +46,16 @@ $SUDO yum install -y \
   readline-devel    \
   sqlite            \
   sqlite-devel      \
-  openssl11-devel   \
+  openssl-devel     \
   tk-devel          \
   libffi-devel      \
   xz-devel \
   binutils
 
-$SUDO alternatives --install /usr/bin/gcc gcc /usr/bin/gcc10-gcc 50
-$SUDO alternatives --install /usr/bin/g++ g++ /usr/bin/gcc10-g++ 50
-$SUDO alternatives --set gcc /usr/bin/gcc10-gcc
-$SUDO alternatives --set g++ /usr/bin/gcc10-g++
+$SUDO alternatives --install /usr/bin/gcc gcc /usr/bin/gcc14-gcc 50
+$SUDO alternatives --install /usr/bin/g++ g++ /usr/bin/gcc14-g++ 50
+$SUDO alternatives --set gcc /usr/bin/gcc14-gcc
+$SUDO alternatives --set g++ /usr/bin/gcc14-g++
 
 gcc --version
 g++ --version
