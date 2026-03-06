@@ -1,6 +1,6 @@
 import argparse
+import json
 import logging
-import pickle
 from pathlib import Path
 
 from inference.infer import FlatClassifier
@@ -37,12 +37,12 @@ digits = args.digits
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("infer")
 
-subheadings_file = target_dir / "subheadings.pkl"
+subheadings_file = target_dir / "subheadings.json"
 if not subheadings_file.exists():
     raise FileNotFoundError(f"Could not find subheadings file: {subheadings_file}")
 
-with open(subheadings_file, "rb") as fp:
-    subheadings = pickle.load(fp)
+with open(subheadings_file, "r") as fp:
+    subheadings = json.load(fp)
 
 classifier = FlatClassifier(subheadings, device)
 

@@ -1,5 +1,5 @@
+import json
 import os
-import pickle
 import time
 from pathlib import Path
 
@@ -13,9 +13,9 @@ logger = Logger(service="fpo-commodity-code-tool")
 start = time.perf_counter()
 cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
-subheadings_file = target_dir / "subheadings.pkl"
-with open(subheadings_file, "rb") as fp:
-    subheadings = pickle.load(fp)
+subheadings_file = target_dir / "subheadings.json"
+with open(subheadings_file, "r") as fp:
+    subheadings = json.load(fp)
 logger.info("🚀⇨ Subheadings loaded in %.2fms", (time.perf_counter() - start) * 1000)
 
 

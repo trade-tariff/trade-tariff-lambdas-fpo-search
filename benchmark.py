@@ -2,7 +2,6 @@ import argparse
 import json
 import logging
 import os
-import pickle
 from pathlib import Path
 from typing import List
 
@@ -155,12 +154,12 @@ cwd = Path(__file__).resolve().parent
 target_dir = cwd / "target"
 target_dir.mkdir(parents=True, exist_ok=True)
 
-subheadings_file = target_dir / "subheadings.pkl"
+subheadings_file = target_dir / "subheadings.json"
 if not subheadings_file.exists():
     raise FileNotFoundError(f"Could not find subheadings file: {subheadings_file}")
 
-with open(subheadings_file, "rb") as fp:
-    subheadings = pickle.load(fp)
+with open(subheadings_file, "r") as fp:
+    subheadings = json.load(fp)
 
 model_file = target_dir / "model.pt"
 if not model_file.exists():
