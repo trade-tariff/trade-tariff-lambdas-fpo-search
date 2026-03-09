@@ -84,9 +84,10 @@ jobs:
     steps:
       - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
         with:
-          result: ${{ needs.deploy.result }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
-          slack_channel: '#production-deployments'
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          channel: production-deployments
+          color: ${{ needs.deploy.result }}
+          message: "Deployment of trade-tariff-lambdas-fpo-search to production ${{ needs.deploy.result }}"
 
   tag:
     runs-on: ubuntu-latest
