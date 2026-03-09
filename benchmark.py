@@ -18,6 +18,8 @@ from training.cleaning_pipeline import (
     CleaningPipeline,
     DescriptionLower,
     LanguageCleaning,
+    Map2024CodesTo2025Codes,
+    Map2025CodesTo2026Codes,
     RemoveDescriptionsMatchingRegexes,
     RemoveEmptyDescription,
     RemoveShortDescription,
@@ -131,6 +133,8 @@ filters = [
         min_length=2
     ),  # remove anything length 2 or less (just for benchmarks)
     RemoveSubheadingsNotMatchingRegexes(regexes=["^\\d{" + str(args.digits) + "}$"]),
+    Map2024CodesTo2025Codes.build(),
+    Map2025CodesTo2026Codes.build(),
     RemoveDescriptionsMatchingRegexes.build(),
     LanguageCleaning(
         detected_languages=training_args.detected_languages(),
