@@ -222,17 +222,11 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - id: result
-        run: |
-          if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "result=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "result=failure" >> "$GITHUB_OUTPUT"
-          fi
       - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
         with:
-          result: ${{ steps.result.outputs.result }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          color: ${{ needs.deploy.result }}
+          message: "Deployment of trade-tariff-lambdas-fpo-search to development ${{ needs.deploy.result }}"
 
   merge-pr:
     needs: deploy

@@ -81,8 +81,9 @@ jobs:
     steps:
       - uses: trade-tariff/trade-tariff-tools/.github/actions/slack-notify@main
         with:
-          result: ${{ needs.deploy.result }}
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          color: ${{ needs.deploy.result }}
+          message: "Deployment of trade-tariff-lambdas-fpo-search to staging ${{ needs.deploy.result }}"
 
   e2etest:
     uses: trade-tariff/trade-tariff-tools/.github/workflows/e2e-fpo-tests.yml@main
