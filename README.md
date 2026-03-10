@@ -93,7 +93,7 @@ Once you have the model built you can run inference against it to classify
 items. By default the inference script requires the following files to be
 present:
 
-- `target/subheading.pkl` which is a pickle file of a list of subheadings. This
+- `target/subheadings.json` which is a JSON file of a list of subheadings. This
   is used to convert the classification from the model back into the eight digit
   code.
 - `target/model.pt` which is the PyTorch model

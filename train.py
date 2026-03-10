@@ -1,6 +1,6 @@
 if __name__ == "__main__":
+    import json
     import logging
-    import pickle
     from pathlib import Path
 
     import toml
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # First load in the training data
     logger.info("💾⇨ Loading training data")
 
-    subheadings_file = target_dir / "subheadings.pkl"
+    subheadings_file = target_dir / "subheadings.json"
 
     language_skips_file = args.pwd() / args.partial_non_english_terms()
     language_keeps_file = args.pwd() / args.partial_english_terms()
@@ -174,8 +174,8 @@ if __name__ == "__main__":
     logger.info(f"Found {len(unique_text_values)} unique descriptions")
 
     logger.info("💾⇦ Saving subheadings")
-    with open(subheadings_file, "wb") as fp:
-        pickle.dump(subheadings, fp)
+    with open(subheadings_file, "w") as fp:
+        json.dump(subheadings, fp)
 
     # Impose the limit if required - this will limit the number of unique descriptions
     if args.limit() is not None:
