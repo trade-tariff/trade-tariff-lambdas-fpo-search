@@ -76,7 +76,7 @@ custom:
   logRetentionInDays:
     development: 7
     staging: 14
-    production: 30
+    production: 180
 
 resources:
   Resources:
