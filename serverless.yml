@@ -97,8 +97,28 @@ resources:
             Value: ${self:service}-${env:STAGE}-fpo_search
         Statistic: Sum
         Period: 300 # 5 minutes
-        EvaluationPeriods: 1
-        Threshold: 1
+        EvaluationPeriods: 2
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions:
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+        TreatMissingData: notBreaching
+
+    ApiGateway5xxAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: "Alarm if FPO search API Gateway 5xx responses exceed a threshold"
+        Namespace: "AWS/ApiGateway"
+        MetricName: "5XXError"
+        Dimensions:
+          - Name: "ApiName"
+            Value: ${self:service}-${env:STAGE}
+          - Name: "Stage"
+            Value: ${env:STAGE}
+        Statistic: Sum
+        Period: 300 # 5 minutes
+        EvaluationPeriods: 2
+        Threshold: 5
         ComparisonOperator: GreaterThanOrEqualToThreshold
         AlarmActions:
           - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
