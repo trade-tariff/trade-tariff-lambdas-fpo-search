@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.15.12
     hooks:
       - id: ruff-check
       - id: ruff-format
@@ -25,20 +25,19 @@ repos:
         args: ["--severity=warning"]
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
+    rev: v0.48.0
     hooks:
-      - id: markdownlint-docker
+      - id: markdownlint-fix
         args:
-          - "--fix"
           - "--ignore"
           - terraform
 
   - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.90.12
+    rev: v3.95.3
     hooks:
       - id: trufflehog
 
   - repo: https://github.com/rhysd/actionlint.git
-    rev: v1.7.8
+    rev: v1.7.12
     hooks:
       - id: actionlint-docker
