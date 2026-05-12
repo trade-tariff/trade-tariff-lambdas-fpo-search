@@ -29,7 +29,7 @@ class TestNegationCleaning(unittest.TestCase):
             "fabrics (textile) other than knitted, crocheted or woven - felt",
             "fabrics (textile)- felt",
         ),
-        ("I have a\u00A0non-breaking space", "i have a non-breaking space"),
+        ("I have a\u00a0non-breaking space", "i have a non-breaking space"),
         ("some text", "some text"),
         (None, ""),
         ("", ""),

@@ -26,7 +26,7 @@ We typically process millions of descriptions and codes from different sources i
 ## Custom cleaners
 
 | Cleaner Name | Description | Used in Training | Used in Inference |
-|--------------|-------------|------------------|-------------------|
+| -------------- | ----------- | ------------------ | ------------------- |
 | **StripExcessCharacters** | Strips leading/trailing whitespace, newlines, tabs, carriage returns, periods, and commas from subheadings and descriptions. Normalizes multiple spaces in descriptions to single spaces. | Yes | Yes |
 | **PluralCleaning** | Converts odd plural forms in descriptions (e.g., "women s" to "womens") while preserving specific forms like "size s". | Yes | No |
 | **IncorrectPairsRemover** | Removes incorrect subheading-description pairs based on a CSV file specifying descriptions, correct chapters, and codes to skip. | Yes | No |
@@ -58,10 +58,10 @@ The following outlines the various data sources we clean with a summary of the c
 - Reinforcement Muliplier - How many times we repeat this data source during training to reinforce its importance/boost output scores for the result
 
 | Data Source | Cleaners Used | Description | Reinforcement Multiplier |
-|-------------|-----------------------|-------------|-------------------------|
+| ----------- | ----------------------- | ----------- | ------------------------ |
 | Tradesets CSV | DescriptionLower, PhraseRemover, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, RemoveDescriptionsMatchingRegexes, LanguageCleaning, IncorrectPairsRemover, PluralCleaning | Very large CSV file containing trade transaction data requiring comprehensive cleaning to handle noisy, real-world data. | 1 |
 | Search References | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | API data source authored via the admin app with search-related reference mappings for commodity codes, weighted heavily to improve search-based classification accuracy. | 10 |
-| Brands CSV | PadCodes, DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with brand-specific commodity descriptions and codes  | 5 |
+| Brands CSV | PadCodes, DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with brand-specific commodity descriptions and codes | 5 |
 | Extra References CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file with additional reference data for commodity codes, providing authoritative mappings. Duplicates search references concept with less reinforcement. | 5 |
 | CN Data CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes, NegationCleaning | CSV file containing Combined Nomenclature (CN) data, a standard EU tariff classification system for training authoritative classifications. | 3 |
 | Vague Terms CSV | DescriptionLower, StripExcessCharacters, RemoveEmptyDescription, RemoveShortDescription, RemoveSubheadingsNotMatchingRegexes, Map2024CodesTo2025Codes | CSV file containing vague or ambiguous commodity descriptions, likely with regex patterns to identify them, used to train the model to handle non-specific terms. | 1 |
