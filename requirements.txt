@@ -1,5 +1,5 @@
 aws_lambda_powertools==3.23.0
-dill==0.4.0
+dill==0.4.1
 lingua-language-detector==2.1.1
 numpy==2.3.5
 requests==2.33.0
