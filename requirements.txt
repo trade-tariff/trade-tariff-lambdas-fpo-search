@@ -1,4 +1,4 @@
-aws_lambda_powertools==3.23.0
+aws_lambda_powertools==3.29.0
 dill==0.4.1
 lingua-language-detector==2.1.1
 numpy==2.4.6
