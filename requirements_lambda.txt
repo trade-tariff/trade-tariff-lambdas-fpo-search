@@ -3,7 +3,7 @@ awslambdaric==3.1.1
 jmespath==1.1.0
 lingua-language-detector==2.1.1
 numpy==2.4.6
-requests==2.33.0
+requests==2.34.2
 sentence-transformers==5.5.1
 toml==0.10.2
 torch==2.12.0
