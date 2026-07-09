@@ -212,10 +212,11 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     environment: development
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - run: .github/bin/smoketest https://search.dev.trade-tariff.service.gov.uk ${{ secrets.SMOKETEST_API_KEY }}
+      - run: .github/bin/smoketest "https://search.dev.trade-tariff.service.gov.uk" "${{ secrets.SMOKETEST_API_KEY }}"
 
   notify:
     needs: deploy

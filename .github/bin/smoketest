@@ -8,8 +8,13 @@ set -o noclobber
 
 sleep 50
 
-URL=$1
-API_KEY=$2
+URL=${1:-}
+API_KEY=${2:-}
+
+if [[ -z "$URL" || -z "$API_KEY" ]]; then
+  echo "Usage: smoketest <url> <api_key>" >&2
+  exit 1
+fi
 
 # Ensure it responds with a 200 to a POST request
 STATUS_CODE=$(curl -X POST -d '{"description":"grilled cheese"}' -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search" \
