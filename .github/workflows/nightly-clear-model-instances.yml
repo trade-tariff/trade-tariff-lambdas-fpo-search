@@ -14,7 +14,7 @@ jobs:
   clear-model-instances:
     runs-on: ubuntu-latest
     steps:
-      - uses: aws-actions/configure-aws-credentials@v6.2.1
+      - uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
