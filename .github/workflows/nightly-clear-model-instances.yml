@@ -19,6 +19,6 @@ jobs:
           role-to-assume: arn:aws:iam::844815912454:role/GithubActions-FPO-Models-Role
           aws-region: eu-west-2
 
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - run: .github/bin/clearinstances
