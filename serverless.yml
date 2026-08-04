@@ -1,6 +1,8 @@
 frameworkVersion: "3"
 service: trade-tariff-lambdas-fpo-search
 
+configValidationMode: error
+
 plugins:
   - serverless-domain-manager
 
@@ -43,9 +45,9 @@ provider:
 
   apiGateway:
     usagePlan:
-      - apiStages:
-          - api: ${self:service}-${env:STAGE}
-            stage: ${env:STAGE}
+      apiStages:
+        - apiId: ${self:service}-${env:STAGE}
+          stage: ${env:STAGE}
 
 functions:
   fpo_search:

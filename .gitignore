@@ -192,3 +192,5 @@ failed
 
 .envrc
 .pre-commit-config-nix.yaml
+
+.DS_Store
