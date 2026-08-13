@@ -55,7 +55,6 @@ reference_data/CN2025_SelfText_EN_DE_FR.csv
 reference_data/brands.csv
 reference_data/extra_references.csv
 reference_data/incorrect_code_desc_pairs.csv
-requirements.txt
 serverless.yml
 target*/training_data
 target.zip

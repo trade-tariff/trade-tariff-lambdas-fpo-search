@@ -8,13 +8,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /opt/app
 
+COPY requirements.txt .
 COPY requirements_lambda.txt .
 
 # TODO: Revisit awslambdaric pin after upstream issue is fixed:
 # https://github.com/aws/aws-lambda-nodejs-runtime-interface-client/issues/170
 RUN pip install --upgrade pip --no-cache-dir && \
     pip install -r requirements_lambda.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir awslambdaric==3.3.0 && \
+    pip install --no-cache-dir awslambdaric==3.1.1 && \
     pip cache purge && \
     rm -rf /root/.cache/pip
 
