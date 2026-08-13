@@ -1,9 +1,2 @@
-aws_lambda_powertools==3.31.1
+-r requirements.txt
 awslambdaric==4.0.2
-jmespath==1.1.0
-lingua-language-detector==2.1.1
-numpy==2.4.6
-requests==2.34.2
-sentence-transformers==5.6.1
-toml==0.10.2
-torch==2.13.0
