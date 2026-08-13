@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -19,11 +19,11 @@ COPY . .
 
 RUN python quantize_model.py
 
-FROM python:3.12-slim AS production
+FROM python:3.14-slim AS production
 
 WORKDIR /opt/app
 
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /opt/app .
 
