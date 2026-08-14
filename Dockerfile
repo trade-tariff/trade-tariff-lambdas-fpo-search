@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -8,7 +8,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /opt/app
 
+COPY requirements.txt .
 COPY requirements_lambda.txt .
+
+# TODO: Revisit awslambdaric pin after upstream issue is fixed:
+# https://github.com/aws/aws-lambda-nodejs-runtime-interface-client/issues/170
 RUN pip install --upgrade pip --no-cache-dir && \
     pip install -r requirements_lambda.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir awslambdaric==3.1.1 && \
@@ -19,11 +23,11 @@ COPY . .
 
 RUN python quantize_model.py
 
-FROM python:3.12-slim AS production
+FROM python:3.14-slim AS production
 
 WORKDIR /opt/app
 
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /opt/app .
 
