@@ -63,7 +63,11 @@ jobs:
 
       - run: npm install -g serverless@3
 
-      - run: npm install -g serverless-domain-manager
+      # TODO: pinned below 10.3.0 because that release switched credential resolution to
+      # getAwsSdkV3Config(), which only works with the newer `osls` v4 fork. We're still on
+      # `serverless@3` above, so latest breaks with "Resolved credential object is not valid".
+      # Unpin once this repo migrates to osls/serverless v4, or the plugin restores v3 support.
+      - run: npm install -g serverless-domain-manager@10.2.0
 
       - id: docker-tag
         run: echo "DOCKER_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
