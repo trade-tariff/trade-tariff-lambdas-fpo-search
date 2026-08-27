@@ -25,11 +25,18 @@ RUN python quantize_model.py
 
 FROM python:3.14-slim AS production
 
+RUN apt-get update && apt-get upgrade -y libssl3t64 && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /opt/app
 
 COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /opt/app .
+
+# pip vendors a CycloneDX SBOM naming the setuptools/msgpack versions its
+# vendored code was sourced from; Trivy reads it as installed packages and
+# flags their CVEs even though the vulnerable modules aren't present.
+RUN rm -f /usr/local/lib/python3.14/site-packages/pip/_vendor/bom.cdx.json
 
 ENV SENTENCE_TRANSFORMERS_HOME=/opt/app/.sentence_transformer_cache/sentence_transformers/ \
     SENTENCE_TRANSFORMER_PRETRAINED_MODEL=all-mpnet-base-v2 \
@@ -39,7 +46,7 @@ ENV SENTENCE_TRANSFORMERS_HOME=/opt/app/.sentence_transformer_cache/sentence_tra
 RUN python download_transformer.py && \
     rm -rf /root/.cache /opt/app/.sentence_transformer_cache/transformers_cache
 
-ADD https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/download/v1.27/aws-lambda-rie /usr/bin/aws-lambda-rie
+ADD https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/download/v1.36/aws-lambda-rie /usr/bin/aws-lambda-rie
 RUN chmod 700 /usr/bin/aws-lambda-rie
 
 ENTRYPOINT ["/opt/app/bin/entry"]
