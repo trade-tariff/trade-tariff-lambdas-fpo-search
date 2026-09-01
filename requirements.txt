@@ -3,6 +3,6 @@ dill==0.4.1
 lingua-language-detector==2.2.0
 numpy==2.4.6
 requests==2.34.2
-sentence-transformers==5.7.0
+sentence-transformers==6.0.0
 toml==0.10.2
 torch==2.13.0
