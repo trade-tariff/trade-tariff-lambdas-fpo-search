@@ -1,4 +1,4 @@
-name: bi-weekly-automated-model-build
+name: automated-model-build
 
 on:
     workflow_dispatch:
