@@ -1,9 +1,6 @@
 name: bi-weekly-automated-model-build
 
 on:
-    schedule:
-    - cron: "0 0 1,15 * *"    # Bi weekly (almost)
-
     workflow_dispatch:
 
 permissions:
