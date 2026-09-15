@@ -11,10 +11,18 @@ jobs:
   automated-build-model:
     runs-on: ubuntu-latest
 
-    env:
-      GITHUB_TOKEN: ${{ secrets.PULL_REQUEST_PAT }}
-
     steps:
+      # Short-lived token scoped to this repo. Masked in logs and revoked when
+      # the job ends.
+      - name: Mint trade-tariff-pr-bot token
+        id: app-token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ secrets.TRADE_TARIFF_PR_BOT_GITHUB_APP_ID }}
+          private-key: ${{ secrets.TRADE_TARIFF_PR_BOT_GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Checkout repo
         uses: actions/checkout@v7.0.1
 
@@ -23,4 +31,6 @@ jobs:
           ssh-key: ${{ secrets.PRIVATE_SSH_KEY }}
 
       - name: Run create pr script
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: .github/bin/createpr
