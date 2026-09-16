@@ -5,4 +5,4 @@ numpy==2.4.6
 requests==2.34.2
 sentence-transformers==6.0.0
 toml==0.10.2
-torch==2.13.0
+torch==2.14.0
