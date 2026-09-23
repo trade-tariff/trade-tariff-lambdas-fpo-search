@@ -62,6 +62,8 @@ functions:
           private: false
 
 custom:
+  alarmTopic:
+    production: slack-observability-topic
   customDomain:
     domainName: ${param:custom_domain}
     stage: ${env:STAGE}
@@ -101,7 +103,7 @@ resources:
         Threshold: 5
         ComparisonOperator: GreaterThanOrEqualToThreshold
         AlarmActions:
-          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:${self:custom.alarmTopic.${env:STAGE}, 'slack-topic'}
         TreatMissingData: notBreaching
 
     ApiGateway5xxAlarm:
@@ -121,7 +123,7 @@ resources:
         Threshold: 5
         ComparisonOperator: GreaterThanOrEqualToThreshold
         AlarmActions:
-          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:${self:custom.alarmTopic.${env:STAGE}, 'slack-topic'}
         TreatMissingData: notBreaching
 
     DurationAlarm:
@@ -139,7 +141,7 @@ resources:
         Threshold: 50000 # 50 seconds for a cold start of a lambda
         ComparisonOperator: GreaterThanOrEqualToThreshold
         AlarmActions:
-          - arn:aws:sns:${self:provider.region}:${aws:accountId}:slack-topic
+          - arn:aws:sns:${self:provider.region}:${aws:accountId}:${self:custom.alarmTopic.${env:STAGE}, 'slack-topic'}
         TreatMissingData: notBreaching
 
     ApiGatewayLogGroup:
