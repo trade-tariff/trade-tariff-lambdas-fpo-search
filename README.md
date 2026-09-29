@@ -1,5 +1,25 @@
 # FPO Parcel Item Categorisation API
 
+This Python service trains and runs models that suggest commodity codes for
+Fast Parcel Operator (FPO) parcel descriptions. Model suggestions need validation
+against tariff rules; they are not a legal classification decision.
+
+Training data and pre-built models are not included in the source licence.
+Obtain approved datasets from the team and keep them outside commits.
+
+## Checks and contributions
+
+After installing dependencies, run `make test` for the Python unit tests.
+Training, benchmarking and deployed inference are separate integration tasks;
+check their data, compute and AWS requirements before running them.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the fork workflow and security reporting.
+
+## Licence
+
+The code and associated documentation use the [MIT licence](LICENSE.txt), with
+the existing Crown copyright notice. Model weights, training data and third-party
+dependencies retain their own terms.
+
 ## Create your development environment
 
 > Make sure you install and enable all pre-commit hooks https://pre-commit.com/
@@ -147,7 +167,3 @@ python infer.py \
         --query "Kingsmill bread" \
         --digits 8
 ```
-
-## Licence
-
-FPO Parcel Item Categorisation API is licenced under the [MIT licence](LICENCE.txt)
