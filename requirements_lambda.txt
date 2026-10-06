@@ -1,2 +1,2 @@
 -r requirements.txt
-awslambdaric==4.0.2
+awslambdaric==4.0.4
