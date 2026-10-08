@@ -253,17 +253,6 @@ class Test_handler_handle(unittest.TestCase):
             "Expected a request id",
         )
 
-    def test_it_should_handle_healthcheck(self):
-        event = self._create_healthcheck_event()
-
-        result = handler.handle(event, {})
-        self.assertEqual(200, result["statusCode"], "Expected a 200 status code")
-        self.assertEqual(
-            "development",
-            json.loads(result["body"])["git_sha1"],
-            "Expected a 200 status code",
-        )
-
     def _create_post_event(self, description: str, digits: str = "6", limit: str = "5"):
         return {
             "path": "/fpo-code-search",
@@ -297,13 +286,6 @@ class Test_handler_handle(unittest.TestCase):
     def _create_unhandled_event(self):
         return {
             "path": "/unknown",
-            "httpMethod": "GET",
-            "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
-        }
-
-    def _create_healthcheck_event(self):
-        return {
-            "path": "/healthcheck",
             "httpMethod": "GET",
             "requestContext": {"requestId": "6b85ab53-2b60-4178-81ce-342acdec65a2"},
         }

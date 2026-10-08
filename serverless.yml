@@ -57,10 +57,6 @@ functions:
           path: /fpo-code-search
           method: post
           private: true
-      - http:
-          path: /healthcheck
-          method: get
-          private: true
 
 custom:
   alarmTopic:
