@@ -87,7 +87,8 @@ if [[ "$HAS_NO_RESULTS" != "true" ]] ; then
 fi
 
 # Ensure it responds to a healthcheck
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/healthcheck")
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/healthcheck" \
+  -H "X-Api-Key: $API_KEY")
 
 if [[ "$STATUS_CODE" -ne 200 ]] ; then
   echo "ERROR: Status code of $STATUS_CODE" >&2

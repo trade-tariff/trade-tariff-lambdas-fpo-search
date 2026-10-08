@@ -44,8 +44,9 @@ provider:
   apiGateway:
     usagePlan:
       - apiStages:
-          - api: ${self:service}-${env:STAGE}
-            stage: ${env:STAGE}
+          throttle:
+            rateLimit: 200
+            burstLimit: 400
 
 functions:
   fpo_search:
@@ -59,7 +60,7 @@ functions:
       - http:
           path: /healthcheck
           method: get
-          private: false
+          private: true
 
 custom:
   alarmTopic:
