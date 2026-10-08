@@ -44,8 +44,9 @@ provider:
   apiGateway:
     usagePlan:
       - apiStages:
-          - api: ${self:service}-${env:STAGE}
-            stage: ${env:STAGE}
+          throttle:
+            rateLimit: 200
+            burstLimit: 400
 
 functions:
   fpo_search:
@@ -60,6 +61,15 @@ functions:
           path: /healthcheck
           method: get
           private: false
+          integration: mock
+          request:
+            template:
+              application/json: '{"statusCode": 200}'
+          response:
+            template: '{"healthy": true}'
+            statusCodes:
+              200:
+                pattern: ""
 
 custom:
   alarmTopic:
