@@ -60,16 +60,7 @@ functions:
       - http:
           path: /healthcheck
           method: get
-          private: false
-          integration: mock
-          request:
-            template:
-              application/json: '{"statusCode": 200}'
-          response:
-            template: '{"healthy": true}'
-            statusCodes:
-              200:
-                pattern: ""
+          private: true
 
 custom:
   alarmTopic:
