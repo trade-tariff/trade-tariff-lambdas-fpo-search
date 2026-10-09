@@ -1,3 +1,19 @@
+# Build the Lambda Runtime Interface Emulator from source. The upstream
+# release binaries (v1.37 and earlier) use a Go toolchain older than 1.26.9,
+# which has HIGH CVEs in net/http and crypto/tls (CVE-2026-78667,
+# CVE-2026-97031). Move back to the release binary when upstream ships one
+# that uses Go 1.26.9 or later.
+FROM golang:1.26.9-trixie AS rie-builder
+
+ARG RIE_VERSION=v1.37
+
+WORKDIR /src
+
+RUN git clone --depth 1 --branch ${RIE_VERSION} \
+    https://github.com/aws/aws-lambda-runtime-interface-emulator.git . && \
+    CGO_ENABLED=0 go build -buildvcs=false -ldflags "-s -w" \
+    -o /usr/local/bin/aws-lambda-rie ./cmd/aws-lambda-rie
+
 FROM python:3.14-slim AS builder
 
 RUN apt-get update && apt-get install -y \
@@ -46,7 +62,7 @@ ENV SENTENCE_TRANSFORMERS_HOME=/opt/app/.sentence_transformer_cache/sentence_tra
 RUN python download_transformer.py && \
     rm -rf /root/.cache /opt/app/.sentence_transformer_cache/transformers_cache
 
-ADD https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/download/v1.36/aws-lambda-rie /usr/bin/aws-lambda-rie
+COPY --from=rie-builder /usr/local/bin/aws-lambda-rie /usr/bin/aws-lambda-rie
 RUN chmod 700 /usr/bin/aws-lambda-rie
 
 ENTRYPOINT ["/opt/app/bin/entry"]
