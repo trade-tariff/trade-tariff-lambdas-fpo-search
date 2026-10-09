@@ -19,12 +19,6 @@ from training.cleaning_pipeline import (
     StripExcessCharacters,
 )
 
-with open("REVISION", "r") as f:
-    REVISION = f.read().strip()
-
-with open("MODEL_VERSION", "r") as f:
-    MODEL_VERSION = f.read().strip()
-
 args = TrainScriptArgsParser()
 args.load_config_file()
 language_skips_file = args.pwd() / args.partial_non_english_terms()
@@ -144,18 +138,6 @@ class LambdaHandler:
         response["headers"] = self._headers(event)
 
         return response
-
-    def handle_healthcheck_get(self, event, _context):
-        return {
-            "statusCode": 200,
-            "body": json.dumps(
-                {
-                    "git_sha1": REVISION,
-                    "model_version": MODEL_VERSION,
-                    "healthy": True,
-                }
-            ),
-        }
 
     @log_handler
     def handle_default(self, event, _context):

@@ -86,15 +86,6 @@ if [[ "$HAS_NO_RESULTS" != "true" ]] ; then
   exit 1
 fi
 
-# Ensure it responds to a healthcheck
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/healthcheck" \
-  -H "X-Api-Key: $API_KEY")
-
-if [[ "$STATUS_CODE" -ne 200 ]] ; then
-  echo "ERROR: Status code of $STATUS_CODE" >&2
-  exit 1
-fi
-
 # Ensure it responds with a 403 if credentials are missing
 STATUS_CODE=$(curl -X POST -d '{"description":"grilled cheese"}' -s -o /dev/null -w "%{http_code}" "${URL}/fpo-code-search")
 

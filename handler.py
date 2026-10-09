@@ -12,6 +12,10 @@ logger = Logger(service="fpo-commodity-code-tool")
 
 start = time.perf_counter()
 cwd = Path(__file__).resolve().parent
+logger.append_keys(
+    git_sha1=(cwd / "REVISION").read_text().strip(),
+    model_version=(cwd / "MODEL_VERSION").read_text().strip(),
+)
 target_dir = cwd / "target"
 subheadings_file = target_dir / "subheadings.json"
 with open(subheadings_file, "r") as fp:
