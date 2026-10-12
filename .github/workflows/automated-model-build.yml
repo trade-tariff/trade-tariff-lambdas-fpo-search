@@ -18,9 +18,5 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7.0.1
 
-      - uses: trade-tariff/trade-tariff-tools/.github/actions/setup-ssh@main
-        with:
-          ssh-key: ${{ secrets.PRIVATE_SSH_KEY }}
-
       - name: Run create pr script
         run: .github/bin/createpr
