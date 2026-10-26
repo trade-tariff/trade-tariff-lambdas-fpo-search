@@ -248,7 +248,12 @@
                 text = reviewEnvironment + ''
                   if [ ! -s /deps/python-inputs/locked-requirements.txt ]; then echo 'Blocked: verified CPU wheels for the declared requirements are unavailable.' >&2; exit 78; fi
                   (cd /deps/python-inputs; sha256sum -c checksums)
-                  python -m virtualenv --no-download "$VIRTUAL_ENV"
+                  ${
+                    pkgs.python313.withPackages (ps: [
+                      ps.pip
+                      ps.virtualenv
+                    ])
+                  }/bin/python -m virtualenv --no-download "$VIRTUAL_ENV"
                   "$VIRTUAL_ENV/bin/python" -m pip install --no-index --find-links=/deps/python-inputs/wheels --require-hashes -r /deps/python-inputs/locked-requirements.txt
                   "$VIRTUAL_ENV/bin/python" -m pip check
                 '';
