@@ -18,13 +18,24 @@
           system = system;
           config.allowUnfree = true;
         };
+        # Keep native hooks on the Ruff release declared in .pre-commit-config.yaml.
+        ruff =
+          (import (builtins.fetchTree {
+            type = "github";
+            owner = "NixOS";
+            repo = "nixpkgs";
+            rev = "2ac2235f3fdb7cff497dbe490c4cb8497f373e29";
+            narHash = "sha256-mdwWjRoMVa0g4cw7kqFBO3MI17Cg0KtlYPTAV4NQQ4Y=";
+          }) { inherit system; }).ruff;
+
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
           configPath = ".pre-commit-config-nix.yaml";
           hooks = {
             ruff-check = {
               enable = true;
-              entry = "${pkgs.ruff}/bin/ruff check --force-exclude";
+              package = ruff;
+              entry = "${ruff}/bin/ruff check --force-exclude";
               types_or = [
                 "python"
                 "pyi"
@@ -34,7 +45,9 @@
             };
             ruff-format = {
               enable = true;
-              entry = "${pkgs.ruff}/bin/ruff format --force-exclude";
+              package = ruff;
+              entry = "${ruff}/bin/ruff format --force-exclude";
+              types = [ "file" ];
               types_or = [
                 "python"
                 "pyi"
@@ -42,9 +55,22 @@
               ];
               require_serial = true;
             };
-            trim-trailing-whitespace.enable = true;
-            end-of-file-fixer.enable = true;
-            check-yaml.enable = true;
+            trim-trailing-whitespace = {
+              enable = true;
+              excludes = [ "reference_data/.*" ];
+            };
+            end-of-file-fixer = {
+              enable = true;
+              excludes = [ "reference_data/.*" ];
+            };
+            check-yaml = {
+              enable = true;
+              excludes = [ "reference_data/.*" ];
+            };
+            check-merge-conflicts = {
+              enable = true;
+              excludes = [ "reference_data/.*" ];
+            };
             shellcheck = {
               enable = true;
               package = pkgs.shellcheck;
@@ -54,6 +80,7 @@
               enable = true;
               package = pkgs.markdownlint-cli;
               entry = "${pkgs.markdownlint-cli}/bin/markdownlint --fix";
+              excludes = [ "^terraform/" ];
             };
             trufflehog = {
               enable = true;
@@ -74,7 +101,7 @@
           pkgs.python313Packages.pip
           pkgs.nodejs_latest
           pkgs.yarn
-          pkgs.ruff
+          ruff
           pkgs.zlib
         ];
 
