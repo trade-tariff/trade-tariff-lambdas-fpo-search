@@ -25,7 +25,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Ruff
-        run: pip install ruff==0.1.6
+        run: pip install ruff==0.15.12
 
       - name: Run Linting
         run: ruff check .
