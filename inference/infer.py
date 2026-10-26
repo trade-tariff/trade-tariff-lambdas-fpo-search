@@ -28,7 +28,53 @@ class ClassificationResult:
         self.score = score
 
     def __repr__(self) -> str:
-        return "%s = %.2f" % (self.code, self.score * 1000)
+        return f"{self.code} = {self.score * 1000:.2f}"
+
+
+def apply_cutoffs(
+    scored: list[tuple[str, float]], limit: int, digits: int
+) -> list[ClassificationResult]:
+    """Trim scores sorted from highest to lowest that sum to 1."""
+    if not scored:
+        return []
+
+    max_val = max(score for _, score in scored)
+    min_confidence = 0.05
+
+    # Cutoff everything below confidence level of the top result
+    softmax_results = [
+        (category, score)
+        for category, score in scored
+        if max_val * min_confidence <= score
+    ]
+
+    result = []
+
+    vague_term_truncated = vague_term_code[:digits]
+
+    cumulative_score = 0
+
+    for i in softmax_results:
+        classification = ClassificationResult(i[0], float(i[1]))
+        # If the score is less than the cutoff then stop iterating through
+        if classification.score < score_cutoff:
+            break
+
+        # If we've hit the vague terms code then we'll skip it
+        if classification.code == vague_term_truncated:
+            break
+
+        result.append(classification)
+
+        cumulative_score += classification.score
+
+        if len(result) >= limit:
+            break
+
+        if cumulative_score >= cumulative_cutoff:
+            break
+
+    return result
 
 
 class Classifier:
@@ -48,18 +94,18 @@ class FlatClassifier(Classifier):
         device: str,
         offline: bool = False,
         model: SimpleNN | None = None,
-        logger: Logger | AWSLogger = logging.getLogger("inference"),
+        logger: Logger | AWSLogger | None = None,
     ) -> None:
         super().__init__()
 
         self._subheadings = subheadings
         self._device = device
-        self._logger = logger
+        self._logger = logger or logging.getLogger("inference")
 
         # Load the model from disk
         self._model = self.load_model().to(self._device) if model is None else model
 
-        logger.info(
+        self._logger.info(
             f"💾⇨ Sentence Transformers running in {'Offline' if offline else 'Online'} mode"
         )
 
@@ -115,43 +161,11 @@ class FlatClassifier(Classifier):
         )  # Subtract max for numerical stability
         softmax_values = exp_values / np.sum(exp_values)
 
-        max_val = np.max(softmax_values)
-        min_confidence = 0.05
-
-        # Cutoff everything below confidence level of the top result
-        softmax_results = [
-            (category, softmax)
-            for (category, _), softmax in zip(top_results, softmax_values)
-            if max_val * min_confidence <= softmax
-        ]
-
-        result = []
-
-        vague_term_truncated = vague_term_code[:digits]
-
-        cumulative_score = 0
-
-        for i in softmax_results:
-            classification = ClassificationResult(i[0], float(i[1]))
-            # If the score is less than the cutoff then stop iterating through
-            if classification.score < score_cutoff:
-                break
-
-            # If we've hit the vague terms code then we'll skip it
-            if classification.code == vague_term_truncated:
-                break
-
-            result.append(classification)
-
-            cumulative_score += classification.score
-
-            if len(result) >= limit:
-                break
-
-            if cumulative_score >= cumulative_cutoff:
-                break
-
-        return result
+        return apply_cutoffs(
+            list(zip([category for category, _ in top_results], softmax_values)),
+            limit,
+            digits,
+        )
 
     def load_model(self):
         model_file = args.target_dir() / "model.pt"
@@ -173,7 +187,7 @@ class FlatClassifier(Classifier):
                 )
             except Exception as e:
                 self._logger.error(f"Failed to load the model: {e}")
-                raise e
+                raise
         else:
             self._logger.info(f"💾⇨ Loading model file: {model_file}")
             model_config = toml.load(model_config_file)
@@ -192,3 +206,91 @@ class FlatClassifier(Classifier):
         self._logger.info("🧠⚡ Model loaded")
 
         return model
+
+
+class KNNClassifier(Classifier):
+    """Classify by a similarity-weighted vote of the nearest training descriptions.
+
+    Uses the same frozen sentence transformer as FlatClassifier and the index
+    built by `train.py --knn-index-only`. No network is trained.
+    """
+
+    def __init__(
+        self,
+        subheadings: list[str],
+        device: str,
+        k: int = 25,
+        temperature: float = 0.05,
+        offline: bool = False,
+        index_file=None,
+        logger: Logger | AWSLogger | None = None,
+    ) -> None:
+        super().__init__()
+
+        self._subheadings = subheadings
+        self._device = device
+        self._k = k
+        self._temperature = temperature
+
+        logger = logger or logging.getLogger("inference")
+        index_file = index_file or args.target_dir() / "knn_index.pt"
+        logger.info(f"💾⇨ Loading kNN index: {index_file}")
+        index = torch.load(index_file, map_location="cpu", weights_only=False)
+
+        dtype = torch.float16 if device == "cuda" else torch.float32
+        self._embeddings = index["embeddings"].to(device=device, dtype=dtype)
+        self._offsets = index["offsets"].tolist()
+        self._labels = index["labels"].numpy()
+        self._counts = index["counts"].numpy().astype(np.float64)
+        self.texts = index["texts"]
+
+        self._sentence_transformer_model = SentenceTransformer(
+            args.transformer(), device=device, local_files_only=offline
+        )
+
+    def neighbours(self, search_text: str) -> tuple[list[int], list[float]]:
+        query = self._sentence_transformer_model.encode(
+            [search_text],
+            convert_to_tensor=True,
+            device=self._device,
+            show_progress_bar=False,
+            normalize_embeddings=True,
+        ).to(self._embeddings.dtype)
+
+        with torch.no_grad():
+            similarities = self._embeddings @ query[0]
+            top = torch.topk(similarities, self._k)
+
+        return top.indices.tolist(), top.values.float().tolist()
+
+    def classify(
+        self,
+        search_text: str,
+        limit: int = 5,
+        digits: int = 6,
+    ) -> list[ClassificationResult]:
+        indices, similarities = self.neighbours(search_text)
+
+        weights = np.exp(
+            (np.array(similarities) - max(similarities)) / self._temperature
+        )
+
+        scores: dict[str, float] = {}
+
+        for text_idx, weight in zip(indices, weights):
+            start, end = self._offsets[text_idx], self._offsets[text_idx + 1]
+            counts = self._counts[start:end]
+            for label, probability in zip(
+                self._labels[start:end], counts / counts.sum()
+            ):
+                code = str(self._subheadings[label])[:digits]
+                scores[code] = scores.get(code, 0.0) + weight * probability
+
+        total = sum(scores.values())
+        scored = sorted(
+            ((code, score / total) for code, score in scores.items()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+        return apply_cutoffs(scored, limit, digits)

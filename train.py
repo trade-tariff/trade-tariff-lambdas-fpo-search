@@ -173,6 +173,9 @@ if __name__ == "__main__":
 
     logger.info(f"Found {len(unique_text_values)} unique descriptions")
 
+    if args.knn_index_only():
+        subheadings_file = target_dir / "knn_subheadings.json"
+
     logger.info("💾⇦ Saving subheadings")
     with open(subheadings_file, "w") as fp:
         json.dump(subheadings, fp)
@@ -202,6 +205,24 @@ if __name__ == "__main__":
     )
 
     unique_embeddings = embeddings_processor.create_embeddings(unique_text_values)
+
+    if args.knn_index_only():
+        from training.knn_index import build_knn_index
+
+        knn_index_file = target_dir / "knn_index.pt"
+        logger.info(f"💾⇦ Saving kNN index to {knn_index_file}")
+        torch.save(
+            build_knn_index(
+                unique_text_values,
+                unique_embeddings,
+                text_indexes,
+                labels,
+                len(subheadings),
+            ),
+            knn_index_file,
+        )
+        logger.info("✅ kNN index complete")
+        raise SystemExit(0)
 
     # Now build and train the network
     trainer = FlatClassifierModelTrainer(args)

@@ -3,7 +3,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List
 
 import tqdm
 from prettytable import PrettyTable
@@ -11,7 +10,7 @@ from prettytable.colortable import ColorTable, Themes
 
 from data_sources.basic_csv import BasicCSVDataSource
 from data_sources.data_source import DataSource
-from inference.infer import FlatClassifier
+from inference.infer import FlatClassifier, KNNClassifier
 from train_args import TrainScriptArgsParser
 from training.cleaning_pipeline import (
     CleaningPipeline,
@@ -96,6 +95,42 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--classifier",
+    help="which classifier to benchmark",
+    type=str,
+    default="flat",
+    choices=["flat", "knn"],
+)
+
+parser.add_argument(
+    "--knn-k",
+    help="number of neighbours for the knn classifier",
+    type=int,
+    default=25,
+)
+
+parser.add_argument(
+    "--knn-temperature",
+    help="similarity temperature for the knn classifier",
+    type=float,
+    default=0.05,
+)
+
+parser.add_argument(
+    "--knn-device",
+    help="torch device for the knn classifier",
+    type=str,
+    default="cpu",
+)
+
+parser.add_argument(
+    "--results-dir",
+    help="directory for --write-to-file output",
+    type=str,
+    default="benchmarking_data/results",
+)
+
+parser.add_argument(
     "--log-level",
     help="set the logging level",
     required=False,
@@ -165,19 +200,27 @@ if not subheadings_file.exists():
 with open(subheadings_file, "r") as fp:
     subheadings = json.load(fp)
 
-model_file = target_dir / "model.pt"
-if not model_file.exists():
-    raise FileNotFoundError(f"Could not find model file: {model_file}")
+if args.classifier == "knn":
+    classifier = KNNClassifier(
+        subheadings,
+        args.knn_device,
+        k=args.knn_k,
+        temperature=args.knn_temperature,
+    )
+else:
+    model_file = target_dir / "model.pt"
+    if not model_file.exists():
+        raise FileNotFoundError(f"Could not find model file: {model_file}")
 
-classifier = FlatClassifier(subheadings, device)
+    classifier = FlatClassifier(subheadings, device)
 
-data_sources: List[DataSource] = []
+data_sources: list[DataSource] = []
 
 benchmarking_data_dir = cwd / "benchmarking_data"
 files = list(benchmarking_data_dir.glob("**/*.csv"))
 
 
-def reject_paths(paths: List[str]):
+def reject_paths(paths: list[str]):
     def inner(file: Path):
         for part in file.parts:
             for remove_part in paths:
@@ -369,20 +412,16 @@ else:  # output is json
     print(json.dumps(results, indent=4))
 
 if write_file and results:
-    path = "benchmarking_data/results"
+    path = args.results_dir
     os.makedirs(path, exist_ok=True)
 
     benchmark_type = "classified" if args.benchmark_classifieds else "good_goods"
     filetype = "json" if output == "json" else "txt"
-    file = open(f"{path}/benchmark_results_{benchmark_type}.{filetype}", "w")
+    with open(f"{path}/benchmark_results_{benchmark_type}.{filetype}", "w") as file:
+        if output == "json":
+            file.write(json.dumps(results, indent=2))
+        else:
+            file.write(str(results))
 
-    if output == "json":
-        file.write(json.dumps(results, indent=2))
-    else:
-        file.write(str(results))
-
-    file.close()
-
-    details_file = open(f"{path}/benchmark_details_{benchmark_type}.json", "w")
-    details_file.write(json.dumps(details, indent=2))
-    details_file.close()
+    with open(f"{path}/benchmark_details_{benchmark_type}.json", "w") as details_file:
+        details_file.write(json.dumps(details, indent=2))

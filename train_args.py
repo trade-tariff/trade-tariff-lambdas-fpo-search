@@ -194,6 +194,13 @@ class TrainScriptArgsParser:
             default=True,
         )
 
+        parser.add_argument(
+            "--knn-index-only",
+            action="store_true",
+            help="build the embeddings kNN index (target/knn_index.pt) and skip training the network",
+            default=False,
+        )
+
         self.parsed_args, _unknown = parser.parse_known_args()
         self._parse_search_config()
 
@@ -292,6 +299,9 @@ class TrainScriptArgsParser:
     @config_from_file
     def limit(self):
         return self.parsed_args.limit
+
+    def knn_index_only(self):
+        return self.parsed_args.knn_index_only
 
     @config_from_file
     def digits(self):
