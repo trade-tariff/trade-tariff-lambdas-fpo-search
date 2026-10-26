@@ -1,5 +1,6 @@
 import logging
 import typing
+
 from data_sources.data_source import DataSource
 
 
@@ -13,9 +14,11 @@ class TrainingData(typing.NamedTuple):
 class TrainingDataLoader:
     def __init__(
         self,
-        logger: logging.Logger = logging.getLogger("training_data_loader"),
+        logger: logging.Logger | None = None,
     ) -> None:
-        self._logger = logger
+        self._logger = logger or logging.getLogger("training_data_loader")
+        # Index into the data sources list for each row of labels and texts
+        self.row_sources: list[int] = []
 
     def fetch_data(
         self,
@@ -23,10 +26,10 @@ class TrainingDataLoader:
         digits: int = 8,
     ) -> TrainingData:
         unique_text_values: list[str] = []
-        unique_text_map: typing.Dict[str, int] = {}
+        unique_text_map: dict[str, int] = {}
 
         subheadings: list[str] = []
-        subheadings_map: typing.Dict[str, int] = {}
+        subheadings_map: dict[str, int] = {}
 
         labels = list[int]()
         text_indexes = list[int]()
@@ -79,7 +82,9 @@ class TrainingDataLoader:
         invalid_subheading_count = 0
         incorrect_code_for_description_count = 0
 
-        for data_source, data in data_sources_with_data:
+        self.row_sources = []
+
+        for source_idx, (data_source, data) in enumerate(data_sources_with_data):
             self._logger.info(
                 f"🗄️  Processing data from data source: {data_source.description}"
             )
@@ -114,6 +119,7 @@ class TrainingDataLoader:
 
                     labels.extend([this_subheading_idx] * data_source.multiplier)
                     text_indexes.extend([unique_text_idx] * data_source.multiplier)
+                    self.row_sources.extend([source_idx] * data_source.multiplier)
 
         self._logger.debug(
             f"ℹ️  {invalid_subheading_count} entries with invalid subheadings were skipped"

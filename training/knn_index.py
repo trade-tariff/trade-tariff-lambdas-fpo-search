@@ -8,6 +8,8 @@ def build_knn_index(
     text_indexes: list[int],
     labels: list[int],
     num_labels: int,
+    row_sources: list[int] | None = None,
+    source_names: list[str] | None = None,
 ) -> dict:
     """Store each unique description's embedding with its label counts.
 
@@ -27,7 +29,17 @@ def build_knn_index(
         torch.bincount(pair_texts, minlength=len(unique_text_values)), dim=0
     )
 
+    rows = {}
+    if row_sources is not None:
+        rows = {
+            "row_texts": texts.to(torch.int32),
+            "row_labels": label_tensor.to(torch.int32),
+            "row_sources": torch.tensor(row_sources, dtype=torch.int16),
+            "source_names": source_names,
+        }
+
     return {
+        **rows,
         "texts": unique_text_values,
         "embeddings": unique_embeddings.to(torch.float16),
         "offsets": offsets,

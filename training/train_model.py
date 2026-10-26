@@ -1,13 +1,14 @@
-import logging
-import torch
-from torch import Tensor, optim, nn
-from torch.utils.data import DataLoader, TensorDataset
-from model.model import SimpleNN
-from typing import Any, Dict
-from train_args import TrainScriptArgsParser
 import json
+import logging
 import math
+from typing import Any
 
+import torch
+from torch import Tensor, nn, optim
+from torch.utils.data import DataLoader, TensorDataset
+
+from model.model import SimpleNN
+from train_args import TrainScriptArgsParser
 
 logger = logging.getLogger("train")
 
@@ -25,9 +26,21 @@ class FlatClassifierModelTrainer:
         self._dropout_prob2 = args.model_dropout_layer_2_percentage()
 
     def run(
-        self, embeddings: Tensor, labels: Tensor, num_labels: int
-    ) -> tuple[Dict[str, Any], int, int, int]:
-        train_dataset = TensorDataset(embeddings, labels)
+        self,
+        embeddings: Tensor,
+        labels: Tensor,
+        num_labels: int,
+        text_indexes: Tensor | None = None,
+    ) -> tuple[dict[str, Any], int, int, int]:
+        """Train on one embedding per label.
+
+        With text_indexes, embeddings holds one row per unique text and each
+        label uses embeddings[text_indexes[i]]. This avoids a copy per row.
+        """
+        if text_indexes is None:
+            train_dataset = TensorDataset(embeddings, labels)
+        else:
+            train_dataset = TensorDataset(text_indexes, labels)
 
         input_size = len(embeddings[0])  # Assuming embeddings have fixed size
         output_size = num_labels  # Number of unique classes in your labels
@@ -71,7 +84,7 @@ class FlatClassifierModelTrainer:
         batches = len(train_loader)
         size = len(train_dataset)
 
-        report: Dict[str, Dict[str, float]] = {
+        report: dict[str, dict[str, float]] = {
             f"epoch_{epoch + 1}": {"accuracy": 0.0, "average_loss": 0.0}
             for epoch in range(self._max_epochs)
         }
@@ -85,7 +98,9 @@ class FlatClassifierModelTrainer:
             for _, (inputs, loader_labels) in enumerate(train_loader):
                 optimizer.zero_grad()
 
-                inputs = inputs.to(self._device)
+                if text_indexes is not None:
+                    inputs = embeddings[inputs.to(embeddings.device)]
+                inputs = inputs.to(self._device, torch.float32)
                 loader_labels = loader_labels.to(self._device)
 
                 outputs = model(inputs)

@@ -218,6 +218,8 @@ if __name__ == "__main__":
                 text_indexes,
                 labels,
                 len(subheadings),
+                loader.row_sources,
+                [data_source.description for data_source in data_sources],
             ),
             knn_index_file,
         )

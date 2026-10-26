@@ -8,6 +8,7 @@
 - Updated: November 27, 2025
 - Version: 1.0
 - Target Component: Training data preparation pipeline (`training/cleaning_pipeline.py`)
+- Outcome: [Experiment 002](../experiments/002_semantic_distance_filtering.md) tested this filter. It removed many correct rows and made the model less accurate on classified parcel data.
 
 ## Abstract
 
