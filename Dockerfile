@@ -1,9 +1,9 @@
 # Build the Lambda Runtime Interface Emulator from source. The upstream
-# release binaries (v1.37 and earlier) use a Go toolchain older than 1.26.9,
+# release binaries (v1.37 and earlier) use a Go toolchain older than 1.26.10,
 # which has HIGH CVEs in net/http and crypto/tls (CVE-2026-78667,
 # CVE-2026-97031). Move back to the release binary when upstream ships one
-# that uses Go 1.26.9 or later.
-FROM golang:1.26.9-trixie AS rie-builder
+# that uses Go 1.26.10 or later.
+FROM golang:1.26.10-trixie AS rie-builder
 
 ARG RIE_VERSION=v1.37
 
